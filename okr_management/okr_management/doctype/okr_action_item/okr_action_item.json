@@ -1,0 +1,206 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-06-24 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "details_section",
+  "action_item_title",
+  "key_result",
+  "objective",
+  "cycle",
+  "owner_user",
+  "department",
+  "status_priority_section",
+  "status",
+  "priority",
+  "dates_section",
+  "start_date",
+  "due_date",
+  "completion_date",
+  "notes_section",
+  "notes",
+  "blockers"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "OKR-ACTION-.YYYY.-",
+   "default": "OKR-ACTION-.YYYY.-",
+   "hidden": 1,
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Action Item Details"
+  },
+  {
+   "fieldname": "action_item_title",
+   "fieldtype": "Data",
+   "label": "Action Item Title",
+   "reqd": 1,
+   "in_list_view": 1,
+   "req": 1
+  },
+  {
+   "fieldname": "key_result",
+   "fieldtype": "Link",
+   "label": "Key Result",
+   "options": "OKR Key Result",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "objective",
+   "fieldtype": "Link",
+   "label": "Objective",
+   "options": "OKR Objective",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cycle",
+   "fieldtype": "Link",
+   "label": "OKR Cycle",
+   "options": "OKR Cycle",
+   "read_only": 1
+  },
+  {
+   "fieldname": "owner_user",
+   "fieldtype": "Link",
+   "label": "Owner User",
+   "options": "User",
+   "in_list_view": 1,
+   "req": 1,
+   "description": "Every Action Item must have an owner. Visibility and accountability are based on this field."
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status_priority_section",
+   "fieldtype": "Section Break",
+   "label": "Status & Priority"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nNot Started\nIn Progress\nBlocked\nCompleted\nCancelled",
+   "default": "Draft",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh\nCritical",
+   "default": "Medium",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "dates_section",
+   "fieldtype": "Section Break",
+   "label": "Dates"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date"
+  },
+  {
+   "fieldname": "due_date",
+   "fieldtype": "Date",
+   "label": "Due Date",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "completion_date",
+   "fieldtype": "Date",
+   "label": "Completion Date"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "blockers",
+   "fieldtype": "Small Text",
+   "label": "Blockers"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "module": "OKR Management",
+ "name": "OKR Action Item",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "OKR Admin",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "role": "OKR Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "role": "Team Lead",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 1
+  },
+  {
+   "role": "Employee",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "search_fields": "action_item_title,key_result,owner_user,status,priority",
+ "show_title_field_in_link": 1,
+ "title_field": "action_item_title"
+}
