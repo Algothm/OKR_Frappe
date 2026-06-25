@@ -1,0 +1,22 @@
+{
+ "doctype": "Dashboard Chart",
+ "name": "OKR Objectives by Status",
+ "chart_name": "OKR Objectives by Status",
+ "chart_type": "Group By",
+ "document_type": "OKR Objective",
+ "group_by_type": "Count",
+ "group_by_based_on": "status",
+ "filters_json": "[]",
+ "is_public": 1,
+ "is_standard": 1,
+ "module": "OKR Management",
+ "timeseries": 0,
+ "type": "Donut",
+ "use_report_chart": 0,
+ "number_of_groups": 0,
+ "y_axis": [],
+ "owner": "Administrator",
+ "modified_by": "Administrator",
+ "docstatus": 0,
+ "idx": 0
+}

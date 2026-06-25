@@ -1,0 +1,80 @@
+/* ============================================================
+   OKR Management — Global App Styles
+   Loaded on every Frappe page via hooks.py app_include_css
+   ============================================================ */
+
+/* ---- Shared OKR badge/pill styles ---- */
+.okr-badge {
+	display: inline-block;
+	font-size: 10px;
+	font-weight: 600;
+	padding: 2px 6px;
+	border-radius: 4px;
+	background: var(--bg-light-gray, #f1f5f9);
+	color: var(--text-muted, #64748b);
+	margin-right: 5px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.okr-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 11px;
+	font-weight: 600;
+	padding: 3px 9px;
+	border-radius: 999px;
+	white-space: nowrap;
+}
+.okr-pill-critical { background: #fee2e2; color: #991b1b; }
+.okr-pill-high     { background: #ffedd5; color: #9a3412; }
+.okr-pill-medium   { background: #fef9c3; color: #854d0e; }
+.okr-pill-low      { background: #dcfce7; color: #166534; }
+.okr-pill-default  { background: #e2e8f0; color: #334155; }
+
+/* ---- Progress bars ---- */
+.okr-progressbar {
+	height: 7px;
+	border-radius: 999px;
+	background: var(--border-color, #e2e8f0);
+	overflow: hidden;
+}
+.okr-progressbar-fill {
+	display: block;
+	height: 100%;
+	border-radius: 999px;
+	background: linear-gradient(90deg, #2563eb 0%, #10b981 100%);
+	transition: width 0.6s ease;
+}
+.okr-progressbar-fill.danger  { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); }
+.okr-progressbar-fill.warning { background: linear-gradient(90deg, #f97316 0%, #f59e0b 100%); }
+
+/* ---- KPI card accent colors (workspace number cards) ---- */
+.okr-kpi-card { transition: box-shadow 0.2s, transform 0.15s; }
+.okr-kpi-card:hover { box-shadow: var(--shadow-md, 0 4px 16px rgba(0,0,0,0.12)); transform: translateY(-2px); }
+
+/* ---- Spin animation (shared) ---- */
+@keyframes okr-spin { to { transform: rotate(360deg); } }
+
+/* ---- Print: hide Frappe chrome when printing any OKR executive page ---- */
+@media print {
+	.navbar,
+	.page-head,
+	.page-actions,
+	.layout-side-section,
+	.body-sidebar,
+	.sidebar-toggle-btn,
+	.page-breadcrumbs {
+		display: none !important;
+	}
+	.page-content-wrapper,
+	.layout-main,
+	.layout-main-section {
+		padding: 0 !important;
+		margin: 0 !important;
+		width: 100% !important;
+		max-width: none !important;
+		box-shadow: none !important;
+	}
+}

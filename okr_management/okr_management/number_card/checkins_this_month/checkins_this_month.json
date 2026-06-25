@@ -1,0 +1,17 @@
+{
+ "doctype": "Number Card",
+ "name": "Check-ins This Month",
+ "label": "Check-ins This Month",
+ "type": "Custom",
+ "document_type": "OKR Check In",
+ "method": "okr_management.analytics.checkins_this_month_count",
+ "is_public": 1,
+ "is_standard": 1,
+ "module": "OKR Management",
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Monthly",
+ "owner": "Administrator",
+ "modified_by": "Administrator",
+ "docstatus": 0,
+ "idx": 0
+}

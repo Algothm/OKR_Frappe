@@ -1,0 +1,18 @@
+{
+ "doctype": "Number Card",
+ "name": "Completed Objectives",
+ "label": "Completed Objectives",
+ "type": "Document Type",
+ "document_type": "OKR Objective",
+ "function": "Count",
+ "filters_json": "[[\"OKR Objective\", \"status\", \"=\", \"Completed\"]]",
+ "is_public": 1,
+ "is_standard": 1,
+ "module": "OKR Management",
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Monthly",
+ "owner": "Administrator",
+ "modified_by": "Administrator",
+ "docstatus": 0,
+ "idx": 0
+}

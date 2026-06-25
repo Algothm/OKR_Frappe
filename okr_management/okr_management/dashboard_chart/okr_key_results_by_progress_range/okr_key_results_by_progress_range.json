@@ -1,0 +1,20 @@
+{
+ "doctype": "Dashboard Chart",
+ "name": "OKR Key Results by Progress Range",
+ "chart_name": "Key Results by Progress Range",
+ "chart_type": "Custom",
+ "source": "OKR Key Results by Progress Range",
+ "filters_json": "{}",
+ "is_public": 1,
+ "is_standard": 1,
+ "module": "OKR Management",
+ "timeseries": 0,
+ "type": "Bar",
+ "use_report_chart": 0,
+ "number_of_groups": 0,
+ "y_axis": [],
+ "owner": "Administrator",
+ "modified_by": "Administrator",
+ "docstatus": 0,
+ "idx": 0
+}

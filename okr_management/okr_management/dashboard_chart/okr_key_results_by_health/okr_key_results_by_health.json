@@ -1,0 +1,13 @@
+{
+  "chart_name": "Key Results by Health",
+  "chart_type": "Donut",
+  "document_type": "OKR Key Result",
+  "based_on": "status",
+  "value_based_on": "Count",
+  "is_public": 1,
+  "filters_json": "[]",
+  "timeseries": 0,
+  "use_count": 1,
+  "doctype": "Dashboard Chart",
+  "name": "OKR Key Results by Health"
+}

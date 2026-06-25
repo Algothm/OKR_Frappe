@@ -1,0 +1,12 @@
+{
+ "doctype": "Dashboard Chart Source",
+ "name": "OKR Average Progress by Cycle",
+ "source_name": "OKR Average Progress by Cycle",
+ "module": "OKR Management",
+ "timeseries": 0,
+ "is_standard": 1,
+ "owner": "Administrator",
+ "modified_by": "Administrator",
+ "docstatus": 0,
+ "idx": 0
+}
