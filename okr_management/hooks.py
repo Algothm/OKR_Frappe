@@ -25,8 +25,8 @@ app_license = "mit"
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/okr_management/css/okr_management.css"
-# app_include_js = "/assets/okr_management/js/okr_management.js"
+app_include_css = "/assets/okr_management/css/okr_management.css"
+app_include_js = "/assets/okr_management/js/okr_management.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/okr_management/css/okr_management.css"
@@ -82,8 +82,8 @@ app_license = "mit"
 # Installation
 # ------------
 
-# before_install = "okr_management.install.before_install"
-# after_install = "okr_management.install.after_install"
+before_install = "okr_management.install.before_install"
+after_install = "okr_management.install.after_install"
 
 # Uninstallation
 # ------------
@@ -111,19 +111,20 @@ app_license = "mit"
 # ------------------
 # See frappe.core.notifications.get_notification_config
 
-# notification_config = "okr_management.notifications.get_notification_config"
+notification_config = "okr_management.notifications.get_notification_config"
 
 # Permissions
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+permission_query_conditions = {
+	"OKR Cycle": "okr_management.permissions.get_cycle_permission_query_conditions",
+	"OKR Objective": "okr_management.permissions.get_objective_permission_query_conditions",
+	"OKR Key Result": "okr_management.permissions.get_key_result_permission_query_conditions",
+	"OKR Initiative": "okr_management.permissions.get_initiative_permission_query_conditions",
+	"OKR Check In": "okr_management.permissions.get_checkin_permission_query_conditions",
+	"OKR Action Item": "okr_management.permissions.get_action_item_permission_query_conditions",
+}
 
 # DocType Class
 # ---------------
@@ -137,34 +138,31 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"OKR Objective": {
+		"after_insert": "okr_management.notifications.notify_assignment",
+	},
+	"OKR Key Result": {
+		"after_insert": "okr_management.notifications.notify_assignment",
+	},
+	"OKR Check In": {
+		"on_update": "okr_management.notifications.notify_progress_review",
+	},
+	"OKR Objective Review": {
+		"on_update": "okr_management.notifications.notify_review_status",
+	},
+	"OKR Cycle": {
+		"on_update": "okr_management.notifications.notify_cycle_completion",
+	},
+}
 
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"okr_management.tasks.all"
-# 	],
-# 	"daily": [
-# 		"okr_management.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"okr_management.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"okr_management.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"okr_management.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"daily": ["okr_management.tasks.daily"],
+	"hourly": ["okr_management.tasks.hourly"],
+}
 
 # Testing
 # -------

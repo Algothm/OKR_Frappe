@@ -1,0 +1,226 @@
+{
+ "charts": [
+  {
+   "chart_name": "OKR Objectives by Status",
+   "label": "OKR Objectives by Status"
+  }
+ ],
+ "content": "[{\"id\":\"okr_executive_analyt\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Executive Analytics</b></span>\",\"col\":12}},{\"id\":\"okr_executive_dashbo\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Executive Dashboard\",\"col\":4}},{\"id\":\"okr_executive_attent\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Executive Attention\",\"col\":4}},{\"id\":\"okr_health_insights_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Health Insights\",\"col\":4}},{\"id\":\"okr_executive_report\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Executive Report\",\"col\":4}},{\"id\":\"okr_executive_analyt\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"okr_reports_7\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"okr_okr_summary_8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Summary\",\"col\":4}},{\"id\":\"okr_at_risk_report_9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"At Risk Report\",\"col\":4}},{\"id\":\"okr_employee_progres\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee Progress\",\"col\":4}},{\"id\":\"okr_cycle_review_11\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cycle Review\",\"col\":4}},{\"id\":\"okr_action_item_repo\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Action Item Report\",\"col\":4}},{\"id\":\"okr_reports_spacer_1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"okr_charts_14\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Charts</b></span>\",\"col\":12}},{\"id\":\"okr_okr_objectives_b\",\"type\":\"chart\",\"data\":{\"chart_name\":\"OKR Objectives by Status\",\"col\":6}},{\"id\":\"okr_charts_spacer_16\",\"type\":\"spacer\",\"data\":{\"col\":12}}]",
+ "creation": "2026-06-22 16:31:11.913028",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "chart",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Analytics",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Executive Analytics",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Executive Dashboard",
+   "link_count": 0,
+   "link_to": "okr-management",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Executive Attention",
+   "link_count": 0,
+   "link_to": "okr-executive-attention",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Health Insights",
+   "link_count": 0,
+   "link_to": "OKR Health Insights Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link",
+   "report_ref_doctype": "OKR Objective"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Executive Report",
+   "link_count": 0,
+   "link_to": "okr-executive-report",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "OKR Summary",
+   "link_count": 0,
+   "link_to": "OKR Summary Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link",
+   "report_ref_doctype": "OKR Cycle"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "At Risk Report",
+   "link_count": 0,
+   "link_to": "At Risk OKR Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link",
+   "report_ref_doctype": "OKR Objective"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Employee Progress",
+   "link_count": 0,
+   "link_to": "Employee OKR Progress Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link",
+   "report_ref_doctype": "OKR Objective"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Cycle Review",
+   "link_count": 0,
+   "link_to": "Cycle Review Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link",
+   "report_ref_doctype": "OKR Cycle"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Action Item Report",
+   "link_count": 0,
+   "link_to": "OKR Action Item Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link",
+   "report_ref_doctype": "OKR Action Item"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Charts",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  }
+ ],
+ "modified": "2026-06-25 10:28:54.576631",
+ "modified_by": "Administrator",
+ "module": "OKR Management",
+ "name": "Analytics",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "OKR Management",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 5.0,
+ "shortcuts": [
+  {
+   "doc_view": "",
+   "label": "Executive Dashboard",
+   "link_to": "okr-management",
+   "type": "Page"
+  },
+  {
+   "doc_view": "",
+   "label": "Executive Attention",
+   "link_to": "okr-executive-attention",
+   "type": "Page"
+  },
+  {
+   "doc_view": "",
+   "label": "Health Insights",
+   "link_to": "OKR Health Insights Report",
+   "report_ref_doctype": "OKR Objective",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "Executive Report",
+   "link_to": "okr-executive-report",
+   "type": "Page"
+  },
+  {
+   "doc_view": "",
+   "label": "OKR Summary",
+   "link_to": "OKR Summary Report",
+   "report_ref_doctype": "OKR Cycle",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "At Risk Report",
+   "link_to": "At Risk OKR Report",
+   "report_ref_doctype": "OKR Objective",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "Employee Progress",
+   "link_to": "Employee OKR Progress Report",
+   "report_ref_doctype": "OKR Objective",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "Cycle Review",
+   "link_to": "Cycle Review Report",
+   "report_ref_doctype": "OKR Cycle",
+   "type": "Report"
+  },
+  {
+   "doc_view": "",
+   "label": "Action Item Report",
+   "link_to": "OKR Action Item Report",
+   "report_ref_doctype": "OKR Action Item",
+   "type": "Report"
+  }
+ ],
+ "title": "Analytics"
+}

@@ -1,0 +1,57 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"okr_administration_1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Administration</b></span>\",\"col\":12}},{\"id\":\"okr_settings_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Settings\",\"col\":4}},{\"id\":\"okr_administration_s\",\"type\":\"spacer\",\"data\":{\"col\":12}}]",
+ "creation": "2026-06-22 16:31:11.913028",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "settings",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Administration",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Administration",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Settings",
+   "link_count": 0,
+   "link_to": "OKR Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-06-25 10:28:54.576631",
+ "modified_by": "Administrator",
+ "module": "OKR Management",
+ "name": "Administration",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "OKR Management",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 6.0,
+ "shortcuts": [
+  {
+   "doc_view": "",
+   "label": "Settings",
+   "link_to": "OKR Settings",
+   "type": "DocType"
+  }
+ ],
+ "title": "Administration"
+}
