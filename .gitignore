@@ -1,7 +1,41 @@
+# OS / editor
 .DS_Store
-*.pyc
-*.egg-info
 *.swp
 tags
-node_modules
-__pycache__
+
+# Python / tooling cache
+*.pyc
+*.egg-info
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# JavaScript dependencies
+node_modules/
+
+# Frappe / bench generated files
+logs/
+sites/
+env/
+assets/
+dist/
+build/
+
+# Local backups and scratch helpers
+*.bak
+*.tmp
+*.log
+okr_management/check_charts.py
+okr_management/rebuild_workspace.py
+
+# Secrets / private runtime files
+site_config.json
+common_site_config.json
+*.key
+*.pem
+*.crt
+*.p12
+*.env
