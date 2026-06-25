@@ -1,0 +1,171 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-06-22 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "cycle_details_section",
+  "cycle_name",
+  "company",
+  "cycle_type",
+  "period_section",
+  "start_date",
+  "end_date",
+  "review_deadline",
+  "ownership_section",
+  "owner_user",
+  "status",
+  "description",
+  "technical_section",
+  "naming_series"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "OKR-CYCLE-.YYYY.-",
+   "default": "OKR-CYCLE-.YYYY.-",
+   "req": 1,
+   "in_list_view": 1,
+   "reqd": 1,
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "cycle_name",
+   "fieldtype": "Data",
+   "label": "Cycle Name",
+   "req": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "req": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cycle_type",
+   "fieldtype": "Select",
+   "label": "Cycle Type",
+   "options": "Quarterly\nHalf-Yearly\nYearly\nCustom",
+   "default": "Quarterly",
+   "req": 1
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date",
+   "req": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date",
+   "req": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPending Approval\nApproved\nActive\nReview in Progress\nClosed\nArchived",
+   "default": "Draft",
+   "req": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "review_deadline",
+   "fieldtype": "Date",
+   "label": "Review Deadline",
+   "description": "Defaults to 7 days after the cycle end date."
+  },
+  {
+   "fieldname": "owner_user",
+   "fieldtype": "Link",
+   "label": "Owner User",
+   "options": "User",
+   "description": "Person responsible for coordinating this OKR cycle."
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "cycle_details_section",
+   "fieldtype": "Section Break",
+   "label": "Cycle Details"
+  },
+  {
+   "fieldname": "period_section",
+   "fieldtype": "Section Break",
+   "label": "Time Period"
+  },
+  {
+   "fieldname": "ownership_section",
+   "fieldtype": "Section Break",
+   "label": "Ownership & Status"
+  },
+  {
+   "fieldname": "technical_section",
+   "fieldtype": "Section Break",
+   "label": "System Details",
+   "collapsible": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "module": "OKR Management",
+ "name": "OKR Cycle",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "OKR Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "OKR Manager",
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Executive Viewer",
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "title_field": "cycle_name",
+ "search_fields": "cycle_name,name,company,status",
+ "show_title_field_in_link": 1
+}

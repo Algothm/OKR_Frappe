@@ -1,0 +1,210 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-06-22 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "checkin_context_section",
+  "key_result",
+  "objective",
+  "cycle",
+  "reported_by",
+  "checkin_date",
+  "employee_update_section",
+  "progress_percent",
+  "self_rating",
+  "confidence",
+  "blockers",
+  "notes",
+  "status",
+  "manager_review_section",
+  "manager_rating",
+  "manager_feedback",
+  "review_status",
+  "technical_section",
+  "naming_series"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "OKR-CHECKIN-.YYYY.-",
+   "default": "OKR-CHECKIN-.YYYY.-",
+   "req": 1,
+   "in_list_view": 1,
+   "reqd": 1,
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "key_result",
+   "fieldtype": "Link",
+   "label": "Key Result",
+   "options": "OKR Key Result",
+   "req": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "objective",
+   "fieldtype": "Link",
+   "label": "Objective",
+   "options": "OKR Objective",
+   "read_only": 1,
+   "description": "Auto-filled from the selected Key Result."
+  },
+  {
+   "fieldname": "cycle",
+   "fieldtype": "Link",
+   "label": "OKR Cycle",
+   "options": "OKR Cycle",
+   "req": 1,
+   "read_only": 1,
+   "description": "Auto-filled from the selected Key Result."
+  },
+  {
+   "fieldname": "reported_by",
+   "fieldtype": "Link",
+   "label": "Reported By",
+   "options": "User",
+   "req": 1,
+   "description": "Defaults to the logged-in user."
+  },
+  {
+   "fieldname": "checkin_date",
+   "fieldtype": "Date",
+   "label": "Check-in Date",
+   "req": 1,
+   "default": "Today"
+  },
+  {
+   "fieldname": "progress_percent",
+   "fieldtype": "Percent",
+   "label": "Progress Percent",
+   "req": 1,
+   "default": 0,
+   "description": "Your latest progress against the Key Result."
+  },
+  {
+   "fieldname": "self_rating",
+   "fieldtype": "Rating",
+   "label": "Self Rating"
+  },
+  {
+   "fieldname": "manager_rating",
+   "fieldtype": "Rating",
+   "label": "Manager Rating",
+   "read_only": 1
+  },
+  {
+   "fieldname": "manager_feedback",
+   "fieldtype": "Small Text",
+   "label": "Manager Feedback",
+   "read_only": 1
+  },
+  {
+   "fieldname": "review_status",
+   "fieldtype": "Select",
+   "label": "Review Status",
+   "options": "Draft\nSubmitted\nApproved\nModified\nRejected",
+   "default": "Draft",
+   "read_only": 1
+  },
+  {
+   "fieldname": "confidence",
+   "fieldtype": "Select",
+   "label": "Confidence",
+   "options": "1\n2\n3\n4\n5",
+   "default": "3",
+   "description": "1 = low confidence, 5 = high confidence."
+  },
+  {
+   "fieldname": "blockers",
+   "fieldtype": "Small Text",
+   "label": "Blockers"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nSubmitted\nReviewed\nFinal",
+   "default": "Draft",
+   "req": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "checkin_context_section",
+   "fieldtype": "Section Break",
+   "label": "Check-In Context"
+  },
+  {
+   "fieldname": "employee_update_section",
+   "fieldtype": "Section Break",
+   "label": "Employee Update"
+  },
+  {
+   "fieldname": "manager_review_section",
+   "fieldtype": "Section Break",
+   "label": "Manager Review",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "technical_section",
+   "fieldtype": "Section Break",
+   "label": "System Details",
+   "collapsible": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "module": "OKR Management",
+ "name": "OKR Check In",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "OKR Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "OKR Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "Employee",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

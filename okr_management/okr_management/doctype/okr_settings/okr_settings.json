@@ -1,0 +1,25 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "creation": "2026-06-22 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": ["default_cycle_type", "weekly_reminder_day", "escalation_after_days", "score_mode", "default_checkin_frequency", "allow_mid_cycle_edit", "description"],
+  "fields": [
+    {"fieldname": "default_cycle_type", "fieldtype": "Select", "label": "Default Cycle Type", "options": "Quarterly\nHalf-Yearly\nYearly\nCustom", "default": "Quarterly"},
+    {"fieldname": "weekly_reminder_day", "fieldtype": "Select", "label": "Weekly Reminder Day", "options": "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday", "default": "Friday"},
+    {"fieldname": "escalation_after_days", "fieldtype": "Int", "label": "Escalation After Days", "default": 3},
+    {"fieldname": "score_mode", "fieldtype": "Select", "label": "Score Mode", "options": "Weighted Average\nSimple Average\nMilestone Based", "default": "Weighted Average"},
+    {"fieldname": "default_checkin_frequency", "fieldtype": "Select", "label": "Default Check-in Frequency", "options": "Weekly\nBiweekly\nMonthly", "default": "Weekly"},
+    {"fieldname": "allow_mid_cycle_edit", "fieldtype": "Check", "label": "Allow Mid-Cycle Edit", "default": 0},
+    {"fieldname": "description", "fieldtype": "Small Text", "label": "Description"}
+  ],
+  "issingle": 1,
+  "module": "OKR Management",
+  "name": "OKR Settings",
+  "permissions": [
+    {"create": 1, "delete": 0, "email": 0, "export": 1, "print": 1, "read": 1, "report": 1, "role": "OKR Admin", "write": 1}
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC"
+}

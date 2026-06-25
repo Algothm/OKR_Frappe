@@ -1,0 +1,195 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-22 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "review_context_section",
+  "objective",
+  "cycle",
+  "reviewer",
+  "review_date",
+  "review_assessment_section",
+  "self_rating",
+  "manager_rating",
+  "rating",
+  "review_decision_section",
+  "decision",
+  "review_status",
+  "manager_feedback",
+  "review_notes_section",
+  "summary",
+  "risks",
+  "next_actions",
+  "technical_section",
+  "naming_series"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "OKR-REVIEW-.YYYY.-",
+   "default": "OKR-REVIEW-.YYYY.-",
+   "reqd": 1,
+   "in_list_view": 1,
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "objective",
+   "fieldtype": "Link",
+   "label": "Objective",
+   "options": "OKR Objective",
+   "req": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cycle",
+   "fieldtype": "Link",
+   "label": "OKR Cycle",
+   "options": "OKR Cycle",
+   "req": 1,
+   "read_only": 1,
+   "description": "Auto-filled from the selected Objective."
+  },
+  {
+   "fieldname": "reviewer",
+   "fieldtype": "Link",
+   "label": "Reviewer",
+   "options": "User",
+   "req": 1,
+   "description": "Defaults to the logged-in reviewer."
+  },
+  {
+   "fieldname": "review_date",
+   "fieldtype": "Date",
+   "label": "Review Date",
+   "default": "Today",
+   "req": 1
+  },
+  {
+   "fieldname": "self_rating",
+   "fieldtype": "Rating",
+   "label": "Self Rating",
+   "read_only": 1,
+   "description": "Auto-derived from related Check-In self ratings for this Objective when available."
+  },
+  {
+   "fieldname": "manager_rating",
+   "fieldtype": "Rating",
+   "label": "Manager Rating",
+   "description": "Manager/reviewer evaluation of the objective outcome."
+  },
+  {
+   "fieldname": "manager_feedback",
+   "fieldtype": "Small Text",
+   "label": "Manager Feedback"
+  },
+  {
+   "fieldname": "review_status",
+   "fieldtype": "Select",
+   "label": "Review Status",
+   "options": "Draft\nSubmitted\nApproved\nModified\nRejected",
+   "default": "Draft"
+  },
+  {
+   "fieldname": "rating",
+   "fieldtype": "Rating",
+   "label": "Rating",
+   "description": "Overall final rating."
+  },
+  {
+   "fieldname": "decision",
+   "fieldtype": "Select",
+   "label": "Decision",
+   "options": "Approve\nApprove with Conditions\nReject\nDefer",
+   "default": "Approve with Conditions"
+  },
+  {
+   "fieldname": "summary",
+   "fieldtype": "Small Text",
+   "label": "Summary"
+  },
+  {
+   "fieldname": "risks",
+   "fieldtype": "Small Text",
+   "label": "Risks"
+  },
+  {
+   "fieldname": "next_actions",
+   "fieldtype": "Small Text",
+   "label": "Next Actions"
+  },
+  {
+   "fieldname": "review_context_section",
+   "fieldtype": "Section Break",
+   "label": "Review Context"
+  },
+  {
+   "fieldname": "review_assessment_section",
+   "fieldtype": "Section Break",
+   "label": "Assessment"
+  },
+  {
+   "fieldname": "review_decision_section",
+   "fieldtype": "Section Break",
+   "label": "Manager Decision"
+  },
+  {
+   "fieldname": "review_notes_section",
+   "fieldtype": "Section Break",
+   "label": "Summary & Next Actions"
+  },
+  {
+   "fieldname": "technical_section",
+   "fieldtype": "Section Break",
+   "label": "System Details",
+   "collapsible": 1
+  }
+ ],
+ "istable": 0,
+ "module": "OKR Management",
+ "name": "OKR Objective Review",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "OKR Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "OKR Manager",
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "Executive Viewer",
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "autoname": "naming_series:",
+ "naming_rule": "By \"Naming Series\" field"
+}

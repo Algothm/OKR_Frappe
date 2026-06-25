@@ -1,0 +1,248 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-06-22 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "objective_details_section",
+  "objective_title",
+  "cycle",
+  "company",
+  "objective_type",
+  "priority",
+  "ownership_section",
+  "owner_user",
+  "department",
+  "parent_objective",
+  "objective_period_section",
+  "start_date",
+  "end_date",
+  "objective_progress_section",
+  "progress",
+  "confidence",
+  "status",
+  "objective_alignment_section",
+  "alignment_map",
+  "description",
+  "technical_section",
+  "naming_series"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "OKR-OBJ-.YYYY.-",
+   "default": "OKR-OBJ-.YYYY.-",
+   "req": 1,
+   "in_list_view": 1,
+   "reqd": 1,
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "objective_title",
+   "fieldtype": "Data",
+   "label": "Objective Title",
+   "req": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cycle",
+   "fieldtype": "Link",
+   "label": "OKR Cycle",
+   "options": "OKR Cycle",
+   "req": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "req": 1,
+   "read_only": 1,
+   "description": "Auto-filled from the selected OKR Cycle."
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department"
+  },
+  {
+   "fieldname": "owner_user",
+   "fieldtype": "Link",
+   "label": "Owner User",
+   "options": "User",
+   "req": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "parent_objective",
+   "fieldtype": "Link",
+   "label": "Parent Objective",
+   "options": "OKR Objective",
+   "description": "Optional: align this objective under a higher-level objective."
+  },
+  {
+   "fieldname": "objective_type",
+   "fieldtype": "Select",
+   "label": "Objective Type",
+   "options": "Company\nDepartment\nTeam\nIndividual",
+   "default": "Department",
+   "req": 1
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh\nStrategic",
+   "default": "High"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date",
+   "req": 1,
+   "description": "Defaults from the selected OKR Cycle."
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date",
+   "req": 1,
+   "description": "Defaults from the selected OKR Cycle."
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nSubmitted\nApproved\nActive\nAt Risk\nCompleted\nCancelled\nArchived",
+   "default": "Draft",
+   "req": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "progress",
+   "fieldtype": "Percent",
+   "label": "Progress",
+   "default": "0",
+   "read_only": 1,
+   "description": "Calculated from linked Key Results."
+  },
+  {
+   "fieldname": "confidence",
+   "fieldtype": "Select",
+   "label": "Confidence",
+   "options": "1\n2\n3\n4\n5",
+   "default": "3",
+   "read_only": 1,
+   "description": "Calculated from linked Key Results."
+  },
+  {
+   "fieldname": "alignment_map",
+   "fieldtype": "Table",
+   "label": "Alignment Map",
+   "options": "OKR Objective Alignment"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "objective_details_section",
+   "fieldtype": "Section Break",
+   "label": "Objective Details"
+  },
+  {
+   "fieldname": "ownership_section",
+   "fieldtype": "Section Break",
+   "label": "Ownership & Alignment"
+  },
+  {
+   "fieldname": "objective_period_section",
+   "fieldtype": "Section Break",
+   "label": "Time Period"
+  },
+  {
+   "fieldname": "objective_progress_section",
+   "fieldtype": "Section Break",
+   "label": "Progress Summary"
+  },
+  {
+   "fieldname": "objective_alignment_section",
+   "fieldtype": "Section Break",
+   "label": "Alignment & Notes",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "technical_section",
+   "fieldtype": "Section Break",
+   "label": "System Details",
+   "collapsible": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "module": "OKR Management",
+ "name": "OKR Objective",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "OKR Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "OKR Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Team Lead",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "Employee",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "search_fields": "objective_title,name,owner_user,status",
+ "show_title_field_in_link": 1,
+ "title_field": "objective_title"
+}

@@ -1,0 +1,27 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "creation": "2026-06-22 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": ["company", "document_type", "workflow_state", "approval_level", "approver_role", "is_mandatory", "description"],
+  "fields": [
+    {"fieldname": "company", "fieldtype": "Link", "label": "Company", "options": "Company", "req": 1, "in_list_view": 1},
+    {"fieldname": "document_type", "fieldtype": "Select", "label": "Document Type", "options": "OKR Cycle\nOKR Objective\nOKR Key Result\nOKR Check In\nOKR Initiative", "req": 1},
+    {"fieldname": "workflow_state", "fieldtype": "Data", "label": "Workflow State", "req": 1},
+    {"fieldname": "approval_level", "fieldtype": "Int", "label": "Approval Level", "default": 1, "req": 1},
+    {"fieldname": "approver_role", "fieldtype": "Link", "label": "Approver Role", "options": "Role", "req": 1, "in_list_view": 1},
+    {"fieldname": "is_mandatory", "fieldtype": "Check", "label": "Is Mandatory", "default": 1},
+    {"fieldname": "description", "fieldtype": "Small Text", "label": "Description"}
+  ],
+  "istable": 0,
+  "module": "OKR Management",
+  "name": "OKR Approval Matrix",
+  "permissions": [
+    {"create": 1, "delete": 0, "email": 0, "export": 1, "print": 1, "read": 1, "report": 1, "role": "OKR Admin", "write": 1},
+    {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 0, "role": "OKR Manager", "write": 0}
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+}
