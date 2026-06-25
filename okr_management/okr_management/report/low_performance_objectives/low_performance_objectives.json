@@ -1,0 +1,13 @@
+{
+  "add_total_row": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "is_standard": "Yes",
+  "name": "Low Performance Objectives",
+  "ref_doctype": "OKR Objective",
+  "report_name": "Low Performance Objectives",
+  "report_type": "Query Report",
+  "query": "select name, objective_title, cycle, company, department, owner_user, progress, confidence, status from `tabOKR Objective` where progress < 60 order by progress asc"
+}

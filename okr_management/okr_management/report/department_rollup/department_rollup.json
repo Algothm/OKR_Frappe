@@ -1,0 +1,13 @@
+{
+  "add_total_row": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "is_standard": "Yes",
+  "name": "Department Rollup",
+  "ref_doctype": "OKR Score Snapshot",
+  "report_name": "Department Rollup",
+  "report_type": "Query Report",
+  "query": "select department, avg(score) as score from `tabOKR Score Snapshot` group by department order by score desc"
+}

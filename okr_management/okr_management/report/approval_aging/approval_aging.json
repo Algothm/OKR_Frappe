@@ -1,0 +1,13 @@
+{
+  "add_total_row": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "is_standard": "Yes",
+  "name": "Approval Aging",
+  "ref_doctype": "OKR Approval Matrix",
+  "report_name": "Approval Aging",
+  "report_type": "Query Report",
+  "query": "select name, company, document_type, workflow_state, approval_level, approver_role from `tabOKR Approval Matrix` order by modified desc"
+}

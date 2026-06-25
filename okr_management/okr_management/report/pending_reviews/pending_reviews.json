@@ -1,0 +1,14 @@
+{
+  "add_total_row": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "is_standard": "Yes",
+  "name": "Pending Reviews",
+  "ref_doctype": "OKR Check In",
+  "report_name": "Pending Reviews",
+  "report_type": "Query Report",
+  "query": "select name, key_result, objective, cycle, reported_by, round(self_rating * 5) as 'Employee Rating', round(manager_rating * 5) as 'Manager Rating', review_status, checkin_date from `tabOKR Check In` where review_status in ('Draft', 'Submitted') order by checkin_date desc"
+}
+

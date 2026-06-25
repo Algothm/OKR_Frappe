@@ -1,0 +1,13 @@
+{
+  "add_total_row": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "is_standard": "Yes",
+  "name": "Department Performance",
+  "ref_doctype": "OKR Objective",
+  "report_name": "Department Performance",
+  "report_type": "Query Report",
+  "query": "select department, count(name) as objective_count, round(avg(progress), 2) as average_progress, round(avg(confidence), 2) as average_confidence from `tabOKR Objective` group by department order by average_progress desc"
+}
