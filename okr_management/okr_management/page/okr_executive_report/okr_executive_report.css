@@ -1,0 +1,33 @@
+/* OKR Executive Report page — print and layout overrides */
+
+/* Hide Frappe navigation chrome when printing from the executive report page */
+@media print {
+	.navbar,
+	.page-head,
+	.page-actions,
+	.layout-side-section,
+	.body-sidebar,
+	.sidebar-toggle-btn,
+	.page-breadcrumbs {
+		display: none !important;
+	}
+
+	.page-content-wrapper,
+	.layout-main,
+	.layout-main-section {
+		padding: 0 !important;
+		margin: 0 !important;
+		width: 100% !important;
+		max-width: none !important;
+		box-shadow: none !important;
+	}
+
+	.okr-executive-report-page {
+		padding: 0 !important;
+	}
+}
+
+/* Report page container */
+.okr-executive-report-page {
+	padding: 0;
+}
