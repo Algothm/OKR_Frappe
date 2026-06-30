@@ -1,98 +1,54 @@
 {
  "charts": [],
- "content": "[{\"id\":\"okr_planning_1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Planning</b></span>\",\"col\":12}},{\"id\":\"okr_okr_cycle_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Cycle\",\"col\":4}},{\"id\":\"okr_objectives_3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Objectives\",\"col\":4}},{\"id\":\"okr_planning_spacer_\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"okr_secondary_view_5\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Secondary View</b></span>\",\"col\":12}},{\"id\":\"okr_hierarchy_tree_6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Hierarchy Tree\",\"col\":4}},{\"id\":\"okr_secondary_view_s\",\"type\":\"spacer\",\"data\":{\"col\":12}}]",
- "creation": "2026-06-22 16:31:11.913028",
- "custom_blocks": [],
- "docstatus": 0,
+ "content": "[{\"id\":\"okr_planning_header\",\"type\":\"header\",\"data\":{\"text\":\"Planning\",\"col\":12}},{\"id\":\"okr_plan_sc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Plan\",\"col\":4}},{\"id\":\"okr_sprint_sc\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Sprint\",\"col\":4}}]",
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 0,
  "icon": "calendar",
- "idx": 0,
  "indicator_color": "green",
  "is_hidden": 0,
+ "is_standard": 1,
  "label": "Planning",
  "links": [
   {
    "hidden": 0,
    "is_query_report": 0,
    "label": "Planning",
-   "link_count": 0,
-   "onboard": 0,
    "type": "Card Break"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
-   "label": "OKR Cycle",
-   "link_count": 0,
-   "link_to": "OKR Cycle",
+   "label": "OKR Plan",
+   "link_to": "OKR Plan",
    "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Objectives",
-   "link_count": 0,
-   "link_to": "OKR Objective",
-   "link_type": "DocType",
-   "onboard": 0,
    "type": "Link"
   },
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Secondary View",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Hierarchy Tree",
-   "link_count": 0,
-   "link_to": "okr-hierarchy-tree",
-   "link_type": "Page",
-   "onboard": 0,
+   "label": "OKR Sprint",
+   "link_to": "OKR Sprint",
+   "link_type": "DocType",
    "type": "Link"
   }
  ],
- "modified": "2026-06-25 10:28:54.576631",
- "modified_by": "Administrator",
  "module": "OKR Management",
  "name": "Planning",
  "number_cards": [],
- "owner": "Administrator",
  "parent_page": "OKR Management",
  "public": 1,
- "quick_lists": [],
- "restrict_to_domain": "",
- "roles": [],
  "sequence_id": 2.0,
  "shortcuts": [
   {
-   "doc_view": "",
-   "label": "OKR Cycle",
-   "link_to": "OKR Cycle",
+   "label": "OKR Plan",
+   "link_to": "OKR Plan",
    "type": "DocType"
   },
   {
-   "doc_view": "",
-   "label": "Objectives",
-   "link_to": "OKR Objective",
+   "label": "OKR Sprint",
+   "link_to": "OKR Sprint",
    "type": "DocType"
-  },
-  {
-   "doc_view": "",
-   "label": "Hierarchy Tree",
-   "link_to": "okr-hierarchy-tree",
-   "type": "Page"
   }
  ],
  "title": "Planning"
