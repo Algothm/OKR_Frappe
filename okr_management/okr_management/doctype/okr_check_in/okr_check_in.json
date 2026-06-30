@@ -10,20 +10,38 @@
   "checkin_context_section",
   "key_result",
   "objective",
+  "checkin_context_col_break",
   "cycle",
   "reported_by",
   "checkin_date",
+  "department",
   "employee_update_section",
-  "progress_percent",
-  "self_rating",
+  "current_value",
+  "progress",
+  "employee_update_col_break",
   "confidence",
+  "achievements",
+  "next_steps",
   "blockers",
   "notes",
   "status",
-  "manager_review_section",
-  "manager_rating",
-  "manager_feedback",
+  "progress_percent",
+  "self_rating",
+  "dependency_section",
+  "has_dependency",
+  "dependent_department",
+  "dependency_description",
+  "impact_level",
+  "escalation_section",
+  "escalate_to_department",
+  "reason_for_escalation",
+  "expected_resolution_date",
+  "summary_sidebar_section",
   "review_status",
+  "manager_feedback",
+  "action_required",
+  "review_date",
+  "reviewed_by",
   "technical_section",
   "naming_series"
  ],
@@ -81,37 +99,26 @@
    "default": "Today"
   },
   {
-   "fieldname": "progress_percent",
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "current_value",
+   "fieldtype": "Float",
+   "label": "Current Value",
+   "reqd": 1,
+   "in_list_view": 1,
+   "default": 0
+  },
+  {
+   "fieldname": "progress",
    "fieldtype": "Percent",
-   "label": "Progress Percent",
-   "req": 1,
-   "default": 0,
-   "description": "Your latest progress against the Key Result."
-  },
-  {
-   "fieldname": "self_rating",
-   "fieldtype": "Rating",
-   "label": "Self Rating"
-  },
-  {
-   "fieldname": "manager_rating",
-   "fieldtype": "Rating",
-   "label": "Manager Rating",
-   "read_only": 1
-  },
-  {
-   "fieldname": "manager_feedback",
-   "fieldtype": "Small Text",
-   "label": "Manager Feedback",
-   "read_only": 1
-  },
-  {
-   "fieldname": "review_status",
-   "fieldtype": "Select",
-   "label": "Review Status",
-   "options": "Draft\nSubmitted\nApproved\nModified\nRejected",
-   "default": "Draft",
-   "read_only": 1
+   "label": "Progress",
+   "read_only": 1,
+   "default": 0
   },
   {
    "fieldname": "confidence",
@@ -122,6 +129,16 @@
    "description": "1 = low confidence, 5 = high confidence."
   },
   {
+   "fieldname": "achievements",
+   "fieldtype": "Small Text",
+   "label": "Achievements"
+  },
+  {
+   "fieldname": "next_steps",
+   "fieldtype": "Small Text",
+   "label": "Next Steps"
+  },
+  {
    "fieldname": "blockers",
    "fieldtype": "Small Text",
    "label": "Blockers"
@@ -129,7 +146,7 @@
   {
    "fieldname": "notes",
    "fieldtype": "Small Text",
-   "label": "Notes"
+   "label": "Comment"
   },
   {
    "fieldname": "status",
@@ -138,7 +155,96 @@
    "options": "Draft\nSubmitted\nReviewed\nFinal",
    "default": "Draft",
    "req": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "progress_percent",
+   "fieldtype": "Percent",
+   "label": "Progress Percent",
+   "hidden": 1,
+   "read_only": 1,
+   "default": 0
+  },
+  {
+   "fieldname": "self_rating",
+   "fieldtype": "Rating",
+   "label": "Self Rating",
+   "hidden": 1
+  },
+  {
+   "fieldname": "has_dependency",
+   "fieldtype": "Check",
+   "label": "Has Dependency",
+   "default": 0
+  },
+  {
+   "fieldname": "dependent_department",
+   "fieldtype": "Link",
+   "label": "Dependent Department",
+   "options": "Department"
+  },
+  {
+   "fieldname": "dependency_description",
+   "fieldtype": "Long Text",
+   "label": "Dependency Description"
+  },
+  {
+   "fieldname": "impact_level",
+   "fieldtype": "Select",
+   "label": "Impact Level",
+   "options": "Low\nMedium\nHigh\nCritical",
+   "default": "Medium"
+  },
+  {
+   "fieldname": "escalate_to_department",
+   "fieldtype": "Link",
+   "label": "Escalate To Department",
+   "options": "Department"
+  },
+  {
+   "fieldname": "reason_for_escalation",
+   "fieldtype": "Long Text",
+   "label": "Reason for Escalation"
+  },
+  {
+   "fieldname": "expected_resolution_date",
+   "fieldtype": "Date",
+   "label": "Expected Resolution Date"
+  },
+  {
+   "fieldname": "review_status",
+   "fieldtype": "Select",
+   "label": "Review Status",
+   "options": "Approved\nNeeds Improvement\nBlocked\nEscalated",
+   "default": "Approved",
+   "read_only": 1
+  },
+  {
+   "fieldname": "manager_feedback",
+   "fieldtype": "Long Text",
+   "label": "Manager Feedback",
+   "read_only": 1
+  },
+  {
+   "fieldname": "action_required",
+   "fieldtype": "Long Text",
+   "label": "Action Required",
+   "read_only": 1
+  },
+  {
+   "fieldname": "review_date",
+   "fieldtype": "Date",
+   "label": "Review Date",
+   "default": "Today",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reviewed_by",
+   "fieldtype": "Link",
+   "label": "Reviewed By",
+   "options": "User",
+   "read_only": 1
   },
   {
    "fieldname": "checkin_context_section",
@@ -146,15 +252,32 @@
    "label": "Check-In Context"
   },
   {
+   "fieldname": "checkin_context_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "employee_update_section",
    "fieldtype": "Section Break",
    "label": "Employee Update"
   },
   {
-   "fieldname": "manager_review_section",
+   "fieldname": "employee_update_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dependency_section",
    "fieldtype": "Section Break",
-   "label": "Manager Review",
-   "collapsible": 1
+   "label": "Cross-Department Dependency"
+  },
+  {
+   "fieldname": "escalation_section",
+   "fieldtype": "Section Break",
+   "label": "Escalation Plan"
+  },
+  {
+   "fieldname": "summary_sidebar_section",
+   "fieldtype": "Section Break",
+   "label": "Review Summary"
   },
   {
    "fieldname": "technical_section",

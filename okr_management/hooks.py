@@ -124,6 +124,8 @@ permission_query_conditions = {
 	"OKR Initiative": "okr_management.permissions.get_initiative_permission_query_conditions",
 	"OKR Check In": "okr_management.permissions.get_checkin_permission_query_conditions",
 	"OKR Action Item": "okr_management.permissions.get_action_item_permission_query_conditions",
+	"OKR Objective Review": "okr_management.permissions.get_review_permission_query_conditions",
+	"OKR Cycle Review": "okr_management.permissions.get_review_permission_query_conditions",
 }
 
 # DocType Class

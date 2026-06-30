@@ -42,7 +42,7 @@ def get_current_value_from_progress(baseline_value: Any, target_value: Any, prog
 
 
 def get_latest_checkin(key_result_name: str) -> dict[str, Any] | None:
-	fields = ["name", "checkin_date", "progress_percent", "self_rating", "manager_rating", "manager_feedback", "review_status", "reported_by", "confidence"]
+	fields = ["name", "checkin_date", "progress", "manager_feedback", "review_status", "reported_by", "confidence", "has_dependency", "impact_level"]
 	fields = [field for field in fields if has_field("OKR Check In", field)]
 	checkin = frappe.get_all(
 		"OKR Check In",
@@ -60,48 +60,36 @@ def sync_checkin_progress(doc: Any, method: str | None = None) -> None:
 		return
 
 	key_result = frappe.get_doc("OKR Key Result", key_result_name)
-	progress = flt(safe_get(doc, "progress_percent", 0))
-	update_date = safe_get(doc, "checkin_date") or nowdate()
-
-	if has_field("OKR Key Result", "progress_updates"):
-		progress_rows = list(key_result.get("progress_updates") or [])
-		matched = False
-		row_values = {
-			"check_in": doc.name,
-			"update_date": update_date,
-			"progress_percent": progress,
-			"self_rating": safe_get(doc, "self_rating"),
-			"manager_rating": safe_get(doc, "manager_rating"),
-			"manager_feedback": safe_get(doc, "manager_feedback"),
-			"review_status": safe_get(doc, "review_status"),
-			"notes": safe_get(doc, "notes"),
-		}
-		for row in progress_rows:
-			if getattr(row, "check_in", None) == doc.name:
-				row.update(row_values)
-				matched = True
-				break
-		if not matched:
-			key_result.append("progress_updates", row_values)
+	progress = flt(safe_get(doc, "progress", 0))
 
 	if has_field("OKR Key Result", "current_value"):
-		key_result.current_value = get_current_value_from_progress(
-			key_result.get("baseline_value"), key_result.get("target_value"), progress
-		)
+		key_result.current_value = flt(safe_get(doc, "current_value", 0))
 	if has_field("OKR Key Result", "target_progress"):
 		key_result.target_progress = progress
-	if has_field("OKR Key Result", "confidence") and has_field("OKR Check In", "confidence") and safe_get(doc, "confidence"):
+	if has_field("OKR Key Result", "confidence") and safe_get(doc, "confidence"):
 		key_result.confidence = safe_get(doc, "confidence")
+	if has_field("OKR Key Result", "last_checkin_date"):
+		key_result.last_checkin_date = safe_get(doc, "checkin_date") or nowdate()
+	if has_field("OKR Key Result", "last_checkin"):
+		key_result.last_checkin = doc.name
+
+	# Flexible Status Calculation:
+	# Blocked if review_status is Blocked or dependency impact is Critical
+	# At Risk if review_status is Escalated/Needs Improvement, confidence is 1/2, or dependency impact is High
 	if has_field("OKR Key Result", "status"):
-		current_status = key_result.get("status")
-		if progress >= 100:
-			key_result.status = "Achieved"
-		elif progress < 60 and current_status in {"Approved", "Active", "Submitted", "At Risk"}:
+		review_status = safe_get(doc, "review_status")
+		has_dep = bool(safe_get(doc, "has_dependency"))
+		impact = safe_get(doc, "impact_level")
+		confidence = safe_get(doc, "confidence")
+
+		if review_status == "Blocked" or (has_dep and impact == "Critical"):
+			key_result.status = "Blocked"
+		elif review_status in ("Escalated", "Needs Improvement") or confidence in ("1", "2") or (has_dep and impact == "High"):
 			key_result.status = "At Risk"
-		elif progress >= 60 and current_status in {"Submitted", "Approved", "At Risk"}:
+		elif progress >= 100:
+			key_result.status = "Achieved"
+		else:
 			key_result.status = "Active"
-		elif current_status == "Draft":
-			key_result.status = "Submitted"
 
 	key_result.flags.ignore_permissions = True
 	key_result.save()
@@ -130,19 +118,27 @@ def recalculate_objective_progress(objective_name: str | None) -> None:
 	weighted_progress = 0.0
 	confidence_total = 0.0
 	confidence_count = 0
+	has_blocked_kr = False
+	has_at_risk_kr = False
+
 	for item in key_results:
 		weight = flt(item.get("weight")) or 1.0
 		weighted_progress += flt(item.get("target_progress")) * weight
 		if item.get("confidence") is not None:
 			confidence_total += flt(item.get("confidence"))
 			confidence_count += 1
+		if item.get("status") == "Blocked":
+			has_blocked_kr = True
+		elif item.get("status") == "At Risk":
+			has_at_risk_kr = True
 
 	progress = round(weighted_progress / total_weight, 2)
 	confidence = round(confidence_total / confidence_count, 2) if confidence_count else 0
+	
 	status = "Active"
 	if progress >= 100:
 		status = "Completed"
-	elif progress < 60:
+	elif has_blocked_kr or has_at_risk_kr or progress < 60:
 		status = "At Risk"
 
 	set_if_has(values, "OKR Objective", "progress", progress)
@@ -203,3 +199,4 @@ def recalculate_from_key_result_doc(doc: Any, method: str | None = None) -> None
 def recalculate_from_objective_doc(doc: Any, method: str | None = None) -> None:
 	if has_field("OKR Objective", "cycle"):
 		recalculate_cycle_progress(safe_get(doc, "cycle"))
+

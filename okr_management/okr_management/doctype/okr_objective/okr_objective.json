@@ -9,24 +9,21 @@
  "field_order": [
   "objective_details_section",
   "objective_title",
-  "cycle",
-  "company",
   "objective_type",
-  "priority",
-  "ownership_section",
-  "owner_user",
-  "department",
   "parent_objective",
-  "objective_period_section",
-  "start_date",
-  "end_date",
-  "objective_progress_section",
-  "progress",
-  "confidence",
-  "status",
+  "objective_details_col_break",
+  "priority",
+  "description",
   "objective_alignment_section",
   "alignment_map",
-  "description",
+  "summary_sidebar_section",
+  "status",
+  "cycle",
+  "company",
+  "owner_user",
+  "department",
+  "progress",
+  "confidence",
   "technical_section",
   "naming_series"
  ],
@@ -160,25 +157,18 @@
    "label": "Objective Details"
   },
   {
-   "fieldname": "ownership_section",
-   "fieldtype": "Section Break",
-   "label": "Ownership & Alignment"
-  },
-  {
-   "fieldname": "objective_period_section",
-   "fieldtype": "Section Break",
-   "label": "Time Period"
-  },
-  {
-   "fieldname": "objective_progress_section",
-   "fieldtype": "Section Break",
-   "label": "Progress Summary"
+   "fieldname": "objective_details_col_break",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "objective_alignment_section",
    "fieldtype": "Section Break",
-   "label": "Alignment & Notes",
-   "collapsible": 1
+   "label": "Alignment Map"
+  },
+  {
+   "fieldname": "summary_sidebar_section",
+   "fieldtype": "Section Break",
+   "label": "Objective Summary"
   },
   {
    "fieldname": "technical_section",
@@ -219,16 +209,27 @@
   {
    "create": 1,
    "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Department Head",
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
    "email": 0,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
    "role": "Team Lead",
-   "write": 1
+   "write": 0
   },
   {
-   "create": 1,
+   "create": 0,
    "delete": 0,
    "email": 0,
    "export": 0,
@@ -236,7 +237,7 @@
    "read": 1,
    "report": 0,
    "role": "Employee",
-   "write": 1
+   "write": 0
   }
  ],
  "sort_field": "modified",
