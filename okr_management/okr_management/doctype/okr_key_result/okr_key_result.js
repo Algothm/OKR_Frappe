@@ -1,28 +1,57 @@
 frappe.ui.form.on('OKR Key Result', {
 	refresh(frm) {
 		frm.set_df_property('naming_series', 'hidden', 1);
-		frm.set_df_property('cycle', 'read_only', 1);
 		frm.set_df_property('target_progress', 'read_only', 1);
 		frm.set_df_property('current_value', 'read_only', 1);
 		frm.set_df_property('confidence', 'read_only', 1);
 		frm.set_df_property('status', 'read_only', 1);
+		
+		render_objective_summary(frm);
 		render_kr_summary_widget(frm);
 	},
 	objective(frm) {
-		fill_from_objective(frm);
+		if (frm.doc.objective) {
+			frappe.db.get_value('OKR Objective', frm.doc.objective, ['owner_user', 'start_date', 'end_date']).then(r => {
+				const objective = r.message || {};
+				if (objective.owner_user && !frm.doc.owner_user) frm.set_value('owner_user', objective.owner_user);
+				if (objective.owner_user && !frm.doc.assigned_by) frm.set_value('assigned_by', objective.owner_user);
+				if (objective.start_date && !frm.doc.start_date) frm.set_value('start_date', objective.start_date);
+				if (objective.end_date && !frm.doc.end_date) frm.set_value('end_date', objective.end_date);
+				
+				render_objective_summary(frm);
+			});
+		} else {
+			frm.dashboard.clear_headline();
+		}
 	}
 });
 
-function fill_from_objective(frm) {
-	if (!frm.doc.objective) return;
-	frappe.db.get_value('OKR Objective', frm.doc.objective, ['cycle', 'owner_user', 'start_date', 'end_date', 'department']).then(r => {
+function render_objective_summary(frm) {
+	if (!frm.doc.objective) {
+		frm.dashboard.clear_headline();
+		return;
+	}
+	frappe.db.get_value('OKR Objective', frm.doc.objective, ['description', 'department', 'level']).then(r => {
 		const objective = r.message || {};
-		if (objective.cycle) frm.set_value('cycle', objective.cycle);
-		if (objective.owner_user && !frm.doc.owner_user) frm.set_value('owner_user', objective.owner_user);
-		if (objective.owner_user && !frm.doc.assigned_by) frm.set_value('assigned_by', objective.owner_user);
-		if (objective.start_date && !frm.doc.start_date) frm.set_value('start_date', objective.start_date);
-		if (objective.end_date && !frm.doc.end_date) frm.set_value('end_date', objective.end_date);
-		if (objective.department && !frm.doc.department) frm.set_value('department', objective.department);
+		const desc = objective.description || 'No description provided.';
+		const dept = objective.level === 'Department' ? (objective.department || 'N/A') : 'Organization Level';
+		
+		const html = `
+			<div class="okr-summary-card" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; padding: 16px 24px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);">
+				<div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #e0f2fe; font-weight: 600; margin-bottom: 8px;">Parent Objective Context</div>
+				<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+					<div>
+						<div style="font-size: 11px; color: #bae6fd; text-transform: uppercase;">Objective Description</div>
+						<div style="font-size: 14px; font-weight: 500; color: #f0f9ff; margin-top: 4px; line-height: 1.4;">${desc}</div>
+					</div>
+					<div>
+						<div style="font-size: 11px; color: #bae6fd; text-transform: uppercase;">Department / Level</div>
+						<div style="font-size: 14px; font-weight: 600; color: #f0f9ff; margin-top: 4px;">${dept}</div>
+					</div>
+				</div>
+			</div>
+		`;
+		frm.dashboard.set_headline_html(html);
 	});
 }
 

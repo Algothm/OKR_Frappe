@@ -20,12 +20,11 @@
   "target_value",
   "unit_of_measure",
   "weight",
+  "score",
   "summary_sidebar_section",
   "status",
   "approval_status",
-  "cycle",
   "owner_user",
-  "department",
   "assigned_by",
   "current_value",
   "target_progress",
@@ -35,6 +34,8 @@
   "kr_period_section",
   "start_date",
   "end_date",
+  "action_items_section",
+  "action_items",
   "kr_notes_section",
   "technical_section",
   "naming_series"
@@ -46,8 +47,6 @@
    "label": "Naming Series",
    "options": "OKR-KR-.YYYY.-",
    "default": "OKR-KR-.YYYY.-",
-   "req": 1,
-   "in_list_view": 1,
    "reqd": 1,
    "hidden": 1,
    "read_only": 1
@@ -56,40 +55,24 @@
    "fieldname": "key_result_title",
    "fieldtype": "Data",
    "label": "Key Result Title",
-   "req": 1,
+   "reqd": 1,
    "in_list_view": 1
   },
   {
    "fieldname": "objective",
    "fieldtype": "Link",
-   "label": "Objective",
+   "label": "Parent Objective",
    "options": "OKR Objective",
-   "req": 1,
+   "reqd": 1,
    "in_list_view": 1
-  },
-  {
-   "fieldname": "cycle",
-   "fieldtype": "Link",
-   "label": "OKR Cycle",
-   "options": "OKR Cycle",
-   "req": 1,
-   "read_only": 1,
-   "description": "Auto-filled from the selected Objective."
   },
   {
    "fieldname": "owner_user",
    "fieldtype": "Link",
    "label": "Owner User",
    "options": "User",
-   "req": 1,
+   "reqd": 1,
    "description": "Defaults from the selected Objective owner."
-  },
-  {
-   "fieldname": "department",
-   "fieldtype": "Link",
-   "label": "Department",
-   "options": "Department",
-   "description": "Auto-filled from the selected Objective department."
   },
   {
    "fieldname": "assigned_by",
@@ -104,7 +87,7 @@
    "label": "Metric Type",
    "options": "Percentage\nCount\nCurrency\nRatio\nBoolean\nCustom",
    "default": "Percentage",
-   "req": 1
+   "reqd": 1
   },
   {
    "fieldname": "metric_direction",
@@ -112,7 +95,7 @@
    "label": "Metric Direction",
    "options": "Increase\nDecrease",
    "default": "Increase",
-   "req": 1
+   "reqd": 1
   },
   {
    "fieldname": "baseline_value",
@@ -124,7 +107,7 @@
    "fieldname": "target_value",
    "fieldtype": "Float",
    "label": "Target Value",
-   "req": 1
+   "reqd": 1
   },
   {
    "fieldname": "current_value",
@@ -140,12 +123,18 @@
    "label": "Progress",
    "default": 0,
    "read_only": 1,
-   "description": "Calculated automatically from check-ins."
+   "description": "Calculated from Action Items average. Falls back to baseline/current/target if no Action Items."
   },
   {
    "fieldname": "weight",
    "fieldtype": "Percent",
    "label": "Weight",
+   "default": 0
+  },
+  {
+   "fieldname": "score",
+   "fieldtype": "Float",
+   "label": "Score",
    "default": 0
   },
   {
@@ -157,14 +146,14 @@
    "fieldname": "start_date",
    "fieldtype": "Date",
    "label": "Start Date",
-   "req": 1,
+   "reqd": 1,
    "description": "Defaults from the selected Objective."
   },
   {
    "fieldname": "end_date",
    "fieldtype": "Date",
    "label": "End Date",
-   "req": 1,
+   "reqd": 1,
    "description": "Defaults from the selected Objective."
   },
   {
@@ -173,7 +162,7 @@
    "label": "Status",
    "options": "Draft\nSubmitted\nApproved\nActive\nAt Risk\nBlocked\nAchieved\nMissed\nClosed",
    "default": "Draft",
-   "req": 1,
+   "reqd": 1,
    "in_list_view": 1,
    "read_only": 1
   },
@@ -183,7 +172,7 @@
    "label": "Approval Status",
    "options": "Draft\nPending Approval\nApproved\nReturned for Changes\nRejected",
    "default": "Draft",
-   "req": 1,
+   "reqd": 1,
    "in_list_view": 1
   },
   {
@@ -211,6 +200,17 @@
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description"
+  },
+  {
+   "fieldname": "action_items",
+   "fieldtype": "Table",
+   "label": "Action Items Table",
+   "options": "OKR Action Item"
+  },
+  {
+   "fieldname": "action_items_section",
+   "fieldtype": "Section Break",
+   "label": "Action Items"
   },
   {
    "fieldname": "kr_details_section",

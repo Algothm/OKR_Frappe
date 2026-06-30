@@ -4,54 +4,86 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import getdate, flt
 
-from okr_management.utils.okr_calculations import recalculate_from_key_result
+from okr_management.utils.okr_calculations import recalculate_objective_progress
 from okr_management.utils.okr_validations import ensure_date_range, ensure_percentage, ensure_required_link, ensure_valid_weight
+
+
+# Action Item status -> implied progress percentage (used when progress field is 0)
+_ACTION_STATUS_PROGRESS = {
+	"Completed": 100.0,
+	"In Progress": 50.0,
+	"Not Started": 0.0,
+	"Draft": 0.0,
+	"Blocked": 0.0,
+	"Cancelled": 0.0,
+}
+
+
+def _progress_from_action_items(action_items) -> float | None:
+	"""Return average progress of child action items, or None if list is empty."""
+	if not action_items:
+		return None
+	total = 0.0
+	for item in action_items:
+		p = flt(item.get("progress") or 0)
+		if p == 0:
+			p = _ACTION_STATUS_PROGRESS.get(item.get("status") or "Draft", 0.0)
+		total += p
+	return round(total / len(action_items), 2)
 
 
 class OKRKeyResult(Document):
 	def before_validate(self) -> None:
 		if self.objective and frappe.db.exists("OKR Objective", self.objective):
-			objective = frappe.db.get_value("OKR Objective", self.objective, ["cycle", "owner_user", "start_date", "end_date", "department"], as_dict=True)
+			objective = frappe.db.get_value("OKR Objective", self.objective, ["owner_user", "start_date", "end_date"], as_dict=True)
 			if objective:
-				if not self.cycle:
-					self.cycle = objective.cycle
 				if not self.owner_user:
 					self.owner_user = objective.owner_user
 				if not self.start_date:
 					self.start_date = objective.start_date
 				if not self.end_date:
 					self.end_date = objective.end_date
-				if not self.department:
-					self.department = objective.department
 				if not self.assigned_by:
 					self.assigned_by = objective.owner_user
 
 		baseline = flt(self.baseline_value)
 		target = flt(self.target_value)
-		current = flt(self.current_value)
-		if target == baseline:
-			self.target_progress = 0.0
-		elif self.metric_direction == "Decrease":
-			self.target_progress = min(100.0, max(0.0, ((baseline - current) / (baseline - target)) * 100.0))
+
+		# Primary: derive progress from child Action Items
+		ai_progress = _progress_from_action_items(self.get("action_items") or [])
+		if ai_progress is not None:
+			self.target_progress = ai_progress
+			# Back-calculate current_value so KPI metrics stay consistent
+			if target != baseline:
+				direction = self.metric_direction or "Increase"
+				if direction == "Decrease":
+					self.current_value = round(baseline - ((ai_progress / 100.0) * (baseline - target)), 2)
+				else:
+					self.current_value = round(baseline + ((ai_progress / 100.0) * (target - baseline)), 2)
 		else:
-			self.target_progress = min(100.0, max(0.0, ((current - baseline) / (target - baseline)) * 100.0))
+			# Fallback: calculate from baseline / current / target
+			current = flt(self.current_value)
+			if target == baseline:
+				self.target_progress = 0.0
+			elif self.metric_direction == "Decrease":
+				self.target_progress = min(100.0, max(0.0, ((baseline - current) / (baseline - target)) * 100.0))
+			else:
+				self.target_progress = min(100.0, max(0.0, ((current - baseline) / (target - baseline)) * 100.0))
 
 	def validate(self) -> None:
 		ensure_required_link(self.objective, "Objective")
-		ensure_required_link(self.cycle, "OKR Cycle")
 		ensure_required_link(self.owner_user, "Owner User")
 		ensure_date_range(self.start_date, self.end_date, "Key Result")
 		ensure_percentage(self.target_progress, "Progress")
 		ensure_valid_weight(self.weight, "Weight")
 
 		if self.objective:
-			objective = frappe.db.get_value("OKR Objective", self.objective, ["cycle", "start_date", "end_date"], as_dict=True)
-			if objective and objective.cycle and self.cycle != objective.cycle:
-				frappe.throw("Key Result Cycle must match the selected Objective Cycle.")
-			if objective and self.start_date and objective.start_date and getdate(self.start_date) < getdate(objective.start_date):
-				frappe.throw("Key Result Start Date cannot be before the Objective Start Date.")
-			if objective and self.end_date and objective.end_date and getdate(self.end_date) > getdate(objective.end_date):
-				frappe.throw("Key Result End Date cannot be after the Objective End Date.")
+			objective = frappe.db.get_value("OKR Objective", self.objective, ["start_date", "end_date"], as_dict=True)
+			if objective:
+				if self.start_date and objective.start_date and getdate(self.start_date) < getdate(objective.start_date):
+					frappe.throw("Key Result Start Date cannot be before the Objective Start Date.")
+				if self.end_date and objective.end_date and getdate(self.end_date) > getdate(objective.end_date):
+					frappe.throw("Key Result End Date cannot be after the Objective End Date.")
 
 		if self.target_value == self.baseline_value:
 			frappe.throw("Target Value must differ from Baseline Value.")
@@ -66,5 +98,4 @@ class OKRKeyResult(Document):
 						frappe.throw(f"Cannot modify planning field '{self.meta.get_label(field)}' once the Key Result has been Approved.")
 
 	def on_update(self) -> None:
-		recalculate_from_key_result(self.name)
-
+		recalculate_objective_progress(self.objective)
