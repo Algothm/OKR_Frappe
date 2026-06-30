@@ -11,17 +11,20 @@
   "objective_title",
   "objective_type",
   "parent_objective",
+  "sprint",
+  "level",
+  "start_date",
+  "end_date",
   "objective_details_col_break",
   "priority",
+  "company",
+  "department",
   "description",
   "objective_alignment_section",
   "alignment_map",
   "summary_sidebar_section",
   "status",
-  "cycle",
-  "company",
   "owner_user",
-  "department",
   "progress",
   "confidence",
   "technical_section",
@@ -34,8 +37,6 @@
    "label": "Naming Series",
    "options": "OKR-OBJ-.YYYY.-",
    "default": "OKR-OBJ-.YYYY.-",
-   "req": 1,
-   "in_list_view": 1,
    "reqd": 1,
    "hidden": 1,
    "read_only": 1
@@ -44,38 +45,60 @@
    "fieldname": "objective_title",
    "fieldtype": "Data",
    "label": "Objective Title",
-   "req": 1,
+   "reqd": 1,
    "in_list_view": 1
   },
   {
-   "fieldname": "cycle",
+   "fieldname": "sprint",
    "fieldtype": "Link",
-   "label": "OKR Cycle",
-   "options": "OKR Cycle",
-   "req": 1,
+   "label": "Parent Sprint",
+   "options": "OKR Sprint",
+   "reqd": 1,
    "in_list_view": 1
+  },
+  {
+   "fieldname": "level",
+   "fieldtype": "Select",
+   "label": "Level",
+   "options": "Organization\nDepartment",
+   "default": "Department",
+   "reqd": 1
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date",
+   "reqd": 1,
+   "description": "Defaults from the parent Sprint."
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date",
+   "reqd": 1,
+   "description": "Defaults from the parent Sprint."
   },
   {
    "fieldname": "company",
    "fieldtype": "Link",
-   "label": "Company",
+   "label": "Organization",
    "options": "Company",
-   "req": 1,
-   "read_only": 1,
-   "description": "Auto-filled from the selected OKR Cycle."
+   "reqd": 1,
+   "description": "Auto-filled from the selected OKR Sprint parent Plan."
   },
   {
    "fieldname": "department",
    "fieldtype": "Link",
    "label": "Department",
-   "options": "Department"
+   "options": "Department",
+   "depends_on": "eval:doc.level=='Department'"
   },
   {
    "fieldname": "owner_user",
    "fieldtype": "Link",
    "label": "Owner User",
    "options": "User",
-   "req": 1,
+   "reqd": 1,
    "in_list_view": 1
   },
   {
@@ -91,7 +114,8 @@
    "label": "Objective Type",
    "options": "Company\nDepartment\nTeam\nIndividual",
    "default": "Department",
-   "req": 1
+   "reqd": 1,
+   "hidden": 1
   },
   {
    "fieldname": "priority",
@@ -101,26 +125,12 @@
    "default": "High"
   },
   {
-   "fieldname": "start_date",
-   "fieldtype": "Date",
-   "label": "Start Date",
-   "req": 1,
-   "description": "Defaults from the selected OKR Cycle."
-  },
-  {
-   "fieldname": "end_date",
-   "fieldtype": "Date",
-   "label": "End Date",
-   "req": 1,
-   "description": "Defaults from the selected OKR Cycle."
-  },
-  {
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
    "options": "Draft\nSubmitted\nApproved\nActive\nAt Risk\nCompleted\nCancelled\nArchived",
    "default": "Draft",
-   "req": 1,
+   "reqd": 1,
    "in_list_view": 1
   },
   {
@@ -218,7 +228,7 @@
    "write": 1
   },
   {
-   "create": 0,
+   "create": 1,
    "delete": 0,
    "email": 0,
    "export": 1,
@@ -226,10 +236,10 @@
    "read": 1,
    "report": 1,
    "role": "Team Lead",
-   "write": 0
+   "write": 1
   },
   {
-   "create": 0,
+   "create": 1,
    "delete": 0,
    "email": 0,
    "export": 0,
@@ -237,7 +247,7 @@
    "read": 1,
    "report": 0,
    "role": "Employee",
-   "write": 0
+   "write": 1
   }
  ],
  "sort_field": "modified",
