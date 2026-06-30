@@ -92,6 +92,6 @@ def notify_cycle_completion(doc, method=None):
 	if recipients:
 		_sendmail(
 			recipients=recipients,
-			subject=f"OKR cycle completed: {doc.name}",
-			message="The OKR cycle has been completed and closed.",
+			subject=f"OKR Plan completed: {doc.name}",
+			message="The OKR Plan has been completed and closed.",
 		)
