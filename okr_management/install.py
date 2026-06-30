@@ -97,25 +97,5 @@ def create_workflows() -> None:
 
 
 def create_workspace() -> None:
-	if frappe.db.exists("Workspace", "OKR Management"):
-		return
-	workspace = frappe.get_doc(
-		{
-			"doctype": "Workspace",
-			"title": "OKR Management",
-			"label": "OKR Management",
-			"module": "OKR Management",
-			"public": 1,
-			"is_standard": 1,
-			"content": "[]",
-			"links": [
-				{"type": "DocType", "label": "OKR Cycle", "name": "OKR Cycle"},
-				{"type": "DocType", "label": "OKR Objective", "name": "OKR Objective"},
-				{"type": "DocType", "label": "OKR Key Result", "name": "OKR Key Result"},
-				{"type": "DocType", "label": "OKR Check In", "name": "OKR Check In"},
-				{"type": "DocType", "label": "OKR Initiative", "name": "OKR Initiative"},
-				{"type": "DocType", "label": "OKR Approval Matrix", "name": "OKR Approval Matrix"},
-			],
-		}
-	)
-	workspace.insert(ignore_permissions=True)
+	from okr_management.rebuild_workspace import run as rebuild_workspaces
+	rebuild_workspaces()
