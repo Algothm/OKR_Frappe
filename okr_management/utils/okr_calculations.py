@@ -111,7 +111,7 @@ def recalculate_objective_progress(objective_name: str | None) -> None:
 		set_if_has(values, "OKR Objective", "status", "Draft")
 		if values:
 			frappe.db.set_value("OKR Objective", objective_name, values, update_modified=False)
-		_recalculate_cycle_for_objective(objective_name)
+		_recalculate_sprint_for_objective(objective_name)
 		return
 
 	total_weight = sum(flt(item.get("weight")) for item in key_results) or len(key_results)
@@ -146,43 +146,75 @@ def recalculate_objective_progress(objective_name: str | None) -> None:
 	set_if_has(values, "OKR Objective", "status", status)
 	if values:
 		frappe.db.set_value("OKR Objective", objective_name, values, update_modified=False)
-	_recalculate_cycle_for_objective(objective_name)
+	_recalculate_sprint_for_objective(objective_name)
 
 
-def _recalculate_cycle_for_objective(objective_name: str) -> None:
-	if has_field("OKR Objective", "cycle"):
-		cycle = frappe.db.get_value("OKR Objective", objective_name, "cycle")
-		if cycle:
-			recalculate_cycle_progress(cycle)
+def _recalculate_sprint_for_objective(objective_name: str) -> None:
+	if has_field("OKR Objective", "sprint"):
+		sprint = frappe.db.get_value("OKR Objective", objective_name, "sprint")
+		if sprint:
+			recalculate_sprint_progress(sprint)
 
 
-def recalculate_cycle_progress(cycle_name: str | None) -> None:
-	if not cycle_name or not frappe.db.exists("OKR Cycle", cycle_name):
+def recalculate_sprint_progress(sprint_name: str | None) -> None:
+	if not sprint_name or not frappe.db.exists("OKR Sprint", sprint_name):
 		return
 
 	fields = ["name"]
 	for field in ("progress", "status"):
 		if has_field("OKR Objective", field):
 			fields.append(field)
-	objectives = frappe.get_all("OKR Objective", filters={"cycle": cycle_name}, fields=fields)
+	objectives = frappe.get_all("OKR Objective", filters={"sprint": sprint_name}, fields=fields)
 
 	values: dict[str, Any] = {}
 	if not objectives:
-		set_if_has(values, "OKR Cycle", "progress", 0)
-		set_if_has(values, "OKR Cycle", "status", "Draft")
+		set_if_has(values, "OKR Sprint", "progress", 0)
+		set_if_has(values, "OKR Sprint", "status", "Draft")
 	elif has_field("OKR Objective", "progress"):
 		progress = round(sum(flt(item.get("progress")) for item in objectives) / len(objectives), 2)
-		set_if_has(values, "OKR Cycle", "progress", progress)
+		set_if_has(values, "OKR Sprint", "progress", progress)
 		if progress >= 100:
 			status = "Closed"
 		elif progress >= 60:
 			status = "Active"
 		else:
-			status = "Review in Progress"
-		set_if_has(values, "OKR Cycle", "status", status)
+			status = "Draft"
+		set_if_has(values, "OKR Sprint", "status", status)
 
 	if values:
-		frappe.db.set_value("OKR Cycle", cycle_name, values, update_modified=False)
+		frappe.db.set_value("OKR Sprint", sprint_name, values, update_modified=False)
+	
+	parent_plan = frappe.db.get_value("OKR Sprint", sprint_name, "parent_plan")
+	if parent_plan:
+		recalculate_plan_progress(parent_plan)
+
+
+def recalculate_plan_progress(plan_name: str | None) -> None:
+	if not plan_name or not frappe.db.exists("OKR Plan", plan_name):
+		return
+
+	fields = ["name"]
+	if has_field("OKR Sprint", "progress"):
+		fields.append("progress")
+	sprints = frappe.get_all("OKR Sprint", filters={"parent_plan": plan_name}, fields=fields)
+
+	values: dict[str, Any] = {}
+	if not sprints:
+		set_if_has(values, "OKR Plan", "progress", 0)
+		set_if_has(values, "OKR Plan", "status", "Draft")
+	elif "progress" in fields:
+		progress = round(sum(flt(item.get("progress")) for item in sprints) / len(sprints), 2)
+		set_if_has(values, "OKR Plan", "progress", progress)
+		if progress >= 100:
+			status = "Closed"
+		elif progress >= 60:
+			status = "Active"
+		else:
+			status = "Draft"
+		set_if_has(values, "OKR Plan", "status", status)
+
+	if values:
+		frappe.db.set_value("OKR Plan", plan_name, values, update_modified=False)
 
 
 def recalculate_from_key_result(key_result_name: str | None) -> None:
@@ -197,6 +229,5 @@ def recalculate_from_key_result_doc(doc: Any, method: str | None = None) -> None
 
 
 def recalculate_from_objective_doc(doc: Any, method: str | None = None) -> None:
-	if has_field("OKR Objective", "cycle"):
-		recalculate_cycle_progress(safe_get(doc, "cycle"))
-
+	if has_field("OKR Objective", "sprint"):
+		recalculate_sprint_progress(safe_get(doc, "sprint"))
