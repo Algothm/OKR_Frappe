@@ -2,7 +2,6 @@ frappe.ui.form.on('OKR Check In', {
 	refresh(frm) {
 		frm.set_df_property('naming_series', 'hidden', 1);
 		frm.set_df_property('objective', 'read_only', 1);
-		frm.set_df_property('cycle', 'read_only', 1);
 		if (!frm.doc.reported_by) {
 			frm.set_value('reported_by', frappe.session.user);
 		}
@@ -47,12 +46,29 @@ function apply_manager_review_permissions(frm) {
 
 function fill_from_key_result(frm) {
 	if (!frm.doc.key_result) return;
-	frappe.db.get_value('OKR Key Result', frm.doc.key_result, ['objective', 'cycle', 'department']).then(r => {
+	frappe.db.get_value('OKR Key Result', frm.doc.key_result, ['objective', 'department']).then(r => {
 		const kr = r.message || {};
 		if (kr.objective) frm.set_value('objective', kr.objective);
-		if (kr.cycle) frm.set_value('cycle', kr.cycle);
 		if (kr.department) frm.set_value('department', kr.department);
 		if (!frm.doc.reported_by) frm.set_value('reported_by', frappe.session.user);
+	});
+
+	// Pull Action Items table from Key Result into the Check-in
+	frappe.model.with_doc('OKR Key Result', frm.doc.key_result, function() {
+		const kr_doc = frappe.model.get_doc('OKR Key Result', frm.doc.key_result);
+		frm.clear_table('action_items');
+		if (kr_doc && kr_doc.action_items) {
+			kr_doc.action_items.forEach(item => {
+				let row = frm.add_child('action_items');
+				row.action_item_title = item.action_item_title;
+				row.owner_user = item.owner_user;
+				row.status = item.status;
+				row.progress = item.progress;
+				row.due_date = item.due_date;
+				row.notes = item.notes;
+			});
+		}
+		frm.refresh_field('action_items');
 	});
 }
 

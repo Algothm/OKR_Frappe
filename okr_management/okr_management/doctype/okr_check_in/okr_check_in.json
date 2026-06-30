@@ -11,7 +11,6 @@
   "key_result",
   "objective",
   "checkin_context_col_break",
-  "cycle",
   "reported_by",
   "checkin_date",
   "department",
@@ -27,6 +26,8 @@
   "status",
   "progress_percent",
   "self_rating",
+  "action_items_section",
+  "action_items",
   "dependency_section",
   "has_dependency",
   "dependent_department",
@@ -52,8 +53,6 @@
    "label": "Naming Series",
    "options": "OKR-CHECKIN-.YYYY.-",
    "default": "OKR-CHECKIN-.YYYY.-",
-   "req": 1,
-   "in_list_view": 1,
    "reqd": 1,
    "hidden": 1,
    "read_only": 1
@@ -63,7 +62,7 @@
    "fieldtype": "Link",
    "label": "Key Result",
    "options": "OKR Key Result",
-   "req": 1,
+   "reqd": 1,
    "in_list_view": 1
   },
   {
@@ -75,27 +74,18 @@
    "description": "Auto-filled from the selected Key Result."
   },
   {
-   "fieldname": "cycle",
-   "fieldtype": "Link",
-   "label": "OKR Cycle",
-   "options": "OKR Cycle",
-   "req": 1,
-   "read_only": 1,
-   "description": "Auto-filled from the selected Key Result."
-  },
-  {
    "fieldname": "reported_by",
    "fieldtype": "Link",
    "label": "Reported By",
    "options": "User",
-   "req": 1,
+   "reqd": 1,
    "description": "Defaults to the logged-in user."
   },
   {
    "fieldname": "checkin_date",
    "fieldtype": "Date",
    "label": "Check-in Date",
-   "req": 1,
+   "reqd": 1,
    "default": "Today"
   },
   {
@@ -154,7 +144,7 @@
    "label": "Status",
    "options": "Draft\nSubmitted\nReviewed\nFinal",
    "default": "Draft",
-   "req": 1,
+   "reqd": 1,
    "in_list_view": 1,
    "read_only": 1
   },
@@ -171,6 +161,17 @@
    "fieldtype": "Rating",
    "label": "Self Rating",
    "hidden": 1
+  },
+  {
+   "fieldname": "action_items",
+   "fieldtype": "Table",
+   "label": "Action Items",
+   "options": "OKR Action Item"
+  },
+  {
+   "fieldname": "action_items_section",
+   "fieldtype": "Section Break",
+   "label": "Action Items Checklist"
   },
   {
    "fieldname": "has_dependency",
@@ -236,7 +237,6 @@
    "fieldname": "review_date",
    "fieldtype": "Date",
    "label": "Review Date",
-   "default": "Today",
    "read_only": 1
   },
   {
