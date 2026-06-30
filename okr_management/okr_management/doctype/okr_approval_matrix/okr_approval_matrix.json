@@ -7,7 +7,7 @@
   "field_order": ["company", "document_type", "workflow_state", "approval_level", "approver_role", "is_mandatory", "description"],
   "fields": [
     {"fieldname": "company", "fieldtype": "Link", "label": "Company", "options": "Company", "req": 1, "in_list_view": 1},
-    {"fieldname": "document_type", "fieldtype": "Select", "label": "Document Type", "options": "OKR Cycle\nOKR Objective\nOKR Key Result\nOKR Check In\nOKR Initiative", "req": 1},
+    {"fieldname": "document_type", "fieldtype": "Select", "label": "Document Type", "options": "OKR Plan\nOKR Sprint\nOKR Objective\nOKR Key Result\nOKR Check In\nOKR Initiative", "req": 1},
     {"fieldname": "workflow_state", "fieldtype": "Data", "label": "Workflow State", "req": 1},
     {"fieldname": "approval_level", "fieldtype": "Int", "label": "Approval Level", "default": 1, "req": 1},
     {"fieldname": "approver_role", "fieldtype": "Link", "label": "Approver Role", "options": "Role", "req": 1, "in_list_view": 1},
