@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from collections import defaultdict
@@ -25,14 +24,12 @@ DEMO_USERS = {
 	"Marketing": ["marketing.manager@example.com", "marketing.lead@example.com", "marketing.specialist@example.com"],
 }
 
-CYCLES = {
-	"Q1 2026 OKR Cycle": ("2026-01-01", "2026-03-31"),
-	"Q2 2026 OKR Cycle": ("2026-04-01", "2026-06-24"),
-	"May 2026 Recovery Sprint": ("2026-05-01", "2026-05-31"),
-	"June 2026 Executive Focus": ("2026-06-01", "2026-06-24"),
+SPRINTS = {
+	"Q1 2026 OKR Sprint": ("2026-01-01", "2026-03-31", "Q1"),
+	"Q2 2026 OKR Sprint": ("2026-04-01", "2026-06-24", "Q2"),
+	"May 2026 Recovery Sprint": ("2026-05-01", "2026-05-31", "Q2"),
+	"June 2026 Executive Focus": ("2026-06-01", "2026-06-24", "Q2"),
 }
-
-OVERALL_RATING_RULE = "Manager-entered final rating; demo values are calibrated against self and manager ratings."
 
 
 @dataclass(frozen=True)
@@ -54,7 +51,7 @@ class KRSpec:
 class ObjectiveSpec:
 	title: str
 	department: str
-	cycle: str
+	sprint: str
 	objective_type: str
 	priority: str
 	scenario: str
@@ -65,7 +62,7 @@ class ObjectiveSpec:
 
 OBJECTIVES: tuple[ObjectiveSpec, ...] = (
 	ObjectiveSpec(
-		"Drive company-wide revenue and growth", "Sales", "Q1 2026 OKR Cycle", "Company", "Strategic", "completed", "company", None,
+		"Drive company-wide revenue and growth", "Sales", "Q1 2026 OKR Sprint", "Company", "Strategic", "completed", "company", None,
 		(
 			KRSpec("Close Q1 ARR target", "Currency", 6_000_000, 9_000_000, 100, "INR", "5", "completed", 4),
 			KRSpec("Increase net revenue retention", "Percentage", 88, 96, 100, "%", "5", "completed", 4),
@@ -73,7 +70,7 @@ OBJECTIVES: tuple[ObjectiveSpec, ...] = (
 		),
 	),
 	ObjectiveSpec(
-		"Build company culture and talent foundation", "HR", "Q1 2026 OKR Cycle", "Company", "High", "completed", "company", None,
+		"Build company culture and talent foundation", "HR", "Q1 2026 OKR Sprint", "Company", "High", "completed", "company", None,
 		(
 			KRSpec("Complete all-hands OKR kickoff", "Count", 0, 1, 100, "events", "5", "completed", 4),
 			KRSpec("Achieve 90%+ eNPS score", "Percentage", 72, 90, 96, "%", "5", "completed", 4),
@@ -81,7 +78,7 @@ OBJECTIVES: tuple[ObjectiveSpec, ...] = (
 		),
 	),
 	ObjectiveSpec(
-		"Establish Marketing as a revenue driver", "Marketing", "Q1 2026 OKR Cycle", "Company", "Strategic", "completed", "company", None,
+		"Establish Marketing as a revenue driver", "Marketing", "Q1 2026 OKR Sprint", "Company", "Strategic", "completed", "company", None,
 		(
 			KRSpec("Generate 1200 marketing qualified leads", "Count", 400, 1200, 100, "MQLs", "5", "completed", 4),
 			KRSpec("Launch brand refresh initiative", "Count", 0, 1, 100, "campaigns", "5", "completed", 4),
@@ -89,7 +86,7 @@ OBJECTIVES: tuple[ObjectiveSpec, ...] = (
 		),
 	),
 	ObjectiveSpec(
-		"Operational Excellence — Q1 Foundation", "Operations", "Q1 2026 OKR Cycle", "Company", "High", "completed", "company", None,
+		"Operational Excellence — Q1 Foundation", "Operations", "Q1 2026 OKR Sprint", "Company", "High", "completed", "company", None,
 		(
 			KRSpec("Reduce process bottlenecks by 40%", "Percentage", 0, 40, 100, "%", "5", "completed", 4),
 			KRSpec("Implement OKR tracking system", "Count", 0, 1, 100, "systems", "5", "completed", 4),
@@ -97,7 +94,7 @@ OBJECTIVES: tuple[ObjectiveSpec, ...] = (
 		),
 	),
 	ObjectiveSpec(
-		"Achieve predictable enterprise growth", "Sales", "Q2 2026 OKR Cycle", "Company", "Strategic", "at_risk", "company", None,
+		"Achieve predictable enterprise growth", "Sales", "Q2 2026 OKR Sprint", "Company", "Strategic", "at_risk", "company", None,
 		(
 			KRSpec("Close enterprise ARR pipeline", "Currency", 8_000_000, 12_000_000, 52, "INR", "2", "at_risk", 3, stale=True),
 			KRSpec("Improve lead-to-opportunity conversion", "Percentage", 18, 30, 46, "%", "2", "critical", 2, missed=True),
@@ -105,7 +102,7 @@ OBJECTIVES: tuple[ObjectiveSpec, ...] = (
 		),
 	),
 	ObjectiveSpec(
-		"Build a high-performing employee experience", "HR", "Q2 2026 OKR Cycle", "Company", "High", "on_track", "company", None,
+		"Build a high-performing employee experience", "HR", "Q2 2026 OKR Sprint", "Company", "High", "on_track", "company", None,
 		(
 			KRSpec("Reduce voluntary attrition", "Percentage", 14, 9, 78, "%", "4", "on_track", 3),
 			KRSpec("Complete manager capability workshops", "Count", 0, 30, 100, "sessions", "5", "completed", 4),
@@ -137,7 +134,7 @@ OBJECTIVES: tuple[ObjectiveSpec, ...] = (
 		),
 	),
 	ObjectiveSpec(
-		"Improve customer satisfaction", "Support", "Q2 2026 OKR Cycle", "Department", "Strategic", "completed", "department", None,
+		"Improve customer satisfaction", "Support", "Q2 2026 OKR Sprint", "Department", "Strategic", "completed", "department", None,
 		(
 			KRSpec("Increase CSAT score", "Percentage", 82, 92, 100, "%", "5", "completed", 4),
 			KRSpec("Reduce first response time", "Count", 6, 2, 100, "hours", "5", "completed", 4),
@@ -153,7 +150,7 @@ OBJECTIVES: tuple[ObjectiveSpec, ...] = (
 		),
 	),
 	ObjectiveSpec(
-		"Improve operational efficiency", "Operations", "Q2 2026 OKR Cycle", "Department", "High", "on_track", "department", None,
+		"Improve operational efficiency", "Operations", "Q2 2026 OKR Sprint", "Department", "High", "on_track", "department", None,
 		(
 			KRSpec("Reduce process cycle time", "Count", 12, 7, 75, "days", "4", "on_track", 3),
 			KRSpec("Automate recurring operations tasks", "Percentage", 20, 75, 82, "%", "4", "on_track", 4),
@@ -296,7 +293,6 @@ def _ensure_employee(user: str, department: str, company: str, full_name: str) -
 		)
 		employee.insert(ignore_permissions=True)
 	except Exception:
-		# Employee master data varies across ERPNext installs. Demo OKRs can still use the User safely.
 		pass
 
 
@@ -329,26 +325,48 @@ def _find_marked_doc(doctype: str, filters: dict[str, Any], marker_field: str) -
 	return frappe.db.get_value(doctype, {**filters, marker_field: ["like", f"%{DEMO_MARKER}%"]}, "name")
 
 
-def _get_or_create_cycle(cycle_name: str, company: str, owner: str) -> str:
-	name = _find_marked_doc("OKR Cycle", {"cycle_name": cycle_name, "company": company}, "description")
-	if name:
-		return name
-	start_date, end_date = CYCLES[cycle_name]
-	cycle = frappe.get_doc(
-		{
-			"doctype": "OKR Cycle",
-			"cycle_name": cycle_name,
-			"company": company,
-			"cycle_type": "Quarterly",
-			"start_date": start_date,
-			"end_date": end_date,
-			"review_deadline": add_days(end_date, 7),
-			"owner_user": owner,
+def _get_or_create_plan_and_sprint(sprint_name: str, company: str, owner: str) -> str:
+	# Keep all sprints linked to a single Plan for FY 2026-27
+	plan_title = "FY 2026-27 Plan"
+	plan_name = _find_marked_doc("OKR Plan", {"plan_name": plan_title}, "description")
+	if not plan_name:
+		# Check if Fiscal Year exists
+		fy = "2026-2027"
+		if not frappe.db.exists("Fiscal Year", fy):
+			fy_doc = frappe.get_doc({
+				"doctype": "Fiscal Year",
+				"year": fy,
+				"year_start_date": "2026-04-01",
+				"year_end_date": "2027-03-31"
+			})
+			fy_doc.insert(ignore_permissions=True)
+
+		plan_doc = frappe.get_doc({
+			"doctype": "OKR Plan",
+			"plan_name": plan_title,
+			"financial_year": fy,
 			"status": "Active",
-			"description": _append_marker("Enterprise demo OKR cycle for CTO dashboards and executive insights."),
-		}
-	)
-	return _safe_insert(cycle)
+			"description": _append_marker("Enterprise demo OKR Plan."),
+			"owner_user": owner
+		})
+		plan_name = _safe_insert(plan_doc)
+
+	sprint_name_val = _find_marked_doc("OKR Sprint", {"sprint_name": sprint_name}, "description")
+	if sprint_name_val:
+		return sprint_name_val
+
+	start_date, end_date, quarter = SPRINTS[sprint_name]
+	sprint = frappe.get_doc({
+		"doctype": "OKR Sprint",
+		"sprint_name": sprint_name,
+		"parent_plan": plan_name,
+		"quarter": quarter,
+		"start_date": start_date,
+		"end_date": end_date,
+		"status": "Active",
+		"description": _append_marker(f"Demo Sprint for {quarter}."),
+	})
+	return _safe_insert(sprint)
 
 
 def _status_for_progress(progress: float, completed_label: str, active_label: str = "Active") -> str:
@@ -363,16 +381,16 @@ def _find_parent(created: dict[str, str], title: str | None) -> str | None:
 	return created.get(title or "")
 
 
-def _get_or_create_objective(spec: ObjectiveSpec, company: str, department: str, cycle: str, owner: str, parent: str | None) -> str:
-	name = _find_marked_doc("OKR Objective", {"objective_title": spec.title, "cycle": cycle}, "description")
+def _get_or_create_objective(spec: ObjectiveSpec, company: str, department: str, sprint: str, owner: str, parent: str | None) -> str:
+	name = _find_marked_doc("OKR Objective", {"objective_title": spec.title, "sprint": sprint}, "description")
 	if name:
 		return name
-	start_date, end_date = frappe.db.get_value("OKR Cycle", cycle, ["start_date", "end_date"])
+	start_date, end_date = frappe.db.get_value("OKR Sprint", sprint, ["start_date", "end_date"])
 	objective = frappe.get_doc(
 		{
 			"doctype": "OKR Objective",
 			"objective_title": spec.title,
-			"cycle": cycle,
+			"sprint": sprint,
 			"company": company,
 			"department": department,
 			"owner_user": owner,
@@ -390,18 +408,17 @@ def _get_or_create_objective(spec: ObjectiveSpec, company: str, department: str,
 	return _safe_insert(objective)
 
 
-def _get_or_create_key_result(objective: str, cycle: str, owner: str, kr: KRSpec, weight: float) -> str:
+def _get_or_create_key_result(objective: str, sprint: str, owner: str, kr: KRSpec, weight: float) -> str:
 	name = _find_marked_doc("OKR Key Result", {"key_result_title": kr.title, "objective": objective}, "description")
 	if name:
 		return name
-	start_date, end_date = frappe.db.get_value("OKR Cycle", cycle, ["start_date", "end_date"])
+	start_date, end_date = frappe.db.get_value("OKR Sprint", sprint, ["start_date", "end_date"])
 	current = get_current_value_from_progress(kr.baseline, kr.target, kr.progress)
 	key_result = frappe.get_doc(
 		{
 			"doctype": "OKR Key Result",
 			"key_result_title": kr.title,
 			"objective": objective,
-			"cycle": cycle,
 			"owner_user": owner,
 			"metric_type": kr.metric_type,
 			"baseline_value": kr.baseline,
@@ -413,6 +430,7 @@ def _get_or_create_key_result(objective: str, cycle: str, owner: str, kr: KRSpec
 			"start_date": start_date,
 			"end_date": end_date,
 			"status": _status_for_progress(kr.progress, "Achieved", "Active"),
+			"approval_status": "Approved",
 			"confidence": kr.confidence,
 			"description": _append_marker(f"Demo KR scenario: {kr.scenario}. Baseline {kr.baseline}, target {kr.target} {kr.unit}."),
 		}
@@ -420,8 +438,8 @@ def _get_or_create_key_result(objective: str, cycle: str, owner: str, kr: KRSpec
 	return _safe_insert(key_result)
 
 
-def _checkin_dates(cycle: str, count: int, stale: bool = False, missed: bool = False) -> list[str]:
-	start, end = frappe.db.get_value("OKR Cycle", cycle, ["start_date", "end_date"])
+def _checkin_dates(sprint: str, count: int, stale: bool = False, missed: bool = False) -> list[str]:
+	start, end = frappe.db.get_value("OKR Sprint", sprint, ["start_date", "end_date"])
 	start = getdate(start)
 	end = getdate(end)
 	if stale:
@@ -448,7 +466,7 @@ def _progress_series(final_progress: float, count: int, scenario: str) -> list[f
 	return [round(start + step * idx, 2) for idx in range(count)]
 
 
-def _get_or_create_checkins(key_result: str, objective: str, cycle: str, owner: str, kr: KRSpec) -> list[str]:
+def _get_or_create_checkins(key_result: str, objective: str, sprint: str, owner: str, kr: KRSpec) -> list[str]:
 	existing = frappe.get_all(
 		"OKR Check In",
 		filters={"key_result": key_result, "notes": ["like", f"%{DEMO_MARKER}%"]},
@@ -458,7 +476,7 @@ def _get_or_create_checkins(key_result: str, objective: str, cycle: str, owner: 
 	if len(existing) >= kr.checkins:
 		return existing
 
-	dates = _checkin_dates(cycle, kr.checkins, stale=kr.stale, missed=kr.missed)
+	dates = _checkin_dates(sprint, kr.checkins, stale=kr.stale, missed=kr.missed)
 	progress_values = _progress_series(kr.progress, kr.checkins, kr.scenario)
 	names = list(existing)
 	for idx in range(len(existing), kr.checkins):
@@ -469,14 +487,13 @@ def _get_or_create_checkins(key_result: str, objective: str, cycle: str, owner: 
 				"doctype": "OKR Check In",
 				"key_result": key_result,
 				"objective": objective,
-				"cycle": cycle,
 				"reported_by": owner,
 				"checkin_date": dates[idx],
 				"progress_percent": progress,
 				"self_rating": max(1, min(5, round(flt(confidence)))),
 				"manager_rating": max(1, min(5, round(flt(confidence)))),
 				"manager_feedback": "Reviewed in demo cadence. Follow-up required." if flt(confidence) <= 2 else "Progress reviewed as on track.",
-				"review_status": "Approved" if progress >= 60 else "Submitted",
+				"review_status": "Approved" if progress >= 60 else "Needs Improvement",
 				"confidence": confidence,
 				"blockers": "Blocked by cross-functional dependency." if flt(confidence) <= 2 else "",
 				"notes": _append_marker(f"Demo check-in: {kr.scenario}, progress {progress}%."),
@@ -488,140 +505,76 @@ def _get_or_create_checkins(key_result: str, objective: str, cycle: str, owner: 
 	return names
 
 
-
 def _action_item_plan(kr: KRSpec) -> list[dict[str, str]]:
-    base = [
-        {"title": f"Prepare execution plan for {kr.title}", "status": "Completed", "priority": "Medium", "offset": 2},
-        {"title": f"Coordinate owner follow-up for {kr.title}", "status": "In Progress", "priority": "High", "offset": 14},
-    ]
-    if kr.scenario == "completed":
-        return [
-            {"title": f"Complete enablement for {kr.title}", "status": "Completed", "priority": "Medium", "offset": 4},
-            {"title": f"Validate final outcome for {kr.title}", "status": "Completed", "priority": "Medium", "offset": 18},
-        ]
-    if kr.scenario == "critical":
-        return base + [
-            {"title": f"Resolve blocker for {kr.title}", "status": "Blocked", "priority": "Critical", "offset": 24},
-            {"title": f"Agree recovery actions for {kr.title}", "status": "Not Started", "priority": "High", "offset": 32},
-        ]
-    if kr.scenario == "at_risk":
-        return base + [
-            {"title": f"Review risk mitigation for {kr.title}", "status": "Blocked", "priority": "High", "offset": 28},
-        ]
-    return base + [
-        {"title": f"Publish weekly update for {kr.title}", "status": "Not Started", "priority": "Medium", "offset": 30},
-    ]
+	base = [
+		{"title": f"Prepare execution plan for {kr.title}", "status": "Completed", "priority": "Medium", "offset": 2},
+		{"title": f"Coordinate owner follow-up for {kr.title}", "status": "In Progress", "priority": "High", "offset": 14},
+	]
+	if kr.scenario == "completed":
+		return [
+			{"title": f"Complete enablement for {kr.title}", "status": "Completed", "priority": "Medium", "offset": 4},
+			{"title": f"Validate final outcome for {kr.title}", "status": "Completed", "priority": "Medium", "offset": 18},
+		]
+	if kr.scenario == "critical":
+		return base + [
+			{"title": f"Resolve blocker for {kr.title}", "status": "Blocked", "priority": "Critical", "offset": 24},
+			{"title": f"Agree recovery actions for {kr.title}", "status": "Not Started", "priority": "High", "offset": 32},
+		]
+	if kr.scenario == "at_risk":
+		return base + [
+			{"title": f"Review risk mitigation for {kr.title}", "status": "Blocked", "priority": "High", "offset": 28},
+		]
+	return base + [
+		{"title": f"Publish weekly update for {kr.title}", "status": "Not Started", "priority": "Medium", "offset": 30},
+	]
 
 
-def _bounded_action_dates(cycle: str, offset: int, status: str) -> tuple[str, str, str | None]:
-    start, end = frappe.db.get_value("OKR Cycle", cycle, ["start_date", "end_date"])
-    start = getdate(start)
-    end = getdate(end)
-    span = max((end - start).days, 1)
-    start_date = add_days(start, min(max(offset, 0), max(span - 1, 0)))
-    due_date = add_days(start_date, 10)
-    if due_date > end:
-        due_date = end
-    if status == "Completed":
-        completion_date = add_days(start_date, 8)
-        if completion_date > due_date:
-            completion_date = due_date
-        return str(start_date), str(due_date), str(completion_date)
-    return str(start_date), str(due_date), None
+def _bounded_action_dates(sprint: str, offset: int, status: str) -> tuple[str, str, str | None]:
+	start, end = frappe.db.get_value("OKR Sprint", sprint, ["start_date", "end_date"])
+	start = getdate(start)
+	end = getdate(end)
+	span = max((end - start).days, 1)
+	start_date = add_days(start, min(max(offset, 0), max(span - 1, 0)))
+	due_date = add_days(start_date, 10)
+	if due_date > end:
+		due_date = end
+	if status == "Completed":
+		completion_date = add_days(start_date, 8)
+		if completion_date > due_date:
+			completion_date = due_date
+		return str(start_date), str(due_date), str(completion_date)
+	return str(start_date), str(due_date), None
 
 
-def _get_or_create_action_items(key_result: str, objective: str, cycle: str, owner: str, department: str, kr: KRSpec) -> list[str]:
-    if not frappe.db.exists("DocType", "OKR Action Item"):
-        return []
-    existing = frappe.get_all(
-        "OKR Action Item",
-        filters={"key_result": key_result, "notes": ["like", f"%{DEMO_MARKER}%"]},
-        pluck="name",
-        order_by="creation asc",
-    )
-    plan = _action_item_plan(kr)
-    if len(existing) >= len(plan):
-        return existing
-
-    names = list(existing)
-    for item in plan[len(existing):]:
-        start_date, due_date, completion_date = _bounded_action_dates(cycle, int(item["offset"]), item["status"])
-        blockers = "Dependency needs leadership unblock." if item["status"] == "Blocked" else ""
-        doc = frappe.get_doc(
-            {
-                "doctype": "OKR Action Item",
-                "action_item_title": item["title"],
-                "key_result": key_result,
-                "objective": objective,
-                "cycle": cycle,
-                "owner_user": owner,
-                "department": department,
-                "status": item["status"],
-                "priority": item["priority"],
-                "start_date": start_date,
-                "due_date": due_date,
-                "completion_date": completion_date,
-                "notes": _append_marker(f"Demo action item supporting KR: {kr.title}."),
-                "blockers": blockers,
-            }
-        )
-        _safe_insert(doc)
-        names.append(doc.name)
-    return names
-
-def _review_rating_profile(scenario: str, index: int) -> tuple[float, float, float]:
-	profiles = {
-		"completed": [(5, 4, 4.5), (4.5, 4.5, 4.5), (5, 5, 5), (4.5, 4, 4.25)],
-		"on_track": [(4, 3, 3.5), (4.5, 4, 4.25), (5, 3, 4), (4, 4, 4), (4.5, 3.5, 4)],
-		"at_risk": [(4, 2, 3), (3, 2, 2.5), (3.5, 2.5, 3), (4, 3, 3.5), (5, 2, 3.5)],
-		"critical": [(2, 2, 2), (3, 1, 2), (2.5, 1.5, 2), (3, 2, 2.5), (2, 1, 1.5)],
-		"delayed": [(3.5, 2.5, 3), (4, 2, 3), (3, 2, 2.5)],
-		"no_recent_updates": [(4, 3, 3.5), (3.5, 2.5, 3), (4.5, 3, 3.75)],
-	}
-	options = profiles.get(scenario, profiles["on_track"])
-	return options[index % len(options)]
-
-
-def _rating_feedback(self_rating: float, manager_rating: float, overall_rating: float) -> str:
-	if abs(self_rating - manager_rating) >= 2:
-		return "Self and manager assessment differ; align expectations."
-	if manager_rating <= 2.5 or overall_rating <= 2.5:
-		return "Needs recovery plan and closer manager review."
-	if overall_rating < 4:
-		return "Good progress, but needs follow-up on blockers."
-	return "Strong execution and good progress."
-
-
-def _get_or_create_review(objective: str, cycle: str, reviewer: str, title: str, progress: float, confidence: float, scenario: str, index: int, review_label: str = "Final", review_offset_days: int = -3) -> str:
-	name = frappe.db.get_value(
-		"OKR Objective Review",
-		{"objective": objective, "cycle": cycle, "summary": ["like", f"%{review_label}%{DEMO_MARKER}%"]},
-		"name",
-	)
-	if name:
-		return name
-	self_rating, manager_rating, overall_rating = _review_rating_profile(scenario, index)
-	review_status = "Approved" if progress >= 75 else "Modified" if progress >= 50 else "Rejected"
-	decision = "Approve" if progress >= 75 else "Approve with Conditions" if progress >= 50 else "Defer"
-	review = frappe.get_doc(
-		{
-			"doctype": "OKR Objective Review",
-			"objective": objective,
-			"cycle": cycle,
-			"reviewer": reviewer,
-			"review_date": add_days(frappe.db.get_value("OKR Cycle", cycle, "end_date"), review_offset_days),
-			"self_rating": round(self_rating / 5, 2),
-			"manager_rating": round(manager_rating / 5, 2),
-			"manager_feedback": _rating_feedback(self_rating, manager_rating, overall_rating),
-			"review_status": review_status,
-			"rating": round(overall_rating / 5, 2),
-			"decision": decision,
-			"summary": _append_marker(f"{review_label} review summary for {title}."),
-			"risks": "Needs management attention: progress, confidence, or update cadence is weak." if progress < 60 or confidence <= 2 else "Healthy execution cadence.",
-			"next_actions": "Schedule owner review and agree recovery plan." if progress < 60 or confidence <= 2 else "Continue weekly execution cadence.",
-		}
-	)
-	return _safe_insert(review)
+def _create_action_items_in_child_table(key_result: str, owner: str, department: str, kr: KRSpec, sprint: str):
+	# Add action items inline to parent KR document
+	kr_doc = frappe.get_doc("OKR Key Result", key_result)
+	plan = _action_item_plan(kr)
+	
+	existing_titles = {item.action_item_title for item in kr_doc.action_items}
+	added = False
+	for item in plan:
+		if item["title"] in existing_titles:
+			continue
+		start_date, due_date, completion_date = _bounded_action_dates(sprint, int(item["offset"]), item["status"])
+		blockers = "Dependency needs leadership unblock." if item["status"] == "Blocked" else ""
+		kr_doc.append("action_items", {
+			"action_item_title": item["title"],
+			"owner_user": owner,
+			"department": department,
+			"status": item["status"],
+			"priority": item["priority"],
+			"start_date": start_date,
+			"due_date": due_date,
+			"completion_date": completion_date,
+			"notes": _append_marker(f"Demo action item supporting KR: {kr.title}."),
+			"blockers": blockers
+		})
+		added = True
+		
+	if added:
+		kr_doc.flags.ignore_permissions = True
+		kr_doc.save()
 
 
 def _recalculate(key_results: list[str], objectives: list[str]) -> None:
@@ -642,7 +595,6 @@ def create_demo_data() -> dict[str, Any]:
 	created_objectives: dict[str, str] = {}
 	all_objectives: list[str] = []
 	all_key_results: list[str] = []
-	all_action_items: list[str] = []
 	try:
 		company = _get_or_create_company()
 		counts["company"] = 1
@@ -651,38 +603,32 @@ def create_demo_data() -> dict[str, Any]:
 		users = _get_demo_users(company, departments)
 		counts["demo_users"] = sum(len(v) for v in users.values())
 
-		cycle_owner = next(iter(users.values()))[0] if users else "Administrator"
-		cycles = {name: _get_or_create_cycle(name, company, cycle_owner) for name in CYCLES}
-		counts["cycles"] = len(cycles)
+		sprint_owner = next(iter(users.values()))[0] if users else "Administrator"
+		sprints = {name: _get_or_create_plan_and_sprint(name, company, sprint_owner) for name in SPRINTS}
+		counts["sprints"] = len(sprints)
 
 		for index, spec in enumerate(OBJECTIVES):
 			owner = _owner_for(users, spec.department, spec.level, index)
-			cycle = cycles[spec.cycle]
+			sprint = sprints[spec.sprint]
 			department = departments[spec.department]
 			parent = _find_parent(created_objectives, spec.parent_title)
-			objective = _get_or_create_objective(spec, company, department, cycle, owner, parent)
+			objective = _get_or_create_objective(spec, company, department, sprint, owner, parent)
 			created_objectives[spec.title] = objective
 			all_objectives.append(objective)
 			counts["objectives"] += 1
 
 			weight = round(100 / len(spec.krs), 2)
 			for kr in spec.krs:
-				key_result = _get_or_create_key_result(objective, cycle, owner, kr, weight)
+				key_result = _get_or_create_key_result(objective, sprint, owner, kr, weight)
 				all_key_results.append(key_result)
 				counts["key_results"] += 1
-				counts["checkins"] += len(_get_or_create_checkins(key_result, objective, cycle, owner, kr))
-				created_actions = _get_or_create_action_items(key_result, objective, cycle, owner, department, kr)
-				all_action_items.extend(created_actions)
-				counts["action_items"] += len(created_actions)
+				counts["checkins"] += len(_get_or_create_checkins(key_result, objective, sprint, owner, kr))
+				
+				# Generate and embed action items
+				_create_action_items_in_child_table(key_result, owner, department, kr, sprint)
+				counts["action_items"] += len(spec.krs)
 
 		_recalculate(all_key_results, all_objectives)
-
-		for index, spec in enumerate(OBJECTIVES):
-			objective = created_objectives[spec.title]
-			progress, confidence, cycle = frappe.db.get_value("OKR Objective", objective, ["progress", "confidence", "cycle"])
-			reviewer = _owner_for(users, spec.department, "department", 1)
-			_get_or_create_review(objective, cycle, reviewer, spec.title, flt(progress), flt(confidence), spec.scenario, index)
-			counts["reviews"] += 1
 
 		frappe.db.commit()
 		return {
@@ -699,20 +645,15 @@ def create_demo_data() -> dict[str, Any]:
 
 @frappe.whitelist()
 def clear_demo_data() -> dict[str, Any]:
-	"""Remove OKR transaction data so CTO demos start from one clean professional dataset.
-
-	Master data such as users, company, and departments is retained. Overall Rating
-	follows the manager-entered final rating rule used by OKR Objective Review.
-	"""
+	"""Remove OKR transaction data so CTO demos start from one clean professional dataset."""
 	deleted = defaultdict(int)
 	try:
 		for doctype in (
-			"OKR Action Item",
 			"OKR Check In",
-			"OKR Objective Review",
 			"OKR Key Result",
 			"OKR Objective",
-			"OKR Cycle",
+			"OKR Sprint",
+			"OKR Plan",
 		):
 			if not frappe.db.exists("DocType", doctype):
 				continue
@@ -724,7 +665,6 @@ def clear_demo_data() -> dict[str, Any]:
 		return {
 			"status": "success",
 			"message": "All OKR transaction records removed. Demo users, company, and departments were retained safely.",
-			"rating_rule": OVERALL_RATING_RULE,
 			"deleted": dict(deleted),
 		}
 	except Exception:
