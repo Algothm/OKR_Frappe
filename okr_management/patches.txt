@@ -7,3 +7,4 @@
 okr_management.patches.v0_0_2_fix_okr_naming_series
 okr_management.patches.v0_0_3_create_enterprise_roles
 okr_management.patches.v0_0_4_refactor_workspace_navigation
+okr_management.patches.v0_0_5_migrate_to_plan_driven
