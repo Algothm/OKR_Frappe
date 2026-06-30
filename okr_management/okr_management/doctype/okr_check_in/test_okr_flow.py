@@ -2,14 +2,22 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, nowdate, flt
 
+
 class TestOKRFlow(FrappeTestCase):
 	def setUp(self):
 		# Clean transactions to avoid collision
 		frappe.db.delete("OKR Check In")
 		frappe.db.delete("OKR Key Result")
 		frappe.db.delete("OKR Objective")
-		frappe.db.delete("OKR Cycle")
+		frappe.db.delete("OKR Sprint")
+		frappe.db.delete("OKR Plan")
 		
+		# Ensure all OKR roles exist in the test database
+		from okr_management.install import create_roles
+		create_roles()
+		
+		frappe.set_user("Administrator")
+
 		# Ensure default company
 		if not frappe.db.exists("Company", "Test Company"):
 			self.company = frappe.get_doc({
@@ -20,26 +28,39 @@ class TestOKRFlow(FrappeTestCase):
 				"country": "India"
 			}).insert(ignore_permissions=True)
 			
-		# Create test cycle
-		self.cycle = frappe.get_doc({
-			"doctype": "OKR Cycle",
-			"cycle_name": "Test Q1 Cycle",
-			"company": "Test Company",
+		# Create test plan
+		self.plan = frappe.get_doc({
+			"doctype": "OKR Plan",
+			"plan_name": "Test FY 2026-27 Plan",
+			"financial_year": "2026-2027",
+			"status": "Active"
+		})
+		self.plan.insert(ignore_permissions=True)
+
+		# Create test sprint
+		self.sprint = frappe.get_doc({
+			"doctype": "OKR Sprint",
+			"sprint_name": "Test Q1 Sprint",
+			"parent_plan": self.plan.name,
+			"quarter": "Q1",
 			"start_date": nowdate(),
 			"end_date": add_days(nowdate(), 90),
 			"status": "Active"
 		})
-		self.cycle.insert(ignore_permissions=True)
+		self.sprint.insert(ignore_permissions=True)
 
 		# Create test objective
 		self.objective = frappe.get_doc({
 			"doctype": "OKR Objective",
 			"objective_title": "Increase Revenue and efficiency",
-			"cycle": self.cycle.name,
-			"objective_type": "Company",
+			"sprint": self.sprint.name,
+			"level": "Organization",
 			"priority": "Strategic",
 			"status": "Active"
 		}).insert(ignore_permissions=True)
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
 
 	def test_progress_calculation_increase(self):
 		# Increase metric type key result
@@ -190,30 +211,60 @@ class TestOKRFlow(FrappeTestCase):
 				"email": user_email,
 				"first_name": "Test",
 				"last_name": "Employee",
+				"user_type": "System User",
 				"send_welcome_email": 0
 			}).insert(ignore_permissions=True)
-			user.add_roles("Employee")
+		else:
+			user = frappe.get_doc("User", user_email)
+			if user.user_type != "System User":
+				user.user_type = "System User"
+				user.save(ignore_permissions=True)
 
-		frappe.set_user(user_email)
+		# Ensure roles are re-added in the test transaction context via direct get_doc insert
+		frappe.db.delete("Has Role", {"parent": user_email})
+		frappe.get_doc({
+			"doctype": "Has Role",
+			"parent": user_email,
+			"parentfield": "roles",
+			"parenttype": "User",
+			"role": "Employee"
+		}).insert(ignore_permissions=True)
 
-		# Test cycle creation blocked
-		new_cycle = frappe.get_doc({
-			"doctype": "OKR Cycle",
-			"cycle_name": "Unauthorized Cycle",
-			"company": "Test Company",
-			"start_date": nowdate(),
-			"end_date": add_days(nowdate(), 30)
-		})
-		self.assertRaises(frappe.PermissionError, new_cycle.insert)
+		# Clear user permission cache to make sure "Employee" role is immediately recognized
+		frappe.clear_cache(user=user_email)
 
-		# Test objective creation blocked
-		new_objective = frappe.get_doc({
-			"doctype": "OKR Objective",
-			"objective_title": "Unauthorized Objective",
-			"cycle": self.cycle.name,
-			"objective_type": "Department",
-			"status": "Draft"
-		})
-		self.assertRaises(frappe.PermissionError, new_objective.insert)
+		try:
+			frappe.set_user(user_email)
 
-		frappe.set_user("Administrator")
+			# Test Plan creation blocked for normal Employee
+			new_plan = frappe.get_doc({
+				"doctype": "OKR Plan",
+				"plan_name": "Unauthorized Plan",
+				"financial_year": "2026-2027",
+				"status": "Draft"
+			})
+			self.assertRaises(frappe.PermissionError, new_plan.insert)
+
+			# Test Sprint creation blocked for normal Employee
+			new_sprint = frappe.get_doc({
+				"doctype": "OKR Sprint",
+				"sprint_name": "Unauthorized Sprint",
+				"parent_plan": self.plan.name,
+				"quarter": "Q1",
+				"start_date": nowdate(),
+				"end_date": add_days(nowdate(), 30)
+			})
+			self.assertRaises(frappe.PermissionError, new_sprint.insert)
+
+			# Employee CAN create Objectives
+			allowed_objective = frappe.get_doc({
+				"doctype": "OKR Objective",
+				"objective_title": "Authorized Objective",
+				"sprint": self.sprint.name,
+				"level": "Organization",
+				"status": "Draft"
+			})
+			allowed_objective.insert() # Should not raise permission error
+
+		finally:
+			frappe.set_user("Administrator")
