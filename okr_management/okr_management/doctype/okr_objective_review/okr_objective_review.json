@@ -9,19 +9,21 @@
   "objective",
   "cycle",
   "reviewer",
+  "context_col_break",
   "review_date",
   "review_assessment_section",
   "self_rating",
   "manager_rating",
+  "assessment_col_break",
   "rating",
-  "review_decision_section",
-  "decision",
-  "review_status",
-  "manager_feedback",
   "review_notes_section",
   "summary",
   "risks",
   "next_actions",
+  "summary_sidebar_section",
+  "decision",
+  "review_status",
+  "manager_feedback",
   "technical_section",
   "naming_series"
  ],
@@ -128,14 +130,22 @@
    "label": "Review Context"
   },
   {
+   "fieldname": "context_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "review_assessment_section",
    "fieldtype": "Section Break",
    "label": "Assessment"
   },
   {
-   "fieldname": "review_decision_section",
+   "fieldname": "assessment_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "summary_sidebar_section",
    "fieldtype": "Section Break",
-   "label": "Manager Decision"
+   "label": "Review Summary"
   },
   {
    "fieldname": "review_notes_section",
@@ -149,6 +159,7 @@
    "collapsible": 1
   }
  ],
+ "index_web_pages_for_search": 1,
  "istable": 0,
  "module": "OKR Management",
  "name": "OKR Objective Review",
@@ -156,7 +167,7 @@
   {
    "create": 1,
    "delete": 0,
-   "email": 0,
+   "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
@@ -167,7 +178,7 @@
   {
    "create": 1,
    "delete": 0,
-   "email": 0,
+   "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
@@ -179,17 +190,15 @@
    "create": 0,
    "delete": 0,
    "email": 0,
-   "export": 0,
-   "print": 0,
+   "export": 1,
+   "print": 1,
    "read": 1,
-   "report": 0,
+   "report": 1,
    "role": "Executive Viewer",
    "write": 0
   }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "track_changes": 1,
- "autoname": "naming_series:",
- "naming_rule": "By \"Naming Series\" field"
+ "track_changes": 1
 }

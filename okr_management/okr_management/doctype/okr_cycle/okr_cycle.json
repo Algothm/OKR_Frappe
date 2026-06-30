@@ -9,16 +9,18 @@
  "field_order": [
   "cycle_details_section",
   "cycle_name",
-  "company",
   "cycle_type",
+  "cycle_details_col_break",
+  "description",
   "period_section",
   "start_date",
   "end_date",
+  "period_col_break",
   "review_deadline",
-  "ownership_section",
-  "owner_user",
+  "summary_sidebar_section",
   "status",
-  "description",
+  "company",
+  "owner_user",
   "technical_section",
   "naming_series"
  ],
@@ -84,8 +86,7 @@
   {
    "fieldname": "review_deadline",
    "fieldtype": "Date",
-   "label": "Review Deadline",
-   "description": "Defaults to 7 days after the cycle end date."
+   "label": "Review Deadline"
   },
   {
    "fieldname": "owner_user",
@@ -105,14 +106,22 @@
    "label": "Cycle Details"
   },
   {
+   "fieldname": "cycle_details_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "period_section",
    "fieldtype": "Section Break",
    "label": "Time Period"
   },
   {
-   "fieldname": "ownership_section",
+   "fieldname": "period_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "summary_sidebar_section",
    "fieldtype": "Section Break",
-   "label": "Ownership & Status"
+   "label": "Cycle Summary"
   },
   {
    "fieldname": "technical_section",
@@ -140,7 +149,7 @@
    "write": 1
   },
   {
-   "create": 1,
+   "create": 0,
    "delete": 0,
    "email": 1,
    "export": 1,
@@ -148,7 +157,7 @@
    "read": 1,
    "report": 1,
    "role": "OKR Manager",
-   "write": 1
+   "write": 0
   },
   {
    "create": 0,
