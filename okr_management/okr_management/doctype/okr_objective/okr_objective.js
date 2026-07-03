@@ -4,6 +4,7 @@ frappe.ui.form.on('OKR Objective', {
 		frm.set_df_property('company', 'read_only', 1);
 		frm.set_df_property('progress', 'read_only', 1);
 		frm.set_df_property('confidence', 'read_only', 1);
+		set_sprint_query(frm);
 		
 		if (frm.is_new() && (!frm.doc.status || frm.doc.status === 'Completed')) {
 			frm.set_value('status', 'Draft');
@@ -14,19 +15,32 @@ frappe.ui.form.on('OKR Objective', {
 		
 		render_sprint_summary(frm);
 	},
+	parent_plan(frm) {
+		set_sprint_query(frm);
+		if (frm.doc.sprint) {
+			frappe.db.get_value('OKR Sprint', frm.doc.sprint, 'parent_plan').then(r => {
+				const sprint_plan = r.message ? r.message.parent_plan : '';
+				if (sprint_plan && sprint_plan !== frm.doc.parent_plan) {
+					frm.set_value('sprint', '');
+				}
+			});
+		}
+	},
 	sprint(frm) {
 		if (frm.doc.sprint) {
-			frappe.db.get_value('OKR Sprint', frm.doc.sprint, ['start_date', 'end_date', 'parent_plan', 'quarter', 'status']).then(r => {
+			frappe.db.get_value('OKR Sprint', frm.doc.sprint, ['start_date', 'end_date', 'parent_plan', 'sprint_cycle', 'quarter', 'status']).then(r => {
 				const sprint = r.message || {};
+				if (sprint.parent_plan) frm.set_value('parent_plan', sprint.parent_plan);
 				if (sprint.start_date) frm.set_value('start_date', sprint.start_date);
 				if (sprint.end_date) frm.set_value('end_date', sprint.end_date);
 				
 				if (sprint.parent_plan) {
-					frappe.db.get_value('OKR Plan', sprint.parent_plan, 'financial_year').then(plan_res => {
-						const fy = plan_res.message ? plan_res.message.financial_year : '';
-						// Auto-populate company (Organization)
-						const default_co = frappe.defaults.get_user_default("Company") || '';
-						frm.set_value('company', default_co);
+					frappe.db.get_value('OKR Plan', sprint.parent_plan, ['company', 'department']).then(plan_res => {
+						const plan = plan_res.message || {};
+						if (plan.company) frm.set_value('company', plan.company);
+						if (frm.doc.level === 'Department' && plan.department && !frm.doc.department) {
+							frm.set_value('department', plan.department);
+						}
 					});
 				}
 				render_sprint_summary(frm);
@@ -37,18 +51,31 @@ frappe.ui.form.on('OKR Objective', {
 	},
 	level(frm) {
 		frm.toggle_reqd('department', frm.doc.level === 'Department');
+		if (frm.doc.level === 'Organization') {
+			frm.set_value('department', '');
+		}
 	}
 });
+
+function set_sprint_query(frm) {
+	frm.set_query('sprint', () => {
+		const filters = {};
+		if (frm.doc.parent_plan) {
+			filters.parent_plan = frm.doc.parent_plan;
+		}
+		return { filters };
+	});
+}
 
 function render_sprint_summary(frm) {
 	if (!frm.doc.sprint) {
 		frm.dashboard.clear_headline();
 		return;
 	}
-	frappe.db.get_value('OKR Sprint', frm.doc.sprint, ['parent_plan', 'quarter', 'status']).then(r => {
+	frappe.db.get_value('OKR Sprint', frm.doc.sprint, ['parent_plan', 'sprint_cycle', 'quarter', 'status']).then(r => {
 		const sprint = r.message || {};
 		const plan = sprint.parent_plan || 'N/A';
-		const quarter = sprint.quarter || 'N/A';
+		const cycle = sprint.sprint_cycle || sprint.quarter || 'N/A';
 		const status = sprint.status || 'Draft';
 		
 		let status_class = 'okr-status-draft';
@@ -65,8 +92,8 @@ function render_sprint_summary(frm) {
 						<div style="font-size: 14px; font-weight: 600; color: #f8fafc; margin-top: 4px;">${plan}</div>
 					</div>
 					<div>
-						<div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Quarter</div>
-						<div style="font-size: 14px; font-weight: 600; color: #f8fafc; margin-top: 4px;">${quarter}</div>
+						<div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Sprint Cycle</div>
+						<div style="font-size: 14px; font-weight: 600; color: #f8fafc; margin-top: 4px;">${cycle}</div>
 					</div>
 					<div>
 						<div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Sprint Status</div>
