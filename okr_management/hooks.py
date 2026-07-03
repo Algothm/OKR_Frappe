@@ -118,14 +118,13 @@ notification_config = "okr_management.notifications.get_notification_config"
 # Permissions evaluated in scripted ways
 
 permission_query_conditions = {
-	"OKR Cycle": "okr_management.permissions.get_cycle_permission_query_conditions",
+	"OKR Plan": "okr_management.permissions.get_plan_permission_query_conditions",
+	"OKR Sprint": "okr_management.permissions.get_sprint_permission_query_conditions",
 	"OKR Objective": "okr_management.permissions.get_objective_permission_query_conditions",
 	"OKR Key Result": "okr_management.permissions.get_key_result_permission_query_conditions",
 	"OKR Initiative": "okr_management.permissions.get_initiative_permission_query_conditions",
 	"OKR Check In": "okr_management.permissions.get_checkin_permission_query_conditions",
 	"OKR Action Item": "okr_management.permissions.get_action_item_permission_query_conditions",
-	"OKR Objective Review": "okr_management.permissions.get_review_permission_query_conditions",
-	"OKR Cycle Review": "okr_management.permissions.get_review_permission_query_conditions",
 }
 
 # DocType Class
@@ -140,23 +139,8 @@ permission_query_conditions = {
 # ---------------
 # Hook on document methods and events
 
-doc_events = {
-	"OKR Objective": {
-		"after_insert": "okr_management.notifications.notify_assignment",
-	},
-	"OKR Key Result": {
-		"after_insert": "okr_management.notifications.notify_assignment",
-	},
-	"OKR Check In": {
-		"on_update": "okr_management.notifications.notify_progress_review",
-	},
-	"OKR Objective Review": {
-		"on_update": "okr_management.notifications.notify_review_status",
-	},
-	"OKR Cycle": {
-		"on_update": "okr_management.notifications.notify_cycle_completion",
-	},
-}
+doc_events = {}
+
 
 # Scheduled Tasks
 # ---------------

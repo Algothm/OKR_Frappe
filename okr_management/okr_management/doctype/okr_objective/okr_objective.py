@@ -2,45 +2,46 @@ from __future__ import annotations
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import getdate
 
-from okr_management.utils.okr_calculations import recalculate_cycle_progress
-from okr_management.utils.okr_validations import ensure_date_range, ensure_percentage, ensure_required_link
+from okr_management.utils.okr_calculations import recalculate_objective_progress, recalculate_sprint_progress
+from okr_management.utils.okr_validations import ensure_percentage, ensure_required_link
 
 
 class OKRObjective(Document):
 	def before_validate(self) -> None:
-		if not self.owner_user:
-			self.owner_user = frappe.session.user
-		if self.cycle and frappe.db.exists("OKR Cycle", self.cycle):
-			cycle = frappe.db.get_value("OKR Cycle", self.cycle, ["company", "start_date", "end_date"], as_dict=True)
-			if cycle:
-				# The Cycle owns company and period context; keep Objectives exactly aligned.
-				if cycle.company:
-					self.company = cycle.company
-				if cycle.start_date:
-					self.start_date = cycle.start_date
-				if cycle.end_date:
-					self.end_date = cycle.end_date
+		if self.sprint and frappe.db.exists('OKR Sprint', self.sprint):
+			sprint = frappe.db.get_value('OKR Sprint', self.sprint, ['parent_plan'], as_dict=True)
+			if sprint and sprint.parent_plan:
+				self.parent_plan = sprint.parent_plan
+
+		if self.parent_plan and frappe.db.exists('OKR Plan', self.parent_plan):
+			plan = frappe.db.get_value('OKR Plan', self.parent_plan, ['company', 'department'], as_dict=True)
+			if plan:
+				if not self.company:
+					self.company = plan.company
+				if self.level == 'Department' and plan.department and not self.department:
+					self.department = plan.department
+
+		if self.level == 'Organization':
+			self.department = None
 
 	def validate(self) -> None:
-		ensure_required_link(self.cycle, "OKR Cycle")
-		ensure_required_link(self.company, "Company")
-		ensure_required_link(self.owner_user, "Owner User")
-		ensure_date_range(self.start_date, self.end_date, "Objective")
-		if self.start_date and self.end_date and getdate(self.start_date) > getdate(self.end_date):
-			frappe.throw("Objective Start Date cannot be after Objective End Date. Please check the selected OKR Cycle dates.")
-		ensure_percentage(self.progress, "Progress")
-		if self.cycle:
-			cycle = frappe.db.get_value("OKR Cycle", self.cycle, ["company", "start_date", "end_date"], as_dict=True)
-			if cycle and cycle.company and self.company and cycle.company != self.company:
-				frappe.throw("Objective Company must match the selected OKR Cycle Company.")
-			if cycle and self.start_date and cycle.start_date and getdate(self.start_date) < getdate(cycle.start_date):
-				frappe.throw("Objective Start Date cannot be before the OKR Cycle Start Date.")
-			if cycle and self.end_date and cycle.end_date and getdate(self.end_date) > getdate(cycle.end_date):
-				frappe.throw("Objective End Date cannot be after the OKR Cycle End Date.")
-		if self.parent_objective and self.parent_objective == self.name:
-			frappe.throw("An objective cannot align to itself.")
+		ensure_required_link(self.parent_plan, 'Parent Plan')
+		ensure_required_link(self.sprint, 'Parent Sprint')
+		ensure_required_link(self.level, 'Level')
+		ensure_required_link(self.company, 'Organization')
+		ensure_required_link(self.description, 'Description')
+		ensure_required_link(self.owner_user, 'Owner')
+		ensure_percentage(self.progress, 'Progress')
+
+		if self.level == 'Department' and not self.department:
+			frappe.throw('Department is required when Level is Department.')
+
+		if self.sprint:
+			sprint_plan = frappe.db.get_value('OKR Sprint', self.sprint, 'parent_plan')
+			if sprint_plan and self.parent_plan and sprint_plan != self.parent_plan:
+				frappe.throw('Parent Plan must match the selected Parent Sprint\'s Parent Plan.')
 
 	def on_update(self) -> None:
-		recalculate_cycle_progress(self.cycle)
+		recalculate_objective_progress(self.name)
+		recalculate_sprint_progress(self.sprint)

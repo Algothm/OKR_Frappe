@@ -33,16 +33,16 @@ class OKRCheckIn(Document):
 			key_result = frappe.db.get_value(
 				"OKR Key Result",
 				self.key_result,
-				["objective", "cycle", "start_date", "end_date", "baseline_value", "target_value", "metric_direction", "department"],
+				["objective", "start_date", "end_date", "baseline_value", "target_value", "metric_direction"],
 				as_dict=True
 			)
 			if key_result:
 				if not self.objective:
 					self.objective = key_result.objective
-				if not self.cycle:
-					self.cycle = key_result.cycle
-				if not self.department:
-					self.department = key_result.department
+				
+				# Get department from objective
+				if self.objective:
+					self.department = frappe.db.get_value("OKR Objective", self.objective, "department")
 
 				# Auto-calculate progress based on raw current_value and direction
 				baseline = flt(key_result.baseline_value)
@@ -61,7 +61,6 @@ class OKRCheckIn(Document):
 	def validate(self) -> None:
 		ensure_required_link(self.key_result, "Key Result")
 		ensure_required_link(self.objective, "Objective")
-		ensure_required_link(self.cycle, "OKR Cycle")
 		ensure_required_link(self.reported_by, "Reported By")
 		ensure_percentage(self.progress, "Progress")
 
@@ -69,7 +68,7 @@ class OKRCheckIn(Document):
 			kr_data = frappe.db.get_value(
 				"OKR Key Result",
 				self.key_result,
-				["objective", "cycle", "start_date", "end_date", "approval_status"],
+				["objective", "start_date", "end_date", "approval_status"],
 				as_dict=True
 			)
 			if kr_data:
@@ -77,8 +76,6 @@ class OKRCheckIn(Document):
 					frappe.throw(f"Check-Ins can only be submitted against Approved Key Results. Current Key Result approval status is '{kr_data.approval_status}'.")
 				if self.objective != kr_data.objective:
 					frappe.throw("Check-In Objective must match the selected Key Result Objective.")
-				if self.cycle != kr_data.cycle:
-					frappe.throw("Check-In Cycle must match the selected Key Result Cycle.")
 				if self.checkin_date and kr_data.start_date and getdate(self.checkin_date) < getdate(kr_data.start_date):
 					frappe.throw("Check-in Date cannot be before the Key Result Start Date.")
 				if self.checkin_date and kr_data.end_date and getdate(self.checkin_date) > getdate(kr_data.end_date):
@@ -114,5 +111,23 @@ class OKRCheckIn(Document):
 				frappe.throw("Reason for Escalation is required when Review Status is Escalated.")
 
 	def on_update(self) -> None:
-		sync_checkin_progress(self)
+		# Update Action Items progress and status back to the Key Result
+		if self.key_result and frappe.db.exists("OKR Key Result", self.key_result):
+			key_result = frappe.get_doc("OKR Key Result", self.key_result)
+			updated_kr = False
+			for ci_item in self.action_items:
+				for kr_item in key_result.action_items:
+					if kr_item.action_item_title == ci_item.action_item_title:
+						if kr_item.progress != ci_item.progress or kr_item.status != ci_item.status:
+							kr_item.progress = ci_item.progress
+							kr_item.status = ci_item.status
+							kr_item.notes = ci_item.notes
+							kr_item.due_date = ci_item.due_date
+							updated_kr = True
+							break
+			if updated_kr:
+				key_result.flags.ignore_permissions = True
+				key_result.save()
 
+		# Sync checkin progress values
+		sync_checkin_progress(self)

@@ -101,32 +101,14 @@ def _owner_or_department_clause(doctype: str, owner_field: str = "owner_user", d
 	return "(" + " or ".join(clauses) + ")"
 
 
-def get_cycle_permission_query_conditions(user: str | None = None) -> str:
-	user = user or frappe.session.user
-	if _is_executive(user):
-		return ""
+def get_plan_permission_query_conditions(user: str | None = None) -> str:
+	return ""
 
-	clauses = []
-	if _is_department_head(user):
-		departments = _user_departments(user)
-		if departments:
-			clauses.append(
-				f"exists (select 1 from `tabOKR Objective` obj where obj.cycle = `tabOKR Cycle`.name and obj.department in ({_in(departments)}))"
-			)
-	if _is_manager(user):
-		users = _team_users(user)
-		clauses.extend([
-			f"exists (select 1 from `tabOKR Objective` obj where obj.cycle = `tabOKR Cycle`.name and obj.owner_user in ({_in(users)}))",
-			f"exists (select 1 from `tabOKR Key Result` kr where kr.cycle = `tabOKR Cycle`.name and kr.owner_user in ({_in(users)}))",
-			f"exists (select 1 from `tabOKR Action Item` ai where ai.cycle = `tabOKR Cycle`.name and ai.owner_user in ({_in(users)}))",
-		])
-	if not clauses:
-		clauses.extend([
-			f"exists (select 1 from `tabOKR Key Result` kr where kr.cycle = `tabOKR Cycle`.name and kr.owner_user = {_escape(user)})",
-			f"exists (select 1 from `tabOKR Action Item` ai where ai.cycle = `tabOKR Cycle`.name and ai.owner_user = {_escape(user)})",
-			f"exists (select 1 from `tabOKR Check In` ci where ci.cycle = `tabOKR Cycle`.name and ci.reported_by = {_escape(user)})",
-		])
-	return "(" + " or ".join(clauses) + ")"
+
+def get_sprint_permission_query_conditions(user: str | None = None) -> str:
+	return ""
+
+
 
 
 def get_objective_permission_query_conditions(user: str | None = None) -> str:
@@ -143,14 +125,12 @@ def get_objective_permission_query_conditions(user: str | None = None) -> str:
 		users = _team_users(user)
 		clauses.extend([
 			f"`tabOKR Objective`.owner_user in ({_in(users)})",
-			f"exists (select 1 from `tabOKR Key Result` kr where kr.objective = `tabOKR Objective`.name and kr.owner_user in ({_in(users)}))",
-			f"exists (select 1 from `tabOKR Action Item` ai where ai.objective = `tabOKR Objective`.name and ai.owner_user in ({_in(users)}))",
+			f"exists (select 1 from `tabOKR Key Result` kr where kr.objective = `tabOKR Objective`.name and kr.owner_user in ({_in(users)}))"
 		])
 	if not clauses:
 		clauses.extend([
 			f"`tabOKR Objective`.owner_user = {_escape(user)}",
-			f"exists (select 1 from `tabOKR Key Result` kr where kr.objective = `tabOKR Objective`.name and kr.owner_user = {_escape(user)})",
-			f"exists (select 1 from `tabOKR Action Item` ai where ai.objective = `tabOKR Objective`.name and ai.owner_user = {_escape(user)})",
+			f"exists (select 1 from `tabOKR Key Result` kr where kr.objective = `tabOKR Objective`.name and kr.owner_user = {_escape(user)})"
 		])
 	return "(" + " or ".join(clauses) + ")"
 
@@ -171,7 +151,7 @@ def get_key_result_permission_query_conditions(user: str | None = None) -> str:
 		users = _team_users(user)
 		clauses.extend([
 			f"`tabOKR Key Result`.owner_user in ({_in(users)})",
-			f"exists (select 1 from `tabOKR Objective` obj where obj.name = `tabOKR Key Result`.objective and obj.owner_user in ({_in(users)}))",
+			f"exists (select 1 from `tabOKR Objective` obj where obj.name = `tabOKR Key Result`.objective and obj.owner_user in ({_in(users)}))"
 		])
 	if not clauses:
 		clauses.append(f"`tabOKR Key Result`.owner_user = {_escape(user)}")
@@ -179,10 +159,7 @@ def get_key_result_permission_query_conditions(user: str | None = None) -> str:
 
 
 def get_action_item_permission_query_conditions(user: str | None = None) -> str:
-	user = user or frappe.session.user
-	if _is_executive(user):
-		return ""
-	return _owner_or_department_clause("OKR Action Item", user=user)
+	return ""
 
 
 def get_checkin_permission_query_conditions(user: str | None = None) -> str:
@@ -205,24 +182,6 @@ def get_checkin_permission_query_conditions(user: str | None = None) -> str:
 	return "(" + " or ".join(clauses) + ")"
 
 
-def get_review_permission_query_conditions(user: str | None = None) -> str:
-	user = user or frappe.session.user
-	if _is_executive(user):
-		return ""
-	clauses = []
-	if _is_department_head(user):
-		departments = _user_departments(user)
-		if departments:
-			clauses.append(
-				f"exists (select 1 from `tabOKR Objective` obj where obj.name = `tabOKR Objective Review`.objective and obj.department in ({_in(departments)}))"
-			)
-	if _is_manager(user):
-		users = _team_users(user)
-		clauses.append(f"`tabOKR Objective Review`.reviewer in ({_in(users)})")
-		clauses.append(f"exists (select 1 from `tabOKR Objective` obj where obj.name = `tabOKR Objective Review`.objective and obj.owner_user in ({_in(users)}))")
-	if not clauses:
-		clauses.append(f"`tabOKR Objective Review`.reviewer = {_escape(user)}")
-	return "(" + " or ".join(clauses) + ")"
 
 
 def get_initiative_permission_query_conditions(user: str | None = None) -> str:

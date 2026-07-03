@@ -1,7 +1,7 @@
 {
  "charts": [],
- "content": "[{\"id\":\"okr_administration_1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Administration</b></span>\",\"col\":12}},{\"id\":\"okr_settings_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Settings\",\"col\":4}},{\"id\":\"okr_administration_s\",\"type\":\"spacer\",\"data\":{\"col\":12}}]",
- "creation": "2026-06-22 16:31:11.913028",
+ "content": "[{\"id\":\"okr_administration_1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Administration</b></span>\",\"col\":12}},{\"id\":\"okr_settings_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Settings\",\"col\":4}},{\"id\":\"okr_approval_matrix_3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Approval Matrix\",\"col\":4}},{\"id\":\"okr_administration_s\",\"type\":\"spacer\",\"data\":{\"col\":12}}]",
+ "creation": "2026-07-02 15:10:15.746393",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -31,9 +31,20 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Approval Matrix",
+   "link_count": 0,
+   "link_to": "OKR Approval Matrix",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-06-25 10:28:54.576631",
+ "modified": "2026-07-02 15:10:15.746393",
  "modified_by": "Administrator",
  "module": "OKR Management",
  "name": "Administration",
@@ -42,14 +53,19 @@
  "parent_page": "OKR Management",
  "public": 1,
  "quick_lists": [],
- "restrict_to_domain": "",
  "roles": [],
- "sequence_id": 6.0,
+ "sequence_id": 4.0,
  "shortcuts": [
   {
-   "doc_view": "",
+   "doc_view": "List",
    "label": "Settings",
    "link_to": "OKR Settings",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "List",
+   "label": "Approval Matrix",
+   "link_to": "OKR Approval Matrix",
    "type": "DocType"
   }
  ],
