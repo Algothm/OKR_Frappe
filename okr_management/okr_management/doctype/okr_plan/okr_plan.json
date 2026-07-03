@@ -10,12 +10,15 @@
   "plan_details_section",
   "plan_name",
   "financial_year",
+  "company",
+  "department",
   "plan_details_col_break",
   "description",
   "summary_sidebar_section",
   "status",
   "owner_user",
   "progress",
+  "objective_count",
   "technical_section",
   "naming_series"
  ],
@@ -28,14 +31,8 @@
    "default": "OKR-PLAN-.YYYY.-",
    "reqd": 1,
    "hidden": 1,
-   "read_only": 1
-  },
-  {
-   "fieldname": "plan_name",
-   "fieldtype": "Data",
-   "label": "Plan Name",
-   "reqd": 1,
-   "in_list_view": 1
+   "read_only": 1,
+   "idx": 1
   },
   {
    "fieldname": "financial_year",
@@ -43,12 +40,43 @@
    "label": "Financial Year",
    "options": "Fiscal Year",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "idx": 2
+  },
+  {
+   "fieldname": "plan_name",
+   "fieldtype": "Data",
+   "label": "Plan Name",
+   "reqd": 1,
+   "in_list_view": 1,
+   "idx": 3
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Organization",
+   "options": "Company",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "idx": 4
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "in_list_view": 1,
+   "reqd": 0,
+   "in_standard_filter": 1,
+   "idx": 5
   },
   {
    "fieldname": "description",
    "fieldtype": "Small Text",
-   "label": "Description"
+   "label": "Description",
+   "idx": 6
   },
   {
    "fieldname": "status",
@@ -57,20 +85,28 @@
    "options": "Draft\nActive\nCompleted\nClosed",
    "default": "Draft",
    "reqd": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "owner_user",
-   "fieldtype": "Link",
-   "label": "Owner",
-   "options": "User"
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "idx": 7
   },
   {
    "fieldname": "progress",
    "fieldtype": "Percent",
    "label": "Progress",
    "read_only": 1,
-   "default": "0"
+   "default": "0",
+   "in_list_view": 1,
+   "idx": 8
+  },
+  {
+   "fieldname": "owner_user",
+   "fieldtype": "Link",
+   "label": "Owner",
+   "options": "User",
+   "hidden": 1,
+   "reqd": 0,
+   "in_list_view": 0,
+   "in_standard_filter": 0
   },
   {
    "fieldname": "plan_details_section",
@@ -91,6 +127,17 @@
    "fieldtype": "Section Break",
    "label": "System Details",
    "collapsible": 1
+  },
+  {
+   "fieldname": "objective_count",
+   "fieldtype": "Int",
+   "label": "Objective Count",
+   "read_only": 1,
+   "default": 0,
+   "hidden": 1,
+   "reqd": 0,
+   "in_list_view": 0,
+   "in_standard_filter": 0
   }
  ],
  "index_web_pages_for_search": 1,
@@ -138,6 +185,6 @@
  "sort_order": "DESC",
  "track_changes": 1,
  "title_field": "plan_name",
- "search_fields": "plan_name,name,financial_year,status",
+ "search_fields": "plan_name,name,financial_year,company,department,status",
  "show_title_field_in_link": 1
 }
