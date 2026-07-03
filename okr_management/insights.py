@@ -834,7 +834,7 @@ EXECUTIVE_REPORT_TEMPLATE = """
 			<div>
 				<div class="okr-report-kicker">{{ _("OKR Executive Report") }}{% if company %} &middot; {{ company }}{% endif %}</div>
 				<h1>{{ _("OKR Executive Report") }}</h1>
-				{% if active_cycle_name %}<p style="font-size:15px;font-weight:600;opacity:0.9;margin-bottom:6px;">{{ active_cycle_name }}</p>{% endif %}
+				{% if active_sprint_name %}<p style="font-size:15px;font-weight:600;opacity:0.9;margin-bottom:6px;">{{ active_sprint_name }}</p>{% endif %}
 				<p>{{ _("Generated on {0}").format(generated_on_display) }}{% if company %} &middot; {{ company }}{% endif %}</p>
 			</div>
 			<div class="okr-report-meta">
@@ -1130,7 +1130,7 @@ EXECUTIVE_REPORT_TEMPLATE = """
 
 		<div style="margin-top:32px;padding-top:18px;border-top:1px solid #e5eaf1;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#94a3b8;">
 			<div>
-				<strong style="color:#64748b;">{{ _("OKR Executive Report") }}</strong>{% if company %} &middot; {{ company }}{% endif %}{% if active_cycle_name %} &middot; {{ active_cycle_name }}{% endif %}
+				<strong style="color:#64748b;">{{ _("OKR Executive Report") }}</strong>{% if company %} &middot; {{ company }}{% endif %}{% if active_sprint_name %} &middot; {{ active_sprint_name }}{% endif %}
 			</div>
 			<div>{{ _("Generated") }}: {{ generated_on_display }}</div>
 		</div>
@@ -1174,10 +1174,10 @@ def _format_department_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 
-def _get_company_and_cycle():
-	"""Return (company_name, active_cycle_name) for the executive report header."""
+def _get_company_and_sprint():
+	"""Return (company_name, active_sprint_name) for the executive report header."""
 	company = ""
-	active_cycle_name = ""
+	active_sprint_name = ""
 	try:
 		if _has_field("OKR Cycle", "company"):
 			cycle_row = frappe.db.get_value(
@@ -1188,17 +1188,17 @@ def _get_company_and_cycle():
 				as_dict=True,
 			)
 			if cycle_row:
-				active_cycle_name = cycle_row.get("cycle_name") or ""
+				active_sprint_name = cycle_row.get("cycle_name") or ""
 				company = cycle_row.get("company") or ""
 		if not company:
 			company = frappe.defaults.get_global_default("company") or ""
 		if not company:
 			company = frappe.db.get_value("Company", {}, "name") or ""
-		if not active_cycle_name and _has_field("OKR Cycle", "cycle_name"):
-			active_cycle_name = frappe.db.get_value("OKR Cycle", {}, "cycle_name", order_by="modified desc") or ""
+		if not active_sprint_name and _has_field("OKR Cycle", "cycle_name"):
+			active_sprint_name = frappe.db.get_value("OKR Cycle", {}, "cycle_name", order_by="modified desc") or ""
 	except Exception:
 		pass
-	return company, active_cycle_name
+	return company, active_sprint_name
 
 def get_review_ratings_summary() -> dict[str, Any]:
 	if not frappe.db.exists("DocType", "OKR Objective Review"):
@@ -1298,7 +1298,7 @@ def _build_executive_report_context() -> dict[str, Any]:
 	top_department = department_performance[0] if department_performance else {}
 	lowest_department = department_performance[-1] if department_performance else {}
 
-	company, active_cycle_name = _get_company_and_cycle()
+	company, active_sprint_name = _get_company_and_sprint()
 
 	# Objective count breakdown
 	all_objectives = _get_objective_rows()
@@ -1316,7 +1316,7 @@ def _build_executive_report_context() -> dict[str, Any]:
 		{
 			"label": _("Total Objectives"),
 			"value": total_objectives,
-			"hint": _("All objectives across all cycles."),
+			"hint": _("All objectives across all sprints."),
 		},
 		{
 			"label": _("Active Objectives"),
@@ -1369,7 +1369,7 @@ def _build_executive_report_context() -> dict[str, Any]:
 	return {
 		"generated_on_display": format_date(report.get("generated_on") or nowdate()),
 		"company": company,
-		"active_cycle_name": active_cycle_name,
+		"active_sprint_name": active_sprint_name,
 		"summary": summary,
 		"summary_cards": summary_cards,
 		"total_objectives": total_objectives,
