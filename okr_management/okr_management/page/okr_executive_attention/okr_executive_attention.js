@@ -383,7 +383,7 @@ ${unique.length ? `
 							<th>${__('Recommended Action')}</th>
 						</tr></thead>
 						<tbody>${rows.map(row => `<tr style="${row.has_issue ? 'background:#fff7ed;' : ''}">
-							<td><a href="/app/okr-objective/${encodeURIComponent(row.objective || '')}" style="font-weight:500;">${this.esc(row.objective_title || row.objective)}</a></td>
+							<td><a href="${frappe.utils.get_form_link('OKR Objective', row.objective || '')}" style="font-weight:500;">${this.esc(row.objective_title || row.objective)}</a></td>
 							<td><small class="text-muted">${this.esc(row.objective || '')}</small></td>
 							<td>${this.esc(row.owner || '—')}</td>
 							<td>${this.esc(row.reviewer || '—')}</td>
@@ -403,11 +403,11 @@ ${unique.length ? `
 	}
 
 	recordRoute(row) {
-		const routeMap = {
-			'Objective': 'okr-objective',
-			'Key Result': 'okr-key-result',
+		const doctypeMap = {
+			'Objective': 'OKR Objective',
+			'Key Result': 'OKR Key Result',
 		};
-		const route = routeMap[row.type] || frappe.router.slug(row.type || '');
-		return `/app/${route}/${encodeURIComponent(row.record || '')}`;
+		const doctype = doctypeMap[row.type] || row.type || '';
+		return frappe.utils.get_form_link(doctype, row.record || '');
 	}
 }
