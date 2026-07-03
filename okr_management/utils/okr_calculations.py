@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 import frappe
-from frappe.utils import flt, nowdate
+from frappe.utils import flt
 
 
 def has_field(doctype: str, fieldname: str) -> bool:
@@ -11,12 +11,18 @@ def has_field(doctype: str, fieldname: str) -> bool:
 
 
 def safe_get(doc: Any, fieldname: str, default: Any = None) -> Any:
-	return doc.get(fieldname) if hasattr(doc, "get") and has_field(doc.doctype, fieldname) else default
+	return doc.get(fieldname) if hasattr(doc, 'get') and has_field(doc.doctype, fieldname) else default
 
 
 def set_if_has(values: dict[str, Any], doctype: str, fieldname: str, value: Any) -> None:
 	if has_field(doctype, fieldname):
 		values[fieldname] = value
+
+
+def average(values: list[Any]) -> float:
+	if not values:
+		return 0.0
+	return round(sum(flt(value) for value in values) / len(values), 2)
 
 
 def get_completion_percentage(current_value: Any, target_value: Any) -> float:
@@ -41,193 +47,106 @@ def get_current_value_from_progress(baseline_value: Any, target_value: Any, prog
 	return round(baseline + ((target - baseline) * flt(progress_percent) / 100.0), 2)
 
 
-def get_latest_checkin(key_result_name: str) -> dict[str, Any] | None:
-	fields = ["name", "checkin_date", "progress", "manager_feedback", "review_status", "reported_by", "confidence", "has_dependency", "impact_level"]
-	fields = [field for field in fields if has_field("OKR Check In", field)]
-	checkin = frappe.get_all(
-		"OKR Check In",
-		filters={"key_result": key_result_name},
-		fields=fields,
-		order_by="checkin_date desc, modified desc",
-		limit=1,
-	)
-	return checkin[0] if checkin else None
-
-
-def sync_checkin_progress(doc: Any, method: str | None = None) -> None:
-	key_result_name = safe_get(doc, "key_result")
-	if not key_result_name or not frappe.db.exists("OKR Key Result", key_result_name):
+def recalculate_key_result_progress(key_result_name: str | None) -> None:
+	if not key_result_name or not frappe.db.exists('OKR Key Result', key_result_name):
 		return
 
-	key_result = frappe.get_doc("OKR Key Result", key_result_name)
-	progress = flt(safe_get(doc, "progress", 0))
-
-	if has_field("OKR Key Result", "current_value"):
-		key_result.current_value = flt(safe_get(doc, "current_value", 0))
-	if has_field("OKR Key Result", "target_progress"):
-		key_result.target_progress = progress
-	if has_field("OKR Key Result", "confidence") and safe_get(doc, "confidence"):
-		key_result.confidence = safe_get(doc, "confidence")
-	if has_field("OKR Key Result", "last_checkin_date"):
-		key_result.last_checkin_date = safe_get(doc, "checkin_date") or nowdate()
-	if has_field("OKR Key Result", "last_checkin"):
-		key_result.last_checkin = doc.name
-
-	# Flexible Status Calculation:
-	# Blocked if review_status is Blocked or dependency impact is Critical
-	# At Risk if review_status is Escalated/Needs Improvement, confidence is 1/2, or dependency impact is High
-	if has_field("OKR Key Result", "status"):
-		review_status = safe_get(doc, "review_status")
-		has_dep = bool(safe_get(doc, "has_dependency"))
-		impact = safe_get(doc, "impact_level")
-		confidence = safe_get(doc, "confidence")
-
-		if review_status == "Blocked" or (has_dep and impact == "Critical"):
-			key_result.status = "Blocked"
-		elif review_status in ("Escalated", "Needs Improvement") or confidence in ("1", "2") or (has_dep and impact == "High"):
-			key_result.status = "At Risk"
-		elif progress >= 100:
-			key_result.status = "Achieved"
-		else:
-			key_result.status = "Active"
-
-	key_result.flags.ignore_permissions = True
-	key_result.save()
+	action_items = frappe.get_all(
+		'OKR Action Item',
+		filters={'parenttype': 'OKR Key Result', 'parent': key_result_name},
+		fields=['progress'],
+	)
+	progress = average([item.get('progress') for item in action_items])
+	values: dict[str, Any] = {}
+	set_if_has(values, 'OKR Key Result', 'target_progress', progress)
+	set_if_has(values, 'OKR Key Result', 'score', progress)
+	set_if_has(values, 'OKR Key Result', 'status', 'Achieved' if progress >= 100 else 'Active')
+	if values:
+		frappe.db.set_value('OKR Key Result', key_result_name, values, update_modified=False)
+	recalculate_from_key_result(key_result_name)
 
 
 def recalculate_objective_progress(objective_name: str | None) -> None:
-	if not objective_name or not frappe.db.exists("OKR Objective", objective_name):
+	if not objective_name or not frappe.db.exists('OKR Objective', objective_name):
 		return
 
-	fields = ["name"]
-	for field in ("target_progress", "weight", "status", "confidence"):
-		if has_field("OKR Key Result", field):
-			fields.append(field)
-	key_results = frappe.get_all("OKR Key Result", filters={"objective": objective_name}, fields=fields)
-
+	progress_field = 'target_progress' if has_field('OKR Key Result', 'target_progress') else 'progress'
+	key_results = frappe.get_all(
+		'OKR Key Result',
+		filters={'objective': objective_name},
+		fields=['name', progress_field],
+	)
+	progress = average([item.get(progress_field) for item in key_results])
 	values: dict[str, Any] = {}
-	if not key_results:
-		set_if_has(values, "OKR Objective", "progress", 0)
-		set_if_has(values, "OKR Objective", "status", "Draft")
-		if values:
-			frappe.db.set_value("OKR Objective", objective_name, values, update_modified=False)
-		_recalculate_sprint_for_objective(objective_name)
-		return
-
-	total_weight = sum(flt(item.get("weight")) for item in key_results) or len(key_results)
-	weighted_progress = 0.0
-	confidence_total = 0.0
-	confidence_count = 0
-	has_blocked_kr = False
-	has_at_risk_kr = False
-
-	for item in key_results:
-		weight = flt(item.get("weight")) or 1.0
-		weighted_progress += flt(item.get("target_progress")) * weight
-		if item.get("confidence") is not None:
-			confidence_total += flt(item.get("confidence"))
-			confidence_count += 1
-		if item.get("status") == "Blocked":
-			has_blocked_kr = True
-		elif item.get("status") == "At Risk":
-			has_at_risk_kr = True
-
-	progress = round(weighted_progress / total_weight, 2)
-	confidence = round(confidence_total / confidence_count, 2) if confidence_count else 0
-	
-	status = "Active"
-	if progress >= 100:
-		status = "Completed"
-	elif has_blocked_kr or has_at_risk_kr or progress < 60:
-		status = "At Risk"
-
-	set_if_has(values, "OKR Objective", "progress", progress)
-	set_if_has(values, "OKR Objective", "confidence", confidence)
-	set_if_has(values, "OKR Objective", "status", status)
+	set_if_has(values, 'OKR Objective', 'progress', progress)
+	set_if_has(values, 'OKR Objective', 'status', 'Completed' if progress >= 100 else 'Active')
 	if values:
-		frappe.db.set_value("OKR Objective", objective_name, values, update_modified=False)
+		frappe.db.set_value('OKR Objective', objective_name, values, update_modified=False)
 	_recalculate_sprint_for_objective(objective_name)
 
 
 def _recalculate_sprint_for_objective(objective_name: str) -> None:
-	if has_field("OKR Objective", "sprint"):
-		sprint = frappe.db.get_value("OKR Objective", objective_name, "sprint")
-		if sprint:
-			recalculate_sprint_progress(sprint)
+	sprint = frappe.db.get_value('OKR Objective', objective_name, 'sprint')
+	if sprint:
+		recalculate_sprint_progress(sprint)
 
 
 def recalculate_sprint_progress(sprint_name: str | None) -> None:
-	if not sprint_name or not frappe.db.exists("OKR Sprint", sprint_name):
+	if not sprint_name or not frappe.db.exists('OKR Sprint', sprint_name):
 		return
 
-	fields = ["name"]
-	for field in ("progress", "status"):
-		if has_field("OKR Objective", field):
-			fields.append(field)
-	objectives = frappe.get_all("OKR Objective", filters={"sprint": sprint_name}, fields=fields)
-
+	objectives = frappe.get_all('OKR Objective', filters={'sprint': sprint_name}, fields=['name', 'progress'])
+	progress = average([item.get('progress') for item in objectives])
 	values: dict[str, Any] = {}
-	if not objectives:
-		set_if_has(values, "OKR Sprint", "progress", 0)
-		set_if_has(values, "OKR Sprint", "status", "Draft")
-	elif has_field("OKR Objective", "progress"):
-		progress = round(sum(flt(item.get("progress")) for item in objectives) / len(objectives), 2)
-		set_if_has(values, "OKR Sprint", "progress", progress)
-		if progress >= 100:
-			status = "Closed"
-		elif progress >= 60:
-			status = "Active"
-		else:
-			status = "Draft"
-		set_if_has(values, "OKR Sprint", "status", status)
-
+	set_if_has(values, 'OKR Sprint', 'progress', progress)
+	set_if_has(values, 'OKR Sprint', 'status', 'Completed' if progress >= 100 else 'Active')
 	if values:
-		frappe.db.set_value("OKR Sprint", sprint_name, values, update_modified=False)
-	
-	parent_plan = frappe.db.get_value("OKR Sprint", sprint_name, "parent_plan")
+		frappe.db.set_value('OKR Sprint', sprint_name, values, update_modified=False)
+
+	parent_plan = frappe.db.get_value('OKR Sprint', sprint_name, 'parent_plan')
 	if parent_plan:
 		recalculate_plan_progress(parent_plan)
 
 
 def recalculate_plan_progress(plan_name: str | None) -> None:
-	if not plan_name or not frappe.db.exists("OKR Plan", plan_name):
+	if not plan_name or not frappe.db.exists('OKR Plan', plan_name):
 		return
 
-	fields = ["name"]
-	if has_field("OKR Sprint", "progress"):
-		fields.append("progress")
-	sprints = frappe.get_all("OKR Sprint", filters={"parent_plan": plan_name}, fields=fields)
-
+	sprints = frappe.get_all('OKR Sprint', filters={'parent_plan': plan_name}, fields=['name', 'progress'])
+	progress = average([item.get('progress') for item in sprints])
 	values: dict[str, Any] = {}
-	if not sprints:
-		set_if_has(values, "OKR Plan", "progress", 0)
-		set_if_has(values, "OKR Plan", "status", "Draft")
-	elif "progress" in fields:
-		progress = round(sum(flt(item.get("progress")) for item in sprints) / len(sprints), 2)
-		set_if_has(values, "OKR Plan", "progress", progress)
-		if progress >= 100:
-			status = "Closed"
-		elif progress >= 60:
-			status = "Active"
-		else:
-			status = "Draft"
-		set_if_has(values, "OKR Plan", "status", status)
-
+	set_if_has(values, 'OKR Plan', 'progress', progress)
+	set_if_has(values, 'OKR Plan', 'status', 'Completed' if progress >= 100 else 'Active')
 	if values:
-		frappe.db.set_value("OKR Plan", plan_name, values, update_modified=False)
+		frappe.db.set_value('OKR Plan', plan_name, values, update_modified=False)
 
 
 def recalculate_from_key_result(key_result_name: str | None) -> None:
-	if not key_result_name or not frappe.db.exists("OKR Key Result", key_result_name):
+	if not key_result_name or not frappe.db.exists('OKR Key Result', key_result_name):
 		return
-	objective = frappe.db.get_value("OKR Key Result", key_result_name, "objective")
+	objective = frappe.db.get_value('OKR Key Result', key_result_name, 'objective')
 	recalculate_objective_progress(objective)
 
 
 def recalculate_from_key_result_doc(doc: Any, method: str | None = None) -> None:
-	recalculate_from_key_result(getattr(doc, "name", None))
+	recalculate_key_result_progress(getattr(doc, 'name', None))
 
 
 def recalculate_from_objective_doc(doc: Any, method: str | None = None) -> None:
-	if has_field("OKR Objective", "sprint"):
-		recalculate_sprint_progress(safe_get(doc, "sprint"))
+	recalculate_sprint_progress(safe_get(doc, 'sprint'))
+
+
+def sync_checkin_progress(doc: Any, method: str | None = None) -> None:
+	key_result_name = safe_get(doc, 'key_result')
+	if not key_result_name or not frappe.db.exists('OKR Key Result', key_result_name):
+		return
+
+	values: dict[str, Any] = {}
+	progress = flt(safe_get(doc, 'progress', 0))
+	set_if_has(values, 'OKR Key Result', 'current_value', flt(safe_get(doc, 'current_value', 0)))
+	set_if_has(values, 'OKR Key Result', 'target_progress', progress)
+	set_if_has(values, 'OKR Key Result', 'score', progress)
+	set_if_has(values, 'OKR Key Result', 'status', 'Achieved' if progress >= 100 else 'Active')
+	if values:
+		frappe.db.set_value('OKR Key Result', key_result_name, values, update_modified=False)
+	recalculate_from_key_result(key_result_name)
