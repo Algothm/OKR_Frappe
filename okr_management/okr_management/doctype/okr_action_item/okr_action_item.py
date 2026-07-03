@@ -3,17 +3,21 @@ from __future__ import annotations
 import frappe
 from frappe.model.document import Document
 
+from okr_management.utils.okr_calculations import recalculate_key_result_progress
+from okr_management.utils.okr_validations import ensure_percentage, ensure_required_link
+
 
 class OKRActionItem(Document):
 	def validate(self) -> None:
-		pass
+		if self.parenttype == 'OKR Key Result' and self.parent:
+			self.parent_key_result = self.parent
+		ensure_required_link(self.action_item_title, 'Action Item')
+		ensure_required_link(self.owner_user, 'Owner')
+		ensure_required_link(self.status, 'Status')
+		ensure_percentage(self.weight, 'Weight %')
+		ensure_percentage(self.progress, 'Progress %')
 
 	def on_update(self) -> None:
-		# If this action item is a child of a Key Result, trigger KR recalculation
-		# so progress flows up: Action Item -> Key Result -> Objective -> Sprint -> Plan
-		parent = getattr(self, "parent", None)
-		parent_type = getattr(self, "parenttype", None)
-		if parent and parent_type == "OKR Key Result" and frappe.db.exists("OKR Key Result", parent):
-			kr_doc = frappe.get_doc("OKR Key Result", parent)
-			kr_doc.flags.ignore_permissions = True
-			kr_doc.save()
+		parent = getattr(self, 'parent_key_result', None) or getattr(self, 'parent', None)
+		if parent and frappe.db.exists('OKR Key Result', parent):
+			recalculate_key_result_progress(parent)
