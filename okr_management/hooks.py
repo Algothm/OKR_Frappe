@@ -139,20 +139,8 @@ permission_query_conditions = {
 # ---------------
 # Hook on document methods and events
 
-doc_events = {
-	"OKR Objective": {
-		"after_insert": "okr_management.notifications.notify_assignment",
-	},
-	"OKR Key Result": {
-		"after_insert": "okr_management.notifications.notify_assignment",
-	},
-	"OKR Check In": {
-		"on_update": "okr_management.notifications.notify_progress_review",
-	},
-	"OKR Plan": {
-		"on_update": "okr_management.notifications.notify_cycle_completion",
-	},
-}
+doc_events = {}
+
 
 # Scheduled Tasks
 # ---------------
