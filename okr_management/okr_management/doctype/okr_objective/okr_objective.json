@@ -9,6 +9,7 @@
  "field_order": [
   "objective_details_section",
   "objective_title",
+  "parent_plan",
   "objective_type",
   "parent_objective",
   "sprint",
@@ -39,14 +40,19 @@
    "default": "OKR-OBJ-.YYYY.-",
    "reqd": 1,
    "hidden": 1,
-   "read_only": 1
+   "read_only": 1,
+   "idx": 1
   },
   {
-   "fieldname": "objective_title",
-   "fieldtype": "Data",
-   "label": "Objective Title",
+   "fieldname": "parent_plan",
+   "fieldtype": "Link",
+   "label": "Parent Plan",
+   "options": "OKR Plan",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "description": "Auto-filled from the selected Parent Sprint.",
+   "in_standard_filter": 1,
+   "idx": 2
   },
   {
    "fieldname": "sprint",
@@ -54,7 +60,9 @@
    "label": "Parent Sprint",
    "options": "OKR Sprint",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "idx": 3
   },
   {
    "fieldname": "level",
@@ -62,21 +70,10 @@
    "label": "Level",
    "options": "Organization\nDepartment",
    "default": "Department",
-   "reqd": 1
-  },
-  {
-   "fieldname": "start_date",
-   "fieldtype": "Date",
-   "label": "Start Date",
    "reqd": 1,
-   "description": "Defaults from the parent Sprint."
-  },
-  {
-   "fieldname": "end_date",
-   "fieldtype": "Date",
-   "label": "End Date",
-   "reqd": 1,
-   "description": "Defaults from the parent Sprint."
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "idx": 4
   },
   {
    "fieldname": "company",
@@ -84,45 +81,38 @@
    "label": "Organization",
    "options": "Company",
    "reqd": 1,
-   "description": "Auto-filled from the selected OKR Sprint parent Plan."
+   "description": "Auto-filled from the selected OKR Sprint parent Plan.",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "idx": 5
   },
   {
    "fieldname": "department",
    "fieldtype": "Link",
    "label": "Department",
    "options": "Department",
-   "depends_on": "eval:doc.level=='Department'"
+   "depends_on": "eval:doc.level=='Department'",
+   "reqd": 0,
+   "in_standard_filter": 1,
+   "idx": 6
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description",
+   "reqd": 1,
+   "in_list_view": 1,
+   "idx": 7
   },
   {
    "fieldname": "owner_user",
    "fieldtype": "Link",
-   "label": "Owner User",
+   "label": "Owner",
    "options": "User",
    "reqd": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "parent_objective",
-   "fieldtype": "Link",
-   "label": "Parent Objective",
-   "options": "OKR Objective",
-   "description": "Optional: align this objective under a higher-level objective."
-  },
-  {
-   "fieldname": "objective_type",
-   "fieldtype": "Select",
-   "label": "Objective Type",
-   "options": "Company\nDepartment\nTeam\nIndividual",
-   "default": "Department",
-   "reqd": 1,
-   "hidden": 1
-  },
-  {
-   "fieldname": "priority",
-   "fieldtype": "Select",
-   "label": "Priority",
-   "options": "Low\nMedium\nHigh\nStrategic",
-   "default": "High"
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "idx": 8
   },
   {
    "fieldname": "status",
@@ -131,7 +121,9 @@
    "options": "Draft\nSubmitted\nApproved\nActive\nAt Risk\nCompleted\nCancelled\nArchived",
    "default": "Draft",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "idx": 9
   },
   {
    "fieldname": "progress",
@@ -139,7 +131,71 @@
    "label": "Progress",
    "default": "0",
    "read_only": 1,
-   "description": "Calculated from linked Key Results."
+   "description": "Calculated from linked Key Results.",
+   "in_list_view": 1,
+   "idx": 10
+  },
+  {
+   "fieldname": "objective_title",
+   "fieldtype": "Data",
+   "label": "Objective Title",
+   "reqd": 0,
+   "in_list_view": 0,
+   "hidden": 1,
+   "in_standard_filter": 0
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date",
+   "reqd": 0,
+   "description": "Defaults from the parent Sprint.",
+   "hidden": 1,
+   "in_list_view": 0,
+   "in_standard_filter": 0
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date",
+   "reqd": 0,
+   "description": "Defaults from the parent Sprint.",
+   "hidden": 1,
+   "in_list_view": 0,
+   "in_standard_filter": 0
+  },
+  {
+   "fieldname": "parent_objective",
+   "fieldtype": "Link",
+   "label": "Parent Objective",
+   "options": "OKR Objective",
+   "description": "Optional: align this objective under a higher-level objective.",
+   "hidden": 1,
+   "reqd": 0,
+   "in_list_view": 0,
+   "in_standard_filter": 0
+  },
+  {
+   "fieldname": "objective_type",
+   "fieldtype": "Select",
+   "label": "Objective Type",
+   "options": "Company\nDepartment\nTeam\nIndividual",
+   "default": "Department",
+   "reqd": 0,
+   "hidden": 1,
+   "in_list_view": 0,
+   "in_standard_filter": 0
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh\nStrategic",
+   "default": "High",
+   "hidden": 1,
+   "reqd": 0,
+   "in_list_view": 0,
+   "in_standard_filter": 0
   },
   {
    "fieldname": "confidence",
@@ -148,18 +204,21 @@
    "options": "1\n2\n3\n4\n5",
    "default": "3",
    "read_only": 1,
-   "description": "Calculated from linked Key Results."
+   "description": "Calculated from linked Key Results.",
+   "hidden": 1,
+   "reqd": 0,
+   "in_list_view": 0,
+   "in_standard_filter": 0
   },
   {
    "fieldname": "alignment_map",
    "fieldtype": "Table",
    "label": "Alignment Map",
-   "options": "OKR Objective Alignment"
-  },
-  {
-   "fieldname": "description",
-   "fieldtype": "Small Text",
-   "label": "Description"
+   "options": "OKR Objective Alignment",
+   "hidden": 1,
+   "reqd": 0,
+   "in_list_view": 0,
+   "in_standard_filter": 0
   },
   {
    "fieldname": "objective_details_section",
@@ -253,7 +312,7 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "track_changes": 1,
- "search_fields": "objective_title,name,owner_user,status",
+ "search_fields": "objective_title,name,parent_plan,sprint,owner_user,status",
  "show_title_field_in_link": 1,
- "title_field": "objective_title"
+ "title_field": "description"
 }
