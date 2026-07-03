@@ -10,6 +10,7 @@
   "sprint_details_section",
   "sprint_name",
   "parent_plan",
+  "sprint_cycle",
   "quarter",
   "sprint_details_col_break",
   "start_date",
@@ -29,14 +30,8 @@
    "default": "OKR-SPRINT-.YYYY.-",
    "reqd": 1,
    "hidden": 1,
-   "read_only": 1
-  },
-  {
-   "fieldname": "sprint_name",
-   "fieldtype": "Data",
-   "label": "Sprint Name",
-   "reqd": 1,
-   "in_list_view": 1
+   "read_only": 1,
+   "idx": 1
   },
   {
    "fieldname": "parent_plan",
@@ -44,29 +39,44 @@
    "label": "Parent Plan",
    "options": "OKR Plan",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "idx": 2
   },
   {
-   "fieldname": "quarter",
-   "fieldtype": "Select",
-   "label": "Quarter",
-   "options": "Q1\nQ2\nQ3\nQ4",
+   "fieldname": "sprint_name",
+   "fieldtype": "Data",
+   "label": "Sprint Name",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "idx": 3
+  },
+  {
+   "fieldname": "sprint_cycle",
+   "fieldtype": "Select",
+   "label": "Sprint Cycle",
+   "options": "Monthly\nQuarterly\nHalf Yearly\nYearly",
+   "default": "Quarterly",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "idx": 4
   },
   {
    "fieldname": "start_date",
    "fieldtype": "Date",
    "label": "Start Date",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "idx": 5
   },
   {
    "fieldname": "end_date",
    "fieldtype": "Date",
    "label": "End Date",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "idx": 6
   },
   {
    "fieldname": "status",
@@ -75,14 +85,30 @@
    "options": "Draft\nActive\nCompleted\nClosed",
    "default": "Draft",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "idx": 7
   },
   {
    "fieldname": "progress",
    "fieldtype": "Percent",
    "label": "Progress",
    "read_only": 1,
-   "default": "0"
+   "default": "0",
+   "in_list_view": 1,
+   "idx": 8
+  },
+  {
+   "fieldname": "quarter",
+   "fieldtype": "Select",
+   "label": "Quarter",
+   "options": "Q1\nQ2\nQ3\nQ4",
+   "in_list_view": 0,
+   "depends_on": "eval:doc.sprint_cycle=='Quarterly'",
+   "mandatory_depends_on": "eval:doc.sprint_cycle=='Quarterly'",
+   "hidden": 1,
+   "reqd": 0,
+   "in_standard_filter": 0
   },
   {
    "fieldname": "sprint_details_section",
@@ -150,6 +176,6 @@
  "sort_order": "DESC",
  "track_changes": 1,
  "title_field": "sprint_name",
- "search_fields": "sprint_name,name,parent_plan,quarter,status",
+ "search_fields": "sprint_name,name,parent_plan,sprint_cycle,quarter,status",
  "show_title_field_in_link": 1
 }
