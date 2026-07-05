@@ -41,7 +41,8 @@ class TestOKRActionItem(FrappeTestCase):
             frappe.db.set_value("Workflow", workflow, "is_active", 1, update_modified=False)
 
     def cleanup_records(self):
-        frappe.db.delete("OKR Action Item", {"parenttype": "OKR Key Result"})
+        frappe.db.delete("OKR Action Item", {"parent_key_result": ["like", "Phase 5 AI%"]})
+        frappe.db.delete("OKR Action Item", {"action_item_title": ["like", "Test%"]})
         frappe.db.delete("OKR Key Result", {"key_result_title": ["like", "Phase 5 AI%"]})
         frappe.db.delete("OKR Objective", {"objective_title": ["like", "Phase 5 AI%"]})
         frappe.db.delete("OKR Sprint", {"sprint_name": ["like", "Phase 5 AI%"]})
@@ -124,7 +125,7 @@ class TestOKRActionItem(FrappeTestCase):
             "key_result_title": "Phase 5 AI KR " + frappe.generate_hash(length=6),
             "objective": objective.name,
             "owner_user": "Administrator",
-            "calculation_mode": "Action Item Based",
+            "calculation_mode": "Manual",
             "metric_type": "Number",
             "baseline_value": 0,
             "target_value": 100,
@@ -141,11 +142,10 @@ class TestOKRActionItem(FrappeTestCase):
         kr = self.key_result
         ai = frappe.get_doc({
             "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": kr.name,
+            "parent_key_result": kr.name,
             "action_item_title": "Test Context Action",
             "owner_user": "Administrator",
-            "status": "Draft",
+            "status": "Open",
         })
         ai.insert(ignore_permissions=True)
         
@@ -156,282 +156,84 @@ class TestOKRActionItem(FrappeTestCase):
         self.assertEqual(ai.company, kr.company)
         self.assertEqual(ai.department, kr.department)
 
-    def test_date_boundaries(self):
+    def test_default_status_is_open(self):
         kr = self.key_result
-        
-        # Valid Dates (inside KR dates)
         ai = frappe.get_doc({
             "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": kr.name,
-            "action_item_title": "Test Date Bound Action",
-            "owner_user": "Administrator",
-            "start_date": kr.start_date,
-            "due_date": kr.end_date,
-            "status": "Draft",
+            "parent_key_result": kr.name,
+            "action_item_title": "Test Default Status",
+            "owner_user": "Administrator"
         })
         ai.insert(ignore_permissions=True)
-        
-        # Start date after due date should fail
-        ai_invalid_dates = frappe.get_doc({
-            "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": kr.name,
-            "action_item_title": "Test Invalid Dates",
-            "owner_user": "Administrator",
-            "start_date": add_days(kr.end_date, 1),
-            "due_date": kr.start_date,
-            "status": "Draft",
-        })
-        self.assertRaises(frappe.ValidationError, ai_invalid_dates.insert)
-        
-        # Start date before KR start date should fail
-        ai_outside_kr = frappe.get_doc({
-            "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": kr.name,
-            "action_item_title": "Test Outside KR Date",
-            "owner_user": "Administrator",
-            "start_date": add_days(kr.start_date, -1),
-            "due_date": kr.end_date,
-            "status": "Draft",
-        })
-        self.assertRaises(frappe.ValidationError, ai_outside_kr.insert)
+        self.assertEqual(ai.status, "Open")
 
-    def test_lifecycle_transitions(self):
+    def test_lifecycle_transitions_are_unrestricted(self):
         kr = self.key_result
         ai = frappe.get_doc({
             "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": kr.name,
+            "parent_key_result": kr.name,
             "action_item_title": "Test Lifecycle Action",
             "owner_user": "Administrator",
-            "status": "Draft",
+            "status": "Open",
         })
         ai.insert(ignore_permissions=True)
         
-        # Draft -> Planned is valid
-        ai.status = "Planned"
+        # Open -> Cancelled -> In Progress (Unrestricted in Phase 2)
+        ai.status = "Cancelled"
         ai.save(ignore_permissions=True)
-        
-        # Planned -> Draft is invalid
-        ai.status = "Draft"
-        self.assertRaises(frappe.ValidationError, ai.save)
-        
-        ai.reload()
-        # Planned -> In Progress is valid
         ai.status = "In Progress"
         ai.save(ignore_permissions=True)
+        self.assertEqual(ai.status, "In Progress")
 
-    def test_parent_key_result_active_dependency(self):
-        # Create a new draft KR (not Active)
-        draft_kr = frappe.get_doc({
-            "doctype": "OKR Key Result",
-            "key_result_title": "Phase 5 AI Draft KR",
-            "objective": self.objective.name,
-            "owner_user": "Administrator",
-            "calculation_mode": "Action Item Based",
-            "metric_type": "Number",
-            "baseline_value": 0,
-            "target_value": 100,
-            "status": "Draft",
-        }).insert(ignore_permissions=True)
-        
-        ai = frappe.get_doc({
-            "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": draft_kr.name,
-            "action_item_title": "Test Dependency Action",
-            "owner_user": "Administrator",
-            "status": "Draft",
-        })
-        ai.insert(ignore_permissions=True)
-        
-        ai.status = "Planned"
-        ai.save(ignore_permissions=True)
-        
-        # Moving to In Progress under a Draft parent KR should fail
-        ai.status = "In Progress"
-        self.assertRaises(frappe.ValidationError, ai.save)
-
-    def test_completion_date_immutability(self):
+    def test_completion_date_updates(self):
         kr = self.key_result
         ai = frappe.get_doc({
             "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": kr.name,
-            "action_item_title": "Test Completion Date Action",
+            "parent_key_result": kr.name,
+            "action_item_title": "Test Completion Date",
             "owner_user": "Administrator",
-            "status": "Draft",
+            "status": "Open",
         })
         ai.insert(ignore_permissions=True)
         
-        ai.status = "Planned"
-        ai.save(ignore_permissions=True)
-        ai.status = "In Progress"
-        ai.save(ignore_permissions=True)
-        
-        # Transition to Completed should set completion_date
         ai.status = "Completed"
         ai.save(ignore_permissions=True)
         self.assertIsNotNone(ai.completion_date)
-        
-        comp_date = ai.completion_date
-        
-        # Transition back to In Progress
-        ai.status = "In Progress"
-        ai.save(ignore_permissions=True)
-        # completion_date must remain set (immutable)
-        self.assertEqual(ai.completion_date, comp_date)
-        
-        # Modifying completion_date as standard user should fail
-        # Set a standard employee user
-        frappe.set_user("test.employee.perm@example.com")
-        ai.completion_date = add_days(comp_date, 1)
-        self.assertRaises(frappe.ValidationError, ai.save)
-        
-        frappe.set_user("Administrator")
 
-    def test_parent_closure_rule(self):
+    def test_unrestricted_delete(self):
         kr = self.key_result
         ai = frappe.get_doc({
             "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": kr.name,
-            "action_item_title": "Test Closed Parent Action",
+            "parent_key_result": kr.name,
+            "action_item_title": "Test Delete",
             "owner_user": "Administrator",
-            "status": "Draft",
+            "status": "Completed"
         })
         ai.insert(ignore_permissions=True)
-        
-        # Close the parent Key Result
-        kr.status = "Completed"
-        kr.save(ignore_permissions=True)
-        kr.status = "Closed"
-        kr.save(ignore_permissions=True)
-        
-        # Updating action item under Closed parent KR should fail
-        ai.status = "Planned"
-        self.assertRaises(frappe.ValidationError, ai.save)
-
-    def test_weight_sum_constraint(self):
-        kr = self.key_result
-        
-        ai1 = frappe.get_doc({
-            "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": kr.name,
-            "action_item_title": "Action 1",
-            "owner_user": "Administrator",
-            "weight": 40,
-            "status": "Draft",
-        })
-        ai1.insert(ignore_permissions=True)
-        
-        ai2 = frappe.get_doc({
-            "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": kr.name,
-            "action_item_title": "Action 2",
-            "owner_user": "Administrator",
-            "weight": 50, # 40 + 50 = 90, which is invalid
-            "status": "Draft",
-        })
-        # Insert will validate sum
-        self.assertRaises(frappe.ValidationError, ai2.insert)
-        
-        # Setting weight sum to exactly 100 should succeed
-        ai2.weight = 60
-        ai2.insert(ignore_permissions=True)
-
-    def test_delete_restriction(self):
-        kr = self.key_result
-        ai = frappe.get_doc({
-            "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": kr.name,
-            "action_item_title": "Test Delete Action",
-            "owner_user": "Administrator",
-            "status": "Draft",
-        })
-        ai.insert(ignore_permissions=True)
-        
-        # Can delete in Draft status
+        # Should succeed because deletion is unrestricted for Phase 2
         ai.delete()
-        
-        # Create and transition to Planned
-        ai_planned = frappe.get_doc({
-            "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": kr.name,
-            "action_item_title": "Test Delete Blocked",
-            "owner_user": "Administrator",
-            "status": "Draft",
-        })
-        ai_planned.insert(ignore_permissions=True)
-        ai_planned.status = "Planned"
-        ai_planned.save(ignore_permissions=True)
-        
-        # Deletion in Planned status should fail
-        self.assertRaises(frappe.ValidationError, ai_planned.delete)
 
-    def test_progress_rollup(self):
+    def test_action_date_defaults_to_today(self):
         kr = self.key_result
-        
-        # Create equal weight action items (weight = 0)
-        ai1 = frappe.get_doc({
+        ai = frappe.get_doc({
             "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": kr.name,
-            "action_item_title": "Equal Action 1",
-            "owner_user": "Administrator",
-            "progress": 20,
-            "status": "Draft",
-        }).insert(ignore_permissions=True)
-        
-        ai2 = frappe.get_doc({
+            "parent_key_result": kr.name,
+            "action_item_title": "Test Action Date Today",
+            "owner_user": "Administrator"
+        })
+        ai.insert(ignore_permissions=True)
+        self.assertEqual(getdate(ai.due_date), getdate(today()))
+
+    def test_reviewer_is_optional(self):
+        kr = self.key_result
+        ai = frappe.get_doc({
             "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": kr.name,
-            "action_item_title": "Equal Action 2",
-            "owner_user": "Administrator",
-            "progress": 80,
-            "status": "Draft",
-        }).insert(ignore_permissions=True)
-        
-        # Trigger progress recalculation for the parent Key Result
-        kr.reload()
-        # Average is (20 + 80) / 2 = 50%
-        self.assertEqual(kr.target_progress, 50)
-        self.assertEqual(kr.score, 50)
-        
-        # Clean up equal weight items to test weighted calculation
-        frappe.db.delete("OKR Action Item", {"parent": kr.name})
-        
-        # Create weighted action items
-        ai_w1 = frappe.get_doc({
-            "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": kr.name,
-            "action_item_title": "Weighted Action 1",
-            "owner_user": "Administrator",
-            "weight": 30,
-            "progress": 40,
-            "status": "Draft",
-        }).insert(ignore_permissions=True)
-        
-        ai_w2 = frappe.get_doc({
-            "doctype": "OKR Action Item",
-            "parenttype": "OKR Key Result",
-            "parent": kr.name,
-            "action_item_title": "Weighted Action 2",
-            "owner_user": "Administrator",
-            "weight": 70,
-            "progress": 90,
-            "status": "Draft",
-        }).insert(ignore_permissions=True)
-        
-        kr.reload()
-        # Weighted progress is (40 * 0.3) + (90 * 0.7) = 12 + 63 = 75%
-        self.assertEqual(kr.target_progress, 75)
-        self.assertEqual(kr.score, 75)
+            "parent_key_result": kr.name,
+            "action_item_title": "Test Optional Reviewer",
+            "owner_user": "Administrator"
+        })
+        # Explicitly clear reviewer if it defaulted from Key Result
+        ai.reviewer = None
+        ai.insert(ignore_permissions=True)
+        # Should save successfully
+        self.assertIsNone(ai.reviewer)

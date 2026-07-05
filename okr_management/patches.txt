@@ -15,3 +15,4 @@ okr_management.patches.v0_0_8_restore_workspace_sidebar
 okr_management.patches.v0_0_9_sync_workspace_leaf_hierarchy
 
 okr_management.patches.v0_0_10_standard_workspace_sidebar
+okr_management.patches.v0_0_11_migrate_action_items_to_standalone
