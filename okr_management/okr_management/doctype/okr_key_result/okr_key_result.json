@@ -28,10 +28,9 @@
   "end_date",
   "ownership_section",
   "owner_user",
-  "reviewer",
-  "approver",
   "ownership_col_break",
   "priority",
+  "ownership_status_col_break",
   "status",
   "measurement_section",
   "calculation_mode",
@@ -45,12 +44,13 @@
   "currency",
   "summary_sidebar_section",
   "target_progress",
-  "score",
   "summary_sidebar_col_break",
   "action_item_count",
+  "summary_checkin_col_break",
   "checkin_count",
   "action_items_section",
   "action_items",
+  "action_items_html",
   "naming_series"
  ],
  "fields": [
@@ -208,14 +208,16 @@
    "fieldtype": "Link",
    "label": "Reviewer",
    "options": "User",
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "hidden": 1
   },
   {
    "fieldname": "approver",
    "fieldtype": "Link",
    "label": "Approver",
    "options": "User",
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "hidden": 1
   },
   {
    "fieldname": "ownership_col_break",
@@ -227,6 +229,10 @@
    "label": "Priority",
    "options": "Low\nMedium\nHigh",
    "default": "Medium"
+  },
+  {
+   "fieldname": "ownership_status_col_break",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "status",
@@ -258,6 +264,7 @@
    "fieldtype": "Select",
    "label": "Measurement Type",
    "options": "Percentage\nNumber\nCurrency\nBoolean",
+   "default": "Percentage",
    "reqd": 1,
    "in_list_view": 1,
    "in_standard_filter": 1
@@ -266,12 +273,14 @@
    "fieldname": "metric_direction",
    "fieldtype": "Select",
    "label": "Measurement Direction",
-   "options": "Increase\nDecrease"
+   "options": "Increase\nDecrease",
+   "default": "Increase"
   },
   {
    "fieldname": "unit_of_measure",
    "fieldtype": "Data",
-   "label": "Unit of Measure"
+   "label": "Unit of Measure",
+   "default": "%"
   },
   {
    "fieldname": "measurement_col_break",
@@ -280,18 +289,21 @@
   {
    "fieldname": "baseline_value",
    "fieldtype": "Float",
-   "label": "Baseline Value"
+   "label": "Baseline Value",
+   "default": 0
   },
   {
    "fieldname": "target_value",
    "fieldtype": "Float",
    "label": "Target Value",
+   "default": 100,
    "in_list_view": 1
   },
   {
    "fieldname": "current_value",
    "fieldtype": "Float",
    "label": "Current Value",
+   "default": 0,
    "in_list_view": 1,
    "description": "Editable only when Calculation Mode is Manual."
   },
@@ -321,7 +333,8 @@
    "label": "Score",
    "default": 0,
    "read_only": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "hidden": 1
   },
   {
    "fieldname": "summary_sidebar_col_break",
@@ -333,6 +346,10 @@
    "label": "Action Item Count",
    "default": 0,
    "read_only": 1
+  },
+  {
+   "fieldname": "summary_checkin_col_break",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "checkin_count",
@@ -350,7 +367,16 @@
    "fieldname": "action_items",
    "fieldtype": "Table",
    "label": "Action Items",
-   "options": "OKR Action Item"
+   "options": "OKR Action Item Row",
+   "read_only": 0,
+   "cannot_add_rows": 1,
+   "cannot_delete_rows": 1
+  },
+  {
+   "fieldname": "action_items_html",
+   "fieldtype": "HTML",
+   "label": "Action Items List",
+   "hidden": 1
   },
   {
    "fieldname": "naming_series",

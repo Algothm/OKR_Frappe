@@ -54,40 +54,41 @@ def recalculate_key_result_progress(key_result_name: str | None) -> None:
 	key_result = frappe.db.get_value(
 		'OKR Key Result',
 		key_result_name,
-		['calculation_mode', 'metric_type', 'metric_direction', 'baseline_value', 'current_value', 'target_value', 'milestone_status'],
+		['calculation_mode', 'metric_type', 'metric_direction', 'baseline_value', 'current_value', 'target_value'],
 		as_dict=True,
 	)
 	progress = get_key_result_progress(key_result_name, key_result)
 	values: dict[str, Any] = {}
 	set_if_has(values, 'OKR Key Result', 'target_progress', progress)
 	set_if_has(values, 'OKR Key Result', 'score', progress)
+
+	action_item_count = frappe.db.count('OKR Action Item', {'parent_key_result': key_result_name})
+	checkin_count = frappe.db.count('OKR Check In', {'key_result': key_result_name})
+	set_if_has(values, 'OKR Key Result', 'action_item_count', action_item_count)
+	set_if_has(values, 'OKR Key Result', 'checkin_count', checkin_count)
+
 	if values:
 		frappe.db.set_value('OKR Key Result', key_result_name, values, update_modified=False)
 	recalculate_from_key_result(key_result_name)
 
 
 def get_key_result_progress(key_result_name: str, key_result: Any) -> float:
-	if key_result and key_result.get('calculation_mode') == 'Action Item Based':
-		action_items = frappe.get_all(
-			'OKR Action Item',
-			filters={'parenttype': 'OKR Key Result', 'parent': key_result_name, 'status': ['!=', 'Cancelled']},
-			fields=['progress', 'weight'],
-		)
-		if not action_items:
-			return 0.0
-		if any(flt(item.get('weight')) > 0 for item in action_items):
-			total_weighted_progress = sum(flt(item.get('progress')) * flt(item.get('weight')) for item in action_items)
-			return round(total_weighted_progress / 100.0, 2)
+	"""Key Result Progress = Average(Action Item Progress).
+	When Action Items exist, their average always determines KR progress.
+	When no Action Items exist, fall back to metric-based calculation.
+	"""
+	# Always use average of action items when they exist (regardless of calculation_mode)
+	action_items = frappe.get_all(
+		'OKR Action Item',
+		filters={'parent_key_result': key_result_name, 'status': ['!=', 'Cancelled']},
+		fields=['progress'],
+	)
+	if action_items:
 		return average([item.get('progress') for item in action_items])
 
+	# No Action Items: fall back to metric-based calculation
 	if key_result and key_result.get('metric_type') == 'Boolean':
 		return 100.0 if flt(key_result.get('current_value')) else 0.0
-
-	if key_result and key_result.get('metric_type') == 'Milestone':
-		return {'Not Started': 0.0, 'In Progress': 50.0, 'Completed': 100.0}.get(
-			key_result.get('milestone_status') or 'Not Started',
-			0.0,
-		)
 
 	if key_result and key_result.get('metric_direction') == 'Decrease':
 		baseline = flt(key_result.get('baseline_value'))

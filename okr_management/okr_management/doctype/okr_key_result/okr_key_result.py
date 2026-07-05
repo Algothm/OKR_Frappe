@@ -26,21 +26,73 @@ INHERITED_FIELDS = {
     "end_date",
 }
 
-PLACEHOLDER_VALUES = {
-    "target_progress": 0,
-    "score": 0,
-    "action_item_count": 0,
-    "checkin_count": 0,
-}
+# Placeholder values mapping removed
 
 
 class OKRKeyResult(Document):
+    def sync_action_items_to_db(self) -> None:
+        import os
+        with open("/tmp/kr_save.log", "a") as lf:
+            lf.write(f"sync_action_items_to_db called for {self.name}\n")
+            for row in self.get("action_items") or []:
+                lf.write(f"  Row id: {row.action_item_id}, title: {row.action_item_title}, progress: {row.progress}\n")
+        for row in self.get("action_items") or []:
+            if row.action_item_id and frappe.db.exists("OKR Action Item", row.action_item_id):
+                ai = frappe.get_doc("OKR Action Item", row.action_item_id)
+                updated = False
+                if ai.progress != row.progress:
+                    ai.progress = row.progress
+                    updated = True
+                if ai.status != row.status:
+                    ai.status = row.status
+                    updated = True
+                if ai.priority != row.priority:
+                    ai.priority = row.priority
+                    updated = True
+                if updated:
+                    ai.flags.ignore_permissions = True
+                    ai.save()
+
     def before_validate(self) -> None:
         self.priority = self.priority or "Medium"
         self.status = self.status or "Draft"
         self.calculation_mode = self.calculation_mode or "Manual"
+        self.metric_type = self.metric_type or "Percentage"
+        self.metric_direction = self.metric_direction or "Increase"
+        
+        if self.baseline_value is None:
+            self.baseline_value = 0.0
+            
+        if self.current_value is None:
+            self.current_value = 0.0
+            
+        if self.is_new() and self.metric_type == "Percentage" and self.target_value is None:
+            self.target_value = 100.0
+        elif self.metric_type == "Boolean" and self.target_value not in [0.0, 1.0]:
+            self.target_value = 1.0
+            
+        if self.metric_type == "Percentage" and not self.unit_of_measure:
+            self.unit_of_measure = "%"
+        elif self.metric_type in ["Boolean", "Currency"]:
+            self.unit_of_measure = None
+
         self.inherit_context_from_objective()
-        self.set_progress_placeholders()
+        self.sync_action_items_to_db()
+        
+        # Calculate count of standalone Action Items and check-ins
+        if self.name:
+            self.action_item_count = frappe.db.count("OKR Action Item", {"parent_key_result": self.name})
+            self.checkin_count = frappe.db.count("OKR Check In", {"key_result": self.name})
+            
+            from okr_management.utils.okr_calculations import get_key_result_progress
+            self.target_progress = get_key_result_progress(self.name, self)
+            self.score = self.target_progress
+        else:
+            self.action_item_count = 0
+            self.checkin_count = 0
+            self.target_progress = 0.0
+            self.score = 0.0
+
         self.sync_action_item_parent()
 
     def validate(self) -> None:
@@ -49,7 +101,6 @@ class OKRKeyResult(Document):
         self.validate_options()
         self.validate_measurement()
         self.validate_inherited_fields_locked()
-        self.validate_progress_placeholders()
 
     def inherit_context_from_objective(self) -> None:
         if not self.objective:
@@ -99,9 +150,7 @@ class OKRKeyResult(Document):
         for fieldname in INHERITED_FIELDS:
             setattr(self, fieldname, None)
 
-    def set_progress_placeholders(self) -> None:
-        for fieldname, value in PLACEHOLDER_VALUES.items():
-            setattr(self, fieldname, value)
+    # Placeholder setter removed
 
     def sync_action_item_parent(self) -> None:
         for action_item in self.get("action_items") or []:
@@ -141,6 +190,9 @@ class OKRKeyResult(Document):
         if self.metric_type != "Currency":
             self.currency = None
 
+        if self.metric_type in ["Percentage", "Boolean"] and self.target_value is None:
+            frappe.throw(_("Target Value is required for Measurement Type {0}.").format(self.metric_type))
+
         if self.calculation_mode == "Automatic" and self.get_doc_before_save():
             if self.has_value_changed("current_value"):
                 frappe.throw(_("Current Value is editable only when Calculation Mode is Manual."))
@@ -163,9 +215,4 @@ class OKRKeyResult(Document):
             if self.has_value_changed(fieldname):
                 frappe.throw(_("{0} is inherited from Parent Objective and cannot be changed manually.").format(self.meta.get_label(fieldname)))
 
-    def validate_progress_placeholders(self) -> None:
-        for fieldname, value in PLACEHOLDER_VALUES.items():
-            if self.get(fieldname) != value:
-                frappe.throw(_("{0} is a read-only placeholder in this phase.").format(self.meta.get_label(fieldname)))
-
-        self.set_progress_placeholders()
+    # Placeholder validation removed
