@@ -13,7 +13,9 @@ class OKRCheckIn(Document):
 	def before_validate(self) -> None:
 		if not self.reported_by:
 			self.reported_by = frappe.session.user
-		self.status = self.status or "Draft"
+		if not self.checkin_date:
+			self.checkin_date = nowdate()
+		self.status = "Submitted"
 
 		if self.key_result and frappe.db.exists("OKR Key Result", self.key_result):
 			key_result = frappe.db.get_value(
@@ -40,24 +42,16 @@ class OKRCheckIn(Document):
 				self.company = key_result.company
 				self.department = key_result.department
 
-				# Auto-calculate progress based on raw current_value and direction
-				baseline = flt(key_result.baseline_value)
-				target = flt(key_result.target_value)
-				current = flt(self.current_value)
-
-				if target == baseline:
-					self.progress = 0.0
-				elif key_result.metric_direction == "Decrease":
-					self.progress = min(100.0, max(0.0, ((baseline - current) / (baseline - target)) * 100.0))
-				else:
-					self.progress = min(100.0, max(0.0, ((current - baseline) / (target - baseline)) * 100.0))
-
+				self.progress = min(100.0, max(0.0, flt(self.progress)))
 				self.progress_percent = self.progress
+				self.current_value = self.progress
 
 	def validate(self) -> None:
 		ensure_required_link(self.key_result, "Key Result")
 		ensure_required_link(self.reported_by, "Reported By")
 		ensure_percentage(self.progress, "Progress")
+		if not self.achievements:
+			frappe.throw(_("Description / Update is required."))
 
 		if self.key_result:
 			kr_data = frappe.db.get_value(
@@ -76,11 +70,11 @@ class OKRCheckIn(Document):
 			if not kr_data:
 				frappe.throw(_("Parent Key Result does not exist."))
 
-			# Block all check-ins if Parent Key Result is not Active
-			if kr_data.status != "Active":
+			# Workspace task check-ins are allowed while a Key Result is Draft or Active.
+			if kr_data.status not in {"Draft", "Active"}:
 				frappe.throw(
 					_(
-						"Check-ins are only allowed when the Parent Key Result is Active (current status: {0})."
+						"Check-ins are only allowed when the Parent Key Result is Draft or Active (current status: {0})."
 					).format(kr_data.status)
 				)
 
@@ -131,23 +125,6 @@ class OKRCheckIn(Document):
 					).format(latest_date)
 				)
 
-			# Enforce duplicate Submitted check-in per calendar day
-			if self.status == "Submitted":
-				existing_submitted = frappe.db.get_value(
-					"OKR Check In",
-					{
-						"key_result": self.key_result,
-						"status": "Submitted",
-						"checkin_date": self.checkin_date,
-						"name": ["!=", self.name or ""],
-					},
-					"name",
-				)
-				if existing_submitted:
-					frappe.throw(
-						_("Only one Submitted Check-in is allowed per Key Result per calendar day.")
-					)
-
 		# Immutability of Submitted check-ins
 		if self.name and frappe.db.exists("OKR Check In", self.name):
 			prev_status = frappe.db.get_value("OKR Check In", self.name, "status")
@@ -159,24 +136,53 @@ class OKRCheckIn(Document):
 			frappe.throw(_("Submitted Check-ins cannot be deleted."))
 
 	def on_update(self) -> None:
-		# Update Action Items progress and status back to the Key Result
-		if self.key_result and frappe.db.exists("OKR Key Result", self.key_result):
-			key_result = frappe.get_doc("OKR Key Result", self.key_result)
-			updated_kr = False
-			for ci_item in getattr(self, "action_items", []):
-				for kr_item in key_result.action_items:
-					if kr_item.action_item_title == ci_item.action_item_title:
-						if kr_item.progress != ci_item.progress or kr_item.status != ci_item.status:
-							kr_item.progress = ci_item.progress
-							kr_item.status = ci_item.status
-							kr_item.notes = ci_item.notes
-							kr_item.due_date = ci_item.due_date
-							updated_kr = True
-							break
-			if updated_kr:
-				key_result.flags.ignore_permissions = True
-				key_result.save()
+		# Update standalone OKR Action Items directly
+		for ci_item in getattr(self, "action_items", []):
+			ai_doc = None
+			action_item_id = ci_item.get("action_item_id") or ci_item.name
+			if action_item_id and frappe.db.exists("OKR Action Item", action_item_id):
+				ai_doc = frappe.get_doc("OKR Action Item", action_item_id)
+			else:
+				# Fallback lookup by title and parent key result
+				ai_list = frappe.get_all(
+					"OKR Action Item",
+					filters={"action_item_title": ci_item.action_item_title, "parent_key_result": self.key_result},
+					limit=1
+				)
+				if ai_list:
+					ai_doc = frappe.get_doc("OKR Action Item", ai_list[0].name)
+			
+			if ai_doc:
+				new_progress = self.progress if action_item_id else ci_item.progress
+				new_status = ci_item.status
+				if flt(new_progress) >= 100 and ai_doc.status != "Cancelled":
+					new_status = "Completed"
+
+				if (
+					flt(ai_doc.progress) != flt(new_progress)
+					or ai_doc.status != new_status
+					or ai_doc.notes != ci_item.get("notes")
+					or ai_doc.due_date != ci_item.due_date
+				):
+					ai_doc.progress = new_progress
+					ai_doc.status = new_status
+					ai_doc.notes = ci_item.get("notes")
+					ai_doc.due_date = ci_item.due_date
+					ai_doc.flags.ignore_permissions = True
+					ai_doc.save()
 
 		# Sync checkin progress values
 		if self.status == "Submitted":
 			sync_checkin_progress(self)
+
+		if self.key_result:
+			from okr_management.utils.okr_calculations import recalculate_key_result_progress
+			recalculate_key_result_progress(self.key_result)
+
+	def after_delete(self) -> None:
+		if self.key_result:
+			from okr_management.utils.okr_calculations import recalculate_key_result_progress
+			recalculate_key_result_progress(self.key_result)
+
+
+
