@@ -1,15 +1,21 @@
 frappe.ui.form.on('OKR Check In', {
 	refresh(frm) {
 		frm.set_df_property('naming_series', 'hidden', 1);
-		frm.set_df_property('objective', 'read_only', 1);
+		['objective', 'parent_sprint', 'parent_plan', 'financial_year', 'company', 'department', 'reported_by'].forEach(field => {
+			frm.set_df_property(field, 'read_only', 1);
+		});
 		if (!frm.doc.reported_by) {
 			frm.set_value('reported_by', frappe.session.user);
+		}
+		if (frm.doc.status === 'Submitted') {
+			frm.disable_form();
 		}
 		apply_manager_review_permissions(frm);
 		toggle_dependency_fields(frm);
 		toggle_escalation_fields(frm);
 		calculate_checkin_progress_preview(frm);
 		render_summary_widget(frm);
+		fetch_and_cache_parent_plan_title(frm);
 	},
 	key_result(frm) {
 		fill_from_key_result(frm);
@@ -46,9 +52,23 @@ function apply_manager_review_permissions(frm) {
 
 function fill_from_key_result(frm) {
 	if (!frm.doc.key_result) return;
-	frappe.db.get_value('OKR Key Result', frm.doc.key_result, ['objective', 'department']).then(r => {
+	frappe.db.get_value('OKR Key Result', frm.doc.key_result, [
+		'objective', 'parent_sprint', 'parent_plan', 'financial_year', 'company', 'department'
+	]).then(r => {
 		const kr = r.message || {};
 		if (kr.objective) frm.set_value('objective', kr.objective);
+		if (kr.parent_sprint) frm.set_value('parent_sprint', kr.parent_sprint);
+		if (kr.parent_plan) {
+			frm.set_value('parent_plan', kr.parent_plan);
+			frappe.db.get_value('OKR Plan', kr.parent_plan, 'plan_name').then(p => {
+				if (p.message && p.message.plan_name) {
+					frappe.utils.add_link_title("OKR Plan", kr.parent_plan, p.message.plan_name);
+				}
+				frm.refresh_field('parent_plan');
+			});
+		}
+		if (kr.financial_year) frm.set_value('financial_year', kr.financial_year);
+		if (kr.company) frm.set_value('company', kr.company);
 		if (kr.department) frm.set_value('department', kr.department);
 		if (!frm.doc.reported_by) frm.set_value('reported_by', frappe.session.user);
 	});
@@ -154,4 +174,15 @@ function render_summary_widget(frm) {
 			<span class="okr-status-badge ${status_class}">${__(status)}</span>
 		</div>
 	`);
+}
+
+function fetch_and_cache_parent_plan_title(frm) {
+	if (frm.doc.parent_plan) {
+		frappe.db.get_value('OKR Plan', frm.doc.parent_plan, 'plan_name').then(r => {
+			if (r.message && r.message.plan_name) {
+				frappe.utils.add_link_title("OKR Plan", frm.doc.parent_plan, r.message.plan_name);
+				frm.refresh_field('parent_plan');
+			}
+		});
+	}
 }

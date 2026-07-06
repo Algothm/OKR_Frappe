@@ -73,7 +73,6 @@ class TestOKRFlow(FrappeTestCase):
 			"baseline_value": 10.0,
 			"target_value": 50.0,
 			"weight": 10.0,
-			"approval_status": "Approved",
 			"status": "Active"
 		}).insert(ignore_permissions=True)
 
@@ -107,7 +106,6 @@ class TestOKRFlow(FrappeTestCase):
 			"baseline_value": 15.0,
 			"target_value": 4.0,
 			"weight": 10.0,
-			"approval_status": "Approved",
 			"status": "Active"
 		}).insert(ignore_permissions=True)
 
@@ -137,7 +135,6 @@ class TestOKRFlow(FrappeTestCase):
 			"metric_direction": "Increase",
 			"baseline_value": 0,
 			"target_value": 100,
-			"approval_status": "Draft",
 			"status": "Draft"
 		}).insert(ignore_permissions=True)
 
@@ -158,7 +155,6 @@ class TestOKRFlow(FrappeTestCase):
 			"metric_direction": "Increase",
 			"baseline_value": 0,
 			"target_value": 100,
-			"approval_status": "Approved",
 			"status": "Active"
 		}).insert(ignore_permissions=True)
 

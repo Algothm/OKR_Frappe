@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"okr_planning_1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Planning</b></span>\",\"col\":12}},{\"id\":\"okr_okr_plan_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Plan\",\"col\":4}},{\"id\":\"okr_okr_sprint_3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Sprint\",\"col\":4}},{\"id\":\"okr_planning_spacer_\",\"type\":\"spacer\",\"data\":{\"col\":12}}]",
+ "content": "[{\"id\":\"okr_planning_1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Planning</b></span>\",\"col\":12}},{\"id\":\"okr_okr_plan_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Plan\",\"col\":4}},{\"id\":\"okr_okr_sprint_3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Sprint\",\"col\":4}},{\"id\":\"okr_okr_cycle_review_4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Cycle Review\",\"col\":4}},{\"id\":\"okr_planning_spacer_\",\"type\":\"spacer\",\"data\":{\"col\":12}}]",
  "creation": "2026-07-02 15:10:15.689272",
  "custom_blocks": [],
  "docstatus": 0,
@@ -42,6 +42,17 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "OKR Cycle Review",
+   "link_count": 0,
+   "link_to": "OKR Cycle Review",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
  "modified": "2026-07-02 15:10:15.689272",
@@ -66,6 +77,12 @@
    "doc_view": "List",
    "label": "OKR Sprint",
    "link_to": "OKR Sprint",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "List",
+   "label": "OKR Cycle Review",
+   "link_to": "OKR Cycle Review",
    "type": "DocType"
   }
  ],

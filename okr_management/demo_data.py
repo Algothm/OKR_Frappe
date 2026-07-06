@@ -430,7 +430,6 @@ def _get_or_create_key_result(objective: str, sprint: str, owner: str, kr: KRSpe
 			"start_date": start_date,
 			"end_date": end_date,
 			"status": _status_for_progress(kr.progress, "Achieved", "Active"),
-			"approval_status": "Approved",
 			"confidence": kr.confidence,
 			"description": _append_marker(f"Demo KR scenario: {kr.scenario}. Baseline {kr.baseline}, target {kr.target} {kr.unit}."),
 		}

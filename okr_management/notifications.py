@@ -22,25 +22,9 @@ def _sendmail(**kwargs) -> None:
 def get_notification_config():
 	return {
 		"for_doctype": {
-			"OKR Objective": {
-				"notify_on": ["Submitted", "Approved", "Rejected", "At Risk", "Completed"],
-				"messages": [
-					{"subject": "OKR objective requires review", "message": "An OKR objective needs your attention."},
-					{"subject": "New OKR assignment", "message": "You have been assigned a new objective."},
-				],
-			},
-			"OKR Key Result": {
-				"notify_on": ["Submitted", "Approved", "At Risk", "Achieved", "Missed", "Closed"],
-				"messages": [
-					{"subject": "Key result status changed", "message": "A key result status changed and may require follow-up."},
-				],
-			},
-			"OKR Check In": {
-				"notify_on": ["Submitted", "Reviewed", "Final"],
-				"messages": [
-					{"subject": "New OKR check-in submitted", "message": "A check-in was submitted for review."},
-				],
-			},
+			"OKR Objective": {"status": ["in", ["Draft", "Active", "At Risk"]]},
+			"OKR Key Result": {"status": ["in", ["Draft", "Active", "At Risk"]]},
+			"OKR Check In": {"status": ["in", ["Draft", "Submitted"]]},
 		}
 	}
 

@@ -10,15 +10,20 @@
   "checkin_context_section",
   "key_result",
   "objective",
+  "parent_sprint",
+  "parent_plan",
   "checkin_context_col_break",
   "reported_by",
   "checkin_date",
+  "financial_year",
+  "company",
   "department",
   "employee_update_section",
   "current_value",
   "progress",
   "employee_update_col_break",
   "confidence",
+  "attachment",
   "achievements",
   "next_steps",
   "blockers",
@@ -74,6 +79,20 @@
    "description": "Auto-filled from the selected Key Result."
   },
   {
+   "fieldname": "parent_sprint",
+   "fieldtype": "Link",
+   "label": "Parent Sprint",
+   "options": "OKR Sprint",
+   "read_only": 1
+  },
+  {
+   "fieldname": "parent_plan",
+   "fieldtype": "Link",
+   "label": "Parent Plan",
+   "options": "OKR Plan",
+   "read_only": 1
+  },
+  {
    "fieldname": "reported_by",
    "fieldtype": "Link",
    "label": "Reported By",
@@ -87,6 +106,20 @@
    "label": "Check-in Date",
    "reqd": 1,
    "default": "Today"
+  },
+  {
+   "fieldname": "financial_year",
+   "fieldtype": "Link",
+   "label": "Financial Year",
+   "options": "Fiscal Year",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
   },
   {
    "fieldname": "department",
@@ -114,9 +147,15 @@
    "fieldname": "confidence",
    "fieldtype": "Select",
    "label": "Confidence",
-   "options": "1\n2\n3\n4\n5",
-   "default": "3",
-   "description": "1 = low confidence, 5 = high confidence."
+   "options": "Green\nYellow\nRed\nGray",
+   "default": "Green",
+   "reqd": 1,
+   "description": "Current confidence rating for this Key Result."
+  },
+  {
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Attachment"
   },
   {
    "fieldname": "achievements",
@@ -142,7 +181,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nSubmitted\nReviewed\nFinal",
+   "options": "Draft\nSubmitted",
    "default": "Draft",
    "reqd": 1,
    "in_list_view": 1,

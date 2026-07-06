@@ -13,3 +13,5 @@ okr_management.patches.v0_0_6_cleanup_obsolete_workspace_pages
 okr_management.patches.v0_0_7_rebuild_okr_workflow
 okr_management.patches.v0_0_8_restore_workspace_sidebar
 okr_management.patches.v0_0_9_sync_workspace_leaf_hierarchy
+
+okr_management.patches.v0_0_10_standard_workspace_sidebar

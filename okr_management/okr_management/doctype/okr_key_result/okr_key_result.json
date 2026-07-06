@@ -12,45 +12,60 @@
   "objective",
   "kr_details_col_break",
   "description",
-  "measurement_section",
-  "metric_type",
-  "metric_direction",
-  "baseline_value",
-  "measurement_col_break",
-  "target_value",
-  "unit_of_measure",
-  "weight",
-  "score",
-  "summary_sidebar_section",
-  "status",
-  "approval_status",
-  "owner_user",
-  "assigned_by",
-  "current_value",
-  "target_progress",
-  "confidence",
-  "last_checkin",
-  "last_checkin_date",
-  "kr_period_section",
+  "inherited_context_section",
+  "parent_plan",
+  "parent_sprint",
+  "objective_title",
+  "company",
+  "financial_year",
+  "department",
+  "inherited_context_col_break",
+  "plan_owner",
+  "sprint_owner",
+  "objective_owner",
+  "objective_level",
   "start_date",
   "end_date",
+  "ownership_section",
+  "owner_user",
+  "reviewer",
+  "approver",
+  "ownership_col_break",
+  "priority",
+  "status",
+  "measurement_section",
+  "calculation_mode",
+  "metric_type",
+  "metric_direction",
+  "unit_of_measure",
+  "measurement_col_break",
+  "baseline_value",
+  "target_value",
+  "current_value",
+  "currency",
+  "summary_sidebar_section",
+  "target_progress",
+  "score",
+  "summary_sidebar_col_break",
+  "action_item_count",
+  "checkin_count",
   "action_items_section",
   "action_items",
-  "kr_notes_section",
-  "technical_section",
   "naming_series"
  ],
  "fields": [
   {
-   "fieldname": "naming_series",
-   "fieldtype": "Select",
-   "label": "Naming Series",
-   "options": "OKR-KR-.YYYY.-",
-   "default": "OKR-KR-.YYYY.-",
+   "fieldname": "kr_details_section",
+   "fieldtype": "Section Break",
+   "label": "Key Result Details"
+  },
+  {
+   "fieldname": "key_result_title",
+   "fieldtype": "Data",
+   "label": "Key Result Title",
    "reqd": 1,
-   "hidden": 1,
-   "read_only": 1,
-   "idx": 1
+   "in_list_view": 1,
+   "in_standard_filter": 1
   },
   {
    "fieldname": "objective",
@@ -59,34 +74,246 @@
    "options": "OKR Objective",
    "reqd": 1,
    "in_list_view": 1,
-   "in_standard_filter": 1,
-   "idx": 2
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "kr_details_col_break",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "description",
    "fieldtype": "Small Text",
-   "label": "Description",
+   "label": "Description"
+  },
+  {
+   "fieldname": "inherited_context_section",
+   "fieldtype": "Section Break",
+   "label": "Inherited Context"
+  },
+  {
+   "fieldname": "parent_plan",
+   "fieldtype": "Link",
+   "label": "Parent Plan",
+   "options": "OKR Plan",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "parent_sprint",
+   "fieldtype": "Link",
+   "label": "Parent Sprint",
+   "options": "OKR Sprint",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "objective_title",
+   "fieldtype": "Data",
+   "label": "Parent Objective Title",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Organization",
+   "options": "Company",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "financial_year",
+   "fieldtype": "Link",
+   "label": "Financial Year",
+   "options": "Fiscal Year",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "inherited_context_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "plan_owner",
+   "fieldtype": "Link",
+   "label": "Plan Owner",
+   "options": "User",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "sprint_owner",
+   "fieldtype": "Link",
+   "label": "Sprint Owner",
+   "options": "User",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "objective_owner",
+   "fieldtype": "Link",
+   "label": "Objective Owner",
+   "options": "User",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "objective_level",
+   "fieldtype": "Select",
+   "label": "Objective Level",
+   "options": "Organization\nDepartment",
+   "read_only": 1
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "ownership_section",
+   "fieldtype": "Section Break",
+   "label": "Assignment"
+  },
+  {
+   "fieldname": "owner_user",
+   "fieldtype": "Link",
+   "label": "Key Result Owner",
+   "options": "User",
    "reqd": 1,
    "in_list_view": 1,
-   "idx": 3
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "reviewer",
+   "fieldtype": "Link",
+   "label": "Reviewer",
+   "options": "User",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "approver",
+   "fieldtype": "Link",
+   "label": "Approver",
+   "options": "User",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "ownership_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh",
+   "default": "Medium"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPlanned\nActive\nOn Hold\nCompleted\nClosed\nArchived",
+   "default": "Draft",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "measurement_section",
+   "fieldtype": "Section Break",
+   "label": "Measurement Configuration"
+  },
+  {
+   "fieldname": "calculation_mode",
+   "fieldtype": "Select",
+   "label": "Calculation Mode",
+   "options": "Manual\nAutomatic",
+   "default": "Manual",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "metric_type",
+   "fieldtype": "Select",
+   "label": "Measurement Type",
+   "options": "Percentage\nNumber\nCurrency\nBoolean",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "metric_direction",
+   "fieldtype": "Select",
+   "label": "Measurement Direction",
+   "options": "Increase\nDecrease"
+  },
+  {
+   "fieldname": "unit_of_measure",
+   "fieldtype": "Data",
+   "label": "Unit of Measure"
+  },
+  {
+   "fieldname": "measurement_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "baseline_value",
+   "fieldtype": "Float",
+   "label": "Baseline Value"
   },
   {
    "fieldname": "target_value",
    "fieldtype": "Float",
-   "label": "Target",
-   "reqd": 1,
-   "in_list_view": 1,
-   "idx": 4
+   "label": "Target Value",
+   "in_list_view": 1
   },
   {
    "fieldname": "current_value",
    "fieldtype": "Float",
-   "label": "Current",
-   "default": 0,
+   "label": "Current Value",
    "in_list_view": 1,
+   "description": "Editable only when Calculation Mode is Manual."
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "depends_on": "eval:doc.metric_type=='Currency'"
+  },
+  {
+   "fieldname": "summary_sidebar_section",
+   "fieldtype": "Section Break",
+   "label": "Performance Summary"
+  },
+  {
+   "fieldname": "target_progress",
+   "fieldtype": "Percent",
+   "label": "Progress %",
+   "default": 0,
    "read_only": 1,
-   "reqd": 0,
-   "idx": 5
+   "in_list_view": 1
   },
   {
    "fieldname": "score",
@@ -94,183 +321,25 @@
    "label": "Score",
    "default": 0,
    "read_only": 1,
-   "in_list_view": 1,
-   "idx": 6
+   "in_list_view": 1
   },
   {
-   "fieldname": "target_progress",
-   "fieldtype": "Percent",
-   "label": "Progress",
+   "fieldname": "summary_sidebar_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "action_item_count",
+   "fieldtype": "Int",
+   "label": "Action Item Count",
    "default": 0,
-   "read_only": 1,
-   "description": "Calculated from Action Items average. Falls back to baseline/current/target if no Action Items.",
-   "in_list_view": 1,
-   "idx": 7
+   "read_only": 1
   },
   {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "label": "Status",
-   "options": "Draft\nSubmitted\nApproved\nActive\nAt Risk\nBlocked\nAchieved\nMissed\nClosed",
-   "default": "Draft",
-   "reqd": 1,
-   "in_list_view": 1,
-   "read_only": 1,
-   "in_standard_filter": 1,
-   "idx": 8
-  },
-  {
-   "fieldname": "action_items",
-   "fieldtype": "Table",
-   "label": "Action Items",
-   "options": "OKR Action Item",
-   "idx": 9
-  },
-  {
-   "fieldname": "key_result_title",
-   "fieldtype": "Data",
-   "label": "Key Result Title",
-   "reqd": 0,
-   "in_list_view": 0,
-   "hidden": 1,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "owner_user",
-   "fieldtype": "Link",
-   "label": "Owner User",
-   "options": "User",
-   "reqd": 0,
-   "description": "Defaults from the selected Objective owner.",
-   "hidden": 1,
-   "in_list_view": 0,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "assigned_by",
-   "fieldtype": "Link",
-   "label": "Assigned By",
-   "options": "User",
-   "description": "Defaults to the selected Objective owner/manager.",
-   "hidden": 1,
-   "reqd": 0,
-   "in_list_view": 0,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "metric_type",
-   "fieldtype": "Select",
-   "label": "Metric Type",
-   "options": "Percentage\nCount\nCurrency\nRatio\nBoolean\nCustom",
-   "default": "Percentage",
-   "reqd": 0,
-   "hidden": 1,
-   "in_list_view": 0,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "metric_direction",
-   "fieldtype": "Select",
-   "label": "Metric Direction",
-   "options": "Increase\nDecrease",
-   "default": "Increase",
-   "reqd": 0,
-   "hidden": 1,
-   "in_list_view": 0,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "baseline_value",
-   "fieldtype": "Float",
-   "label": "Baseline Value",
+   "fieldname": "checkin_count",
+   "fieldtype": "Int",
+   "label": "Check-In Count",
    "default": 0,
-   "hidden": 1,
-   "reqd": 0,
-   "in_list_view": 0,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "weight",
-   "fieldtype": "Percent",
-   "label": "Weight",
-   "default": 0,
-   "hidden": 1,
-   "reqd": 0,
-   "in_list_view": 0,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "unit_of_measure",
-   "fieldtype": "Data",
-   "label": "Unit of Measure",
-   "hidden": 1,
-   "reqd": 0,
-   "in_list_view": 0,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "start_date",
-   "fieldtype": "Date",
-   "label": "Start Date",
-   "reqd": 0,
-   "description": "Defaults from the selected Objective.",
-   "hidden": 1,
-   "in_list_view": 0,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "end_date",
-   "fieldtype": "Date",
-   "label": "End Date",
-   "reqd": 0,
-   "description": "Defaults from the selected Objective.",
-   "hidden": 1,
-   "in_list_view": 0,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "approval_status",
-   "fieldtype": "Select",
-   "label": "Approval Status",
-   "options": "Draft\nPending Approval\nApproved\nReturned for Changes\nRejected",
-   "default": "Draft",
-   "reqd": 0,
-   "in_list_view": 0,
-   "hidden": 1,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "confidence",
-   "fieldtype": "Select",
-   "label": "Confidence",
-   "options": "1\n2\n3\n4\n5",
-   "default": "3",
-   "read_only": 1,
-   "hidden": 1,
-   "reqd": 0,
-   "in_list_view": 0,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "last_checkin_date",
-   "fieldtype": "Date",
-   "label": "Last Check-in Date",
-   "read_only": 1,
-   "hidden": 1,
-   "reqd": 0,
-   "in_list_view": 0,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "last_checkin",
-   "fieldtype": "Link",
-   "label": "Last Check-In",
-   "options": "OKR Check In",
-   "read_only": 1,
-   "hidden": 1,
-   "reqd": 0,
-   "in_list_view": 0,
-   "in_standard_filter": 0
+   "read_only": 1
   },
   {
    "fieldname": "action_items_section",
@@ -278,44 +347,20 @@
    "label": "Action Items"
   },
   {
-   "fieldname": "kr_details_section",
-   "fieldtype": "Section Break",
-   "label": "Key Result Details"
+   "fieldname": "action_items",
+   "fieldtype": "Table",
+   "label": "Action Items",
+   "options": "OKR Action Item"
   },
   {
-   "fieldname": "kr_details_col_break",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "measurement_section",
-   "fieldtype": "Section Break",
-   "label": "Measurement Plan"
-  },
-  {
-   "fieldname": "measurement_col_break",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "summary_sidebar_section",
-   "fieldtype": "Section Break",
-   "label": "Key Result Summary"
-  },
-  {
-   "fieldname": "kr_period_section",
-   "fieldtype": "Section Break",
-   "label": "Time Period"
-  },
-  {
-   "fieldname": "kr_notes_section",
-   "fieldtype": "Section Break",
-   "label": "Notes",
-   "collapsible": 1
-  },
-  {
-   "fieldname": "technical_section",
-   "fieldtype": "Section Break",
-   "label": "System Details",
-   "collapsible": 1
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "OKR-KR-.YYYY.-",
+   "default": "OKR-KR-.YYYY.-",
+   "reqd": 1,
+   "hidden": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -327,7 +372,7 @@
  "permissions": [
   {
    "create": 1,
-   "delete": 0,
+   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -375,5 +420,5 @@
  "track_changes": 1,
  "search_fields": "key_result_title,name,owner_user,status",
  "show_title_field_in_link": 1,
- "title_field": "description"
+ "title_field": "key_result_title"
 }

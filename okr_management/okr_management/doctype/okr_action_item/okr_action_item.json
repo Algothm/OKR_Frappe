@@ -6,57 +6,121 @@
  "engine": "InnoDB",
  "field_order": [
   "action_item_title",
+  "description",
   "parent_key_result",
+  "parent_objective",
+  "parent_sprint",
+  "parent_plan",
+  "company",
+  "department",
   "owner_user",
+  "priority",
+  "weight",
   "status",
   "progress",
+  "start_date",
   "due_date",
+  "completion_date",
   "notes"
  ],
  "fields": [
+  {
+   "fieldname": "action_item_title",
+   "fieldtype": "Data",
+   "label": "Action Item Title",
+   "reqd": 1,
+   "in_list_view": 1,
+   "idx": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description",
+   "idx": 2
+  },
   {
    "fieldname": "parent_key_result",
    "fieldtype": "Link",
    "label": "Parent Key Result",
    "options": "OKR Key Result",
    "read_only": 1,
-   "in_list_view": 1,
-   "idx": 1
+   "idx": 3
   },
   {
-   "fieldname": "action_item_title",
-   "fieldtype": "Data",
-   "label": "Action Item",
-   "reqd": 1,
-   "in_list_view": 1,
-   "idx": 2
+   "fieldname": "parent_objective",
+   "fieldtype": "Link",
+   "label": "Parent Objective",
+   "options": "OKR Objective",
+   "read_only": 1,
+   "idx": 4
+  },
+  {
+   "fieldname": "parent_sprint",
+   "fieldtype": "Link",
+   "label": "Parent Sprint",
+   "options": "OKR Sprint",
+   "read_only": 1,
+   "idx": 5
+  },
+  {
+   "fieldname": "parent_plan",
+   "fieldtype": "Link",
+   "label": "Parent Plan",
+   "options": "OKR Plan",
+   "read_only": 1,
+   "idx": 6
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Organization",
+   "options": "Company",
+   "read_only": 1,
+   "idx": 7
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1,
+   "idx": 8
   },
   {
    "fieldname": "owner_user",
    "fieldtype": "Link",
-   "label": "Owner",
+   "label": "Action Item Owner",
    "options": "User",
    "reqd": 1,
    "in_list_view": 1,
-   "idx": 3
+   "default": "__user",
+   "idx": 9
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh\nCritical",
+   "default": "Medium",
+   "reqd": 1,
+   "idx": 10
+  },
+  {
+   "fieldname": "weight",
+   "fieldtype": "Percent",
+   "label": "Weight %",
+   "default": 0,
+   "idx": 11
   },
   {
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nNot Started\nIn Progress\nBlocked\nCompleted\nCancelled",
-   "default": "Not Started",
+   "options": "Draft\nPlanned\nIn Progress\nBlocked\nCompleted\nClosed\nArchived\nCancelled",
+   "default": "Draft",
    "reqd": 1,
    "in_list_view": 1,
-   "idx": 4
-  },
-  {
-   "fieldname": "weight",
-   "label": "Weight %",
-   "fieldtype": "Percent",
-   "reqd": 0,
-   "in_list_view": 1,
-   "idx": 5
+   "idx": 12
   },
   {
    "fieldname": "progress",
@@ -64,22 +128,35 @@
    "label": "Progress %",
    "default": 0,
    "in_list_view": 1,
-   "idx": 6
+   "idx": 13
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date",
+   "reqd": 1,
+   "idx": 14
   },
   {
    "fieldname": "due_date",
    "fieldtype": "Date",
    "label": "Due Date",
+   "reqd": 1,
    "in_list_view": 1,
-   "hidden": 1,
-   "reqd": 0
+   "idx": 15
+  },
+  {
+   "fieldname": "completion_date",
+   "fieldtype": "Date",
+   "label": "Completion Date",
+   "read_only": 1,
+   "idx": 16
   },
   {
    "fieldname": "notes",
    "fieldtype": "Small Text",
    "label": "Notes",
-   "hidden": 1,
-   "reqd": 0
+   "idx": 17
   }
  ],
  "index_web_pages_for_search": 1,
