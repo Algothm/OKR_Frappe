@@ -1,12 +1,12 @@
 {
  "charts": [],
- "content": "[{\"id\":\"okr_execution_1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Execution</b></span>\",\"col\":12}},{\"id\":\"okr_objectives_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Objectives\",\"col\":4}},{\"id\":\"okr_key_results_3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Key Results\",\"col\":4}},{\"id\":\"okr_action_items_4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Action Items\",\"col\":4}},{\"id\":\"okr_check_ins_5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Check-ins\",\"col\":4}},{\"id\":\"okr_execution_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}}]",
- "creation": "2026-07-02 15:10:15.714650",
+ "content": "[]",
+ "creation": "2026-07-03 15:11:14.302674",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
- "hide_custom": 0,
+ "hide_custom": 1,
  "icon": "project",
  "idx": 0,
  "indicator_color": "green",
@@ -16,16 +16,26 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Execution",
+   "label": "Links",
    "link_count": 0,
+   "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Objectives",
+   "label": "OKR Workspace",
+   "link_count": 0,
+   "link_to": "okr-workspace",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "OKR Objective",
    "link_count": 0,
    "link_to": "OKR Objective",
    "link_type": "DocType",
@@ -33,10 +43,9 @@
    "type": "Link"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Key Results",
+   "label": "OKR Key Result",
    "link_count": 0,
    "link_to": "OKR Key Result",
    "link_type": "DocType",
@@ -44,21 +53,9 @@
    "type": "Link"
   },
   {
-   "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Action Items",
-   "link_count": 0,
-   "link_to": "OKR Action Item",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Check-ins",
+   "label": "OKR Check In",
    "link_count": 0,
    "link_to": "OKR Check In",
    "link_type": "DocType",
@@ -66,7 +63,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-07-02 15:10:15.714650",
+ "modified": "2026-07-07 22:43:05.505876",
  "modified_by": "Administrator",
  "module": "OKR Management",
  "name": "Execution",
@@ -79,27 +76,21 @@
  "sequence_id": 3.0,
  "shortcuts": [
   {
+   "doc_view": "",
+   "label": "OKR Workspace",
+   "link_to": "okr-workspace",
+   "type": "Page"
+  },
+  {
    "doc_view": "List",
-   "label": "Objectives",
+   "label": "OKR Objective",
    "link_to": "OKR Objective",
    "type": "DocType"
   },
   {
    "doc_view": "List",
-   "label": "Key Results",
+   "label": "OKR Key Result",
    "link_to": "OKR Key Result",
-   "type": "DocType"
-  },
-  {
-   "doc_view": "List",
-   "label": "Action Items",
-   "link_to": "OKR Action Item",
-   "type": "DocType"
-  },
-  {
-   "doc_view": "List",
-   "label": "Check-ins",
-   "link_to": "OKR Check In",
    "type": "DocType"
   }
  ],

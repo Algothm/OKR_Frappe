@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"okr_planning_1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Planning</b></span>\",\"col\":12}},{\"id\":\"okr_okr_plan_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Plan\",\"col\":4}},{\"id\":\"okr_okr_sprint_3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Sprint\",\"col\":4}},{\"id\":\"okr_okr_cycle_review_4\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Cycle Review\",\"col\":4}},{\"id\":\"okr_planning_spacer_\",\"type\":\"spacer\",\"data\":{\"col\":12}}]",
+ "content": "[{\"id\": \"okr_planning_1\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Planning</b></span>\", \"col\": 12}}, {\"id\": \"okr_okr_plan_2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"OKR Plan\", \"col\": 4}}, {\"id\": \"okr_okr_sprint_3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"OKR Sprint\", \"col\": 4}}, {\"id\": \"okr_okr_cycle_review_4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"OKR Cycle Review\", \"col\": 4}}, {\"id\": \"okr_planning_spacer_\", \"type\": \"spacer\", \"data\": {\"col\": 12}}]",
  "creation": "2026-07-02 15:10:15.689272",
  "custom_blocks": [],
  "docstatus": 0,
