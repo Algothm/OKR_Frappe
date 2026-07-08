@@ -8,17 +8,28 @@
  "engine": "InnoDB",
  "field_order": [
   "sprint_details_section",
-  "sprint_name",
   "parent_plan",
-  "sprint_cycle",
-  "quarter",
+  "sprint_name",
+  "sprint_owner",
   "sprint_details_col_break",
+  "description",
+  "inherited_context_section",
+  "company",
+  "sprint_cycle",
+  "financial_quarter",
+  "sprint_month",
+  "inherited_context_col_break",
+  "financial_year",
   "start_date",
   "end_date",
-  "summary_sidebar_section",
+  "sprint_duration",
+  "technical_section",
   "status",
   "progress",
-  "technical_section",
+  "objective_count",
+  "sprint_year",
+  "department",
+  "plan_owner",
   "naming_series"
  ],
  "fields": [
@@ -30,8 +41,7 @@
    "default": "OKR-SPRINT-.YYYY.-",
    "reqd": 1,
    "hidden": 1,
-   "read_only": 1,
-   "idx": 1
+   "read_only": 1
   },
   {
    "fieldname": "parent_plan",
@@ -40,75 +50,151 @@
    "options": "OKR Plan",
    "reqd": 1,
    "in_list_view": 1,
-   "in_standard_filter": 1,
-   "idx": 2
+   "in_standard_filter": 1
   },
   {
    "fieldname": "sprint_name",
    "fieldtype": "Data",
    "label": "Sprint Name",
    "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sprint_owner",
+   "fieldtype": "Link",
+   "label": "Sprint Owner",
+   "options": "User",
+   "reqd": 1,
    "in_list_view": 1,
-   "idx": 3
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "financial_year",
+   "fieldtype": "Link",
+   "label": "Financial Year",
+   "options": "Fiscal Year",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Organization",
+   "options": "Company",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1,
+   "hidden": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "plan_owner",
+   "fieldtype": "Link",
+   "label": "Plan Owner",
+   "options": "User",
+   "read_only": 1,
+   "hidden": 1,
+   "in_standard_filter": 1
   },
   {
    "fieldname": "sprint_cycle",
    "fieldtype": "Select",
    "label": "Sprint Cycle",
-   "options": "Monthly\nQuarterly\nHalf Yearly\nYearly",
-   "default": "Quarterly",
+   "options": "Monthly\nFinancial Quarter\nCustom Date Range",
+   "default": "Financial Quarter",
    "reqd": 1,
    "in_list_view": 1,
-   "in_standard_filter": 1,
-   "idx": 4
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "financial_quarter",
+   "fieldtype": "Select",
+   "label": "Financial Quarter",
+   "options": "Q1\nQ2\nQ3\nQ4",
+   "depends_on": "eval:doc.sprint_cycle=='Financial Quarter'",
+   "mandatory_depends_on": "eval:doc.sprint_cycle=='Financial Quarter'"
+  },
+  {
+   "fieldname": "sprint_month",
+   "fieldtype": "Select",
+   "label": "Month",
+   "options": "January\nFebruary\nMarch\nApril\nMay\nJune\nJuly\nAugust\nSeptember\nOctober\nNovember\nDecember",
+   "depends_on": "eval:doc.sprint_cycle=='Monthly'",
+   "mandatory_depends_on": "eval:doc.sprint_cycle=='Monthly'"
+  },
+  {
+   "fieldname": "sprint_year",
+   "fieldtype": "Int",
+   "label": "Year",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "sprint_duration",
+   "fieldtype": "Data",
+   "label": "Sprint Duration",
+   "read_only": 1,
+   "hidden": 1,
+   "depends_on": "eval:doc.start_date && doc.end_date"
   },
   {
    "fieldname": "start_date",
    "fieldtype": "Date",
    "label": "Start Date",
    "reqd": 1,
-   "in_list_view": 1,
-   "idx": 5
+   "read_only": 1,
+   "in_list_view": 1
   },
   {
    "fieldname": "end_date",
    "fieldtype": "Date",
    "label": "End Date",
    "reqd": 1,
-   "in_list_view": 1,
-   "idx": 6
+   "read_only": 1,
+   "in_list_view": 1
   },
   {
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nActive\nCompleted\nClosed",
+   "options": "Draft\nPlanned\nActive\nCompleted\nClosed\nArchived",
    "default": "Draft",
    "reqd": 1,
+   "hidden": 1,
    "in_list_view": 1,
-   "in_standard_filter": 1,
-   "idx": 7
+   "in_standard_filter": 1
   },
   {
    "fieldname": "progress",
    "fieldtype": "Percent",
    "label": "Progress",
    "read_only": 1,
+   "hidden": 1,
    "default": "0",
-   "in_list_view": 1,
-   "idx": 8
+   "description": "Average progress of child Objectives.",
+   "in_list_view": 1
   },
   {
-   "fieldname": "quarter",
-   "fieldtype": "Select",
-   "label": "Quarter",
-   "options": "Q1\nQ2\nQ3\nQ4",
-   "in_list_view": 0,
-   "depends_on": "eval:doc.sprint_cycle=='Quarterly'",
-   "mandatory_depends_on": "eval:doc.sprint_cycle=='Quarterly'",
+   "fieldname": "objective_count",
+   "fieldtype": "Int",
+   "label": "Objective Count",
+   "read_only": 1,
    "hidden": 1,
-   "reqd": 0,
-   "in_standard_filter": 0
+   "default": 0,
+   "in_list_view": 1
   },
   {
    "fieldname": "sprint_details_section",
@@ -120,15 +206,20 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "summary_sidebar_section",
+   "fieldname": "inherited_context_section",
    "fieldtype": "Section Break",
-   "label": "Sprint Summary"
+   "label": "Inherited Context"
+  },
+  {
+   "fieldname": "inherited_context_col_break",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "technical_section",
    "fieldtype": "Section Break",
    "label": "System Details",
-   "collapsible": 1
+   "collapsible": 1,
+   "hidden": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -150,7 +241,7 @@
    "write": 1
   },
   {
-   "create": 0,
+   "create": 1,
    "delete": 0,
    "email": 1,
    "export": 1,
@@ -158,7 +249,7 @@
    "read": 1,
    "report": 1,
    "role": "OKR Manager",
-   "write": 0
+   "write": 1
   },
   {
    "create": 0,
@@ -176,6 +267,6 @@
  "sort_order": "DESC",
  "track_changes": 1,
  "title_field": "sprint_name",
- "search_fields": "sprint_name,name,parent_plan,sprint_cycle,quarter,status",
+ "search_fields": "sprint_name,name,parent_plan,sprint_owner,sprint_cycle,financial_quarter,status",
  "show_title_field_in_link": 1
 }

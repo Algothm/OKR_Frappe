@@ -8,42 +8,28 @@
  "engine": "InnoDB",
  "field_order": [
   "checkin_context_section",
+  "company",
+  "checkin_context_col_break_2",
+  "checkin_date",
+  "checkin_context_col_break_3",
+  "reported_by",
   "key_result",
   "objective",
+  "parent_plan",
+  "parent_sprint",
   "checkin_context_col_break",
-  "reported_by",
-  "checkin_date",
   "department",
   "employee_update_section",
-  "current_value",
   "progress",
-  "employee_update_col_break",
-  "confidence",
   "achievements",
-  "next_steps",
   "blockers",
-  "notes",
+  "employee_update_col_break",
+  "dependency_description",
+  "attachment",
+  "technical_section",
+  "action_items",
   "status",
   "progress_percent",
-  "self_rating",
-  "action_items_section",
-  "action_items",
-  "dependency_section",
-  "has_dependency",
-  "dependent_department",
-  "dependency_description",
-  "impact_level",
-  "escalation_section",
-  "escalate_to_department",
-  "reason_for_escalation",
-  "expected_resolution_date",
-  "summary_sidebar_section",
-  "review_status",
-  "manager_feedback",
-  "action_required",
-  "review_date",
-  "reviewed_by",
-  "technical_section",
   "naming_series"
  ],
  "fields": [
@@ -63,7 +49,8 @@
    "label": "Key Result",
    "options": "OKR Key Result",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "read_only": 1
   },
   {
    "fieldname": "objective",
@@ -74,19 +61,52 @@
    "description": "Auto-filled from the selected Key Result."
   },
   {
+   "fieldname": "parent_sprint",
+   "fieldtype": "Link",
+   "label": "Parent Sprint",
+   "options": "OKR Sprint",
+   "read_only": 1
+  },
+  {
+   "fieldname": "parent_plan",
+   "fieldtype": "Link",
+   "label": "Parent Plan",
+   "options": "OKR Plan",
+   "read_only": 1
+  },
+  {
    "fieldname": "reported_by",
    "fieldtype": "Link",
    "label": "Reported By",
    "options": "User",
    "reqd": 1,
-   "description": "Defaults to the logged-in user."
+   "description": "Defaults to the logged-in user.",
+   "read_only": 1,
+   "default": "__user"
   },
   {
    "fieldname": "checkin_date",
    "fieldtype": "Date",
-   "label": "Check-in Date",
+   "label": "Check-In Date",
    "reqd": 1,
-   "default": "Today"
+   "default": "Today",
+   "read_only": 1
+  },
+  {
+   "fieldname": "financial_year",
+   "fieldtype": "Link",
+   "label": "Financial Year",
+   "options": "Fiscal Year",
+   "read_only": 1,
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
   },
   {
    "fieldname": "department",
@@ -99,54 +119,76 @@
    "fieldname": "current_value",
    "fieldtype": "Float",
    "label": "Current Value",
-   "reqd": 1,
+   "reqd": 0,
    "in_list_view": 1,
-   "default": 0
+   "default": 0,
+   "hidden": 1
   },
   {
    "fieldname": "progress",
    "fieldtype": "Percent",
-   "label": "Progress",
-   "read_only": 1,
-   "default": 0
+   "label": "Progress (%)",
+   "read_only": 0,
+   "default": 0,
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": ""
   },
   {
    "fieldname": "confidence",
    "fieldtype": "Select",
    "label": "Confidence",
-   "options": "1\n2\n3\n4\n5",
-   "default": "3",
-   "description": "1 = low confidence, 5 = high confidence."
+   "options": "Green\nYellow\nRed\nGray",
+   "default": "Green",
+   "reqd": 0,
+   "description": "Current confidence rating for this Key Result.",
+   "hidden": 1
+  },
+  {
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Attachment",
+   "description": "Upload proof supporting the update or blocker.",
+   "hidden": 0
   },
   {
    "fieldname": "achievements",
    "fieldtype": "Small Text",
-   "label": "Achievements"
+   "label": "Description / Update",
+   "description": "What work was completed?",
+   "reqd": 1
   },
   {
    "fieldname": "next_steps",
    "fieldtype": "Small Text",
-   "label": "Next Steps"
+   "label": "Next Steps",
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "blockers",
    "fieldtype": "Small Text",
-   "label": "Blockers"
+   "label": "Blocker",
+   "description": "What is preventing progress?",
+   "reqd": 0
   },
   {
    "fieldname": "notes",
    "fieldtype": "Small Text",
-   "label": "Comment"
+   "label": "Comment",
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nSubmitted\nReviewed\nFinal",
-   "default": "Draft",
+   "options": "Draft\nSubmitted",
+   "default": "Submitted",
    "reqd": 1,
    "in_list_view": 1,
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "progress_percent",
@@ -160,58 +202,78 @@
    "fieldname": "self_rating",
    "fieldtype": "Rating",
    "label": "Self Rating",
-   "hidden": 1
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "action_items",
    "fieldtype": "Table",
    "label": "Action Items",
-   "options": "OKR Action Item"
+   "options": "OKR Action Item Row",
+   "hidden": 1,
+   "read_only": 1
   },
   {
    "fieldname": "action_items_section",
    "fieldtype": "Section Break",
-   "label": "Action Items Checklist"
+   "label": "Action Items Checklist",
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "has_dependency",
    "fieldtype": "Check",
    "label": "Has Dependency",
-   "default": 0
+   "default": 0,
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "dependent_department",
    "fieldtype": "Link",
    "label": "Dependent Department",
-   "options": "Department"
+   "options": "Department",
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "dependency_description",
-   "fieldtype": "Long Text",
-   "label": "Dependency Description"
+   "fieldtype": "Small Text",
+   "label": "Dependency",
+   "description": "Any cross-team/person dependency?",
+   "reqd": 0,
+   "hidden": 0
   },
   {
    "fieldname": "impact_level",
    "fieldtype": "Select",
    "label": "Impact Level",
    "options": "Low\nMedium\nHigh\nCritical",
-   "default": "Medium"
+   "default": "Medium",
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "escalate_to_department",
    "fieldtype": "Link",
    "label": "Escalate To Department",
-   "options": "Department"
+   "options": "Department",
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "reason_for_escalation",
    "fieldtype": "Long Text",
-   "label": "Reason for Escalation"
+   "label": "Reason for Escalation",
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "expected_resolution_date",
    "fieldtype": "Date",
-   "label": "Expected Resolution Date"
+   "label": "Expected Resolution Date",
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "review_status",
@@ -219,32 +281,42 @@
    "label": "Review Status",
    "options": "Approved\nNeeds Improvement\nBlocked\nEscalated",
    "default": "Approved",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "manager_feedback",
    "fieldtype": "Long Text",
    "label": "Manager Feedback",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "action_required",
    "fieldtype": "Long Text",
    "label": "Action Required",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "review_date",
    "fieldtype": "Date",
    "label": "Review Date",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "reviewed_by",
    "fieldtype": "Link",
    "label": "Reviewed By",
    "options": "User",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "checkin_context_section",
@@ -267,23 +339,38 @@
   {
    "fieldname": "dependency_section",
    "fieldtype": "Section Break",
-   "label": "Cross-Department Dependency"
+   "label": "Cross-Department Dependency",
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "escalation_section",
    "fieldtype": "Section Break",
-   "label": "Escalation Plan"
+   "label": "Escalation Plan",
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "summary_sidebar_section",
    "fieldtype": "Section Break",
-   "label": "Review Summary"
+   "label": "Review Summary",
+   "hidden": 1,
+   "reqd": 0
   },
   {
    "fieldname": "technical_section",
    "fieldtype": "Section Break",
    "label": "System Details",
-   "collapsible": 1
+   "collapsible": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "checkin_context_col_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "checkin_context_col_break_3",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,

@@ -9,27 +9,37 @@
  "field_order": [
   "objective_details_section",
   "objective_title",
-  "parent_plan",
-  "objective_type",
-  "parent_objective",
   "sprint",
   "level",
+  "objective_details_col_break",
+  "description",
+  "inherited_context_section",
+  "parent_plan",
+  "company",
+  "plan_owner",
+  "inherited_context_col_break",
+  "financial_year",
+  "department",
+  "sprint_owner",
+  "timeline_section",
+  "owner_user",
+  "reviewer",
+  "priority",
+  "timeline_col_break",
   "start_date",
   "end_date",
-  "objective_details_col_break",
-  "priority",
-  "company",
-  "department",
-  "description",
-  "objective_alignment_section",
-  "alignment_map",
-  "summary_sidebar_section",
   "status",
-  "owner_user",
-  "progress",
-  "confidence",
+  "partial_completion_accepted",
+  "completion_notes",
   "technical_section",
-  "naming_series"
+  "naming_series",
+  "progress",
+  "key_result_count",
+  "objective_type",
+  "parent_objective",
+  "confidence",
+  "objective_alignment_section",
+  "alignment_map"
  ],
  "fields": [
   {
@@ -40,19 +50,15 @@
    "default": "OKR-OBJ-.YYYY.-",
    "reqd": 1,
    "hidden": 1,
-   "read_only": 1,
-   "idx": 1
+   "read_only": 1
   },
   {
-   "fieldname": "parent_plan",
-   "fieldtype": "Link",
-   "label": "Parent Plan",
-   "options": "OKR Plan",
+   "fieldname": "objective_title",
+   "fieldtype": "Data",
+   "label": "Objective Title",
    "reqd": 1,
    "in_list_view": 1,
-   "description": "Auto-filled from the selected Parent Sprint.",
-   "in_standard_filter": 1,
-   "idx": 2
+   "in_standard_filter": 1
   },
   {
    "fieldname": "sprint",
@@ -61,19 +67,68 @@
    "options": "OKR Sprint",
    "reqd": 1,
    "in_list_view": 1,
-   "in_standard_filter": 1,
-   "idx": 3
+   "in_standard_filter": 1
   },
   {
    "fieldname": "level",
    "fieldtype": "Select",
    "label": "Level",
-   "options": "Organization\nDepartment",
+   "options": "Organization\nDepartment\nTeam\nIndividual",
    "default": "Department",
    "reqd": 1,
    "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh",
+   "default": "High",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "owner_user",
+   "fieldtype": "Link",
+   "label": "Objective Owner",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "reviewer",
+   "fieldtype": "Link",
+   "label": "Reviewer",
+   "options": "User",
    "in_standard_filter": 1,
-   "idx": 4
+   "description": "Reviewer (Optional) – Person responsible for reviewing and approving progress updates."
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "parent_plan",
+   "fieldtype": "Link",
+   "label": "Parent Plan",
+   "options": "OKR Plan",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "financial_year",
+   "fieldtype": "Link",
+   "label": "Financial Year",
+   "options": "Fiscal Year",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
   },
   {
    "fieldname": "company",
@@ -81,49 +136,70 @@
    "label": "Organization",
    "options": "Company",
    "reqd": 1,
-   "description": "Auto-filled from the selected OKR Sprint parent Plan.",
+   "read_only": 1,
    "in_list_view": 1,
-   "in_standard_filter": 1,
-   "idx": 5
+   "in_standard_filter": 1
   },
   {
    "fieldname": "department",
    "fieldtype": "Link",
    "label": "Department",
    "options": "Department",
-   "depends_on": "eval:doc.level=='Department'",
-   "reqd": 0,
-   "in_standard_filter": 1,
-   "idx": 6
+   "read_only": 1,
+   "in_standard_filter": 1
   },
   {
-   "fieldname": "description",
-   "fieldtype": "Small Text",
-   "label": "Description",
-   "reqd": 1,
-   "in_list_view": 1,
-   "idx": 7
-  },
-  {
-   "fieldname": "owner_user",
+   "fieldname": "plan_owner",
    "fieldtype": "Link",
-   "label": "Owner",
+   "label": "Plan Owner",
    "options": "User",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "sprint_owner",
+   "fieldtype": "Link",
+   "label": "Sprint Owner",
+   "options": "User",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date",
    "reqd": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "idx": 8
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date",
+   "reqd": 1,
+   "in_list_view": 1
   },
   {
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nSubmitted\nApproved\nActive\nAt Risk\nCompleted\nCancelled\nArchived",
+   "options": "Draft\nActive\nOn Hold\nCompleted\nClosed",
    "default": "Draft",
    "reqd": 1,
    "in_list_view": 1,
-   "in_standard_filter": 1,
-   "idx": 9
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "partial_completion_accepted",
+   "fieldtype": "Check",
+   "label": "Manager Accepted Partial Completion",
+   "default": 0,
+   "depends_on": "eval:doc.status=='Completed' || doc.status=='Closed'"
+  },
+  {
+   "fieldname": "completion_notes",
+   "fieldtype": "Small Text",
+   "label": "Completion Notes",
+   "depends_on": "eval:doc.partial_completion_accepted"
   },
   {
    "fieldname": "progress",
@@ -131,49 +207,17 @@
    "label": "Progress",
    "default": "0",
    "read_only": 1,
-   "description": "Calculated from linked Key Results.",
-   "in_list_view": 1,
-   "idx": 10
+   "hidden": 1,
+   "in_list_view": 1
   },
   {
-   "fieldname": "objective_title",
-   "fieldtype": "Data",
-   "label": "Objective Title",
-   "reqd": 0,
-   "in_list_view": 0,
+   "fieldname": "key_result_count",
+   "fieldtype": "Int",
+   "label": "Key Result Count",
+   "default": 0,
+   "read_only": 1,
    "hidden": 1,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "start_date",
-   "fieldtype": "Date",
-   "label": "Start Date",
-   "reqd": 0,
-   "description": "Defaults from the parent Sprint.",
-   "hidden": 1,
-   "in_list_view": 0,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "end_date",
-   "fieldtype": "Date",
-   "label": "End Date",
-   "reqd": 0,
-   "description": "Defaults from the parent Sprint.",
-   "hidden": 1,
-   "in_list_view": 0,
-   "in_standard_filter": 0
-  },
-  {
-   "fieldname": "parent_objective",
-   "fieldtype": "Link",
-   "label": "Parent Objective",
-   "options": "OKR Objective",
-   "description": "Optional: align this objective under a higher-level objective.",
-   "hidden": 1,
-   "reqd": 0,
-   "in_list_view": 0,
-   "in_standard_filter": 0
+   "in_list_view": 1
   },
   {
    "fieldname": "objective_type",
@@ -181,21 +225,14 @@
    "label": "Objective Type",
    "options": "Company\nDepartment\nTeam\nIndividual",
    "default": "Department",
-   "reqd": 0,
-   "hidden": 1,
-   "in_list_view": 0,
-   "in_standard_filter": 0
+   "hidden": 1
   },
   {
-   "fieldname": "priority",
-   "fieldtype": "Select",
-   "label": "Priority",
-   "options": "Low\nMedium\nHigh\nStrategic",
-   "default": "High",
-   "hidden": 1,
-   "reqd": 0,
-   "in_list_view": 0,
-   "in_standard_filter": 0
+   "fieldname": "parent_objective",
+   "fieldtype": "Link",
+   "label": "Parent Objective",
+   "options": "OKR Objective",
+   "hidden": 1
   },
   {
    "fieldname": "confidence",
@@ -204,21 +241,14 @@
    "options": "1\n2\n3\n4\n5",
    "default": "3",
    "read_only": 1,
-   "description": "Calculated from linked Key Results.",
-   "hidden": 1,
-   "reqd": 0,
-   "in_list_view": 0,
-   "in_standard_filter": 0
+   "hidden": 1
   },
   {
    "fieldname": "alignment_map",
    "fieldtype": "Table",
    "label": "Alignment Map",
    "options": "OKR Objective Alignment",
-   "hidden": 1,
-   "reqd": 0,
-   "in_list_view": 0,
-   "in_standard_filter": 0
+   "hidden": 1
   },
   {
    "fieldname": "objective_details_section",
@@ -230,20 +260,34 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "objective_alignment_section",
+   "fieldname": "inherited_context_section",
    "fieldtype": "Section Break",
-   "label": "Alignment Map"
+   "label": "Inherited Context"
   },
   {
-   "fieldname": "summary_sidebar_section",
+   "fieldname": "inherited_context_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "timeline_section",
    "fieldtype": "Section Break",
-   "label": "Objective Summary"
+   "label": "Assignment"
+  },
+  {
+   "fieldname": "timeline_col_break",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "technical_section",
    "fieldtype": "Section Break",
    "label": "System Details",
    "collapsible": 1
+  },
+  {
+   "fieldname": "objective_alignment_section",
+   "fieldtype": "Section Break",
+   "label": "Alignment Map",
+   "hidden": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -254,59 +298,59 @@
  "owner": "Administrator",
  "permissions": [
   {
-   "create": 1,
-   "delete": 0,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
    "role": "OKR Admin",
-   "write": 1
-  },
-  {
+   "read": 1,
+   "write": 1,
    "create": 1,
-   "delete": 0,
-   "email": 1,
+   "delete": 1,
+   "report": 1,
    "export": 1,
    "print": 1,
-   "read": 1,
-   "report": 1,
+   "email": 1
+  },
+  {
    "role": "OKR Manager",
-   "write": 1
-  },
-  {
+   "read": 1,
+   "write": 1,
    "create": 1,
-   "delete": 0,
-   "email": 1,
+   "delete": 1,
+   "report": 1,
    "export": 1,
    "print": 1,
-   "read": 1,
-   "report": 1,
+   "email": 1
+  },
+  {
    "role": "Department Head",
-   "write": 1
-  },
-  {
+   "read": 1,
+   "write": 1,
    "create": 1,
    "delete": 0,
-   "email": 0,
+   "report": 1,
    "export": 1,
    "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Team Lead",
-   "write": 1
+   "email": 1
   },
   {
+   "role": "Team Lead",
+   "read": 1,
+   "write": 1,
    "create": 1,
    "delete": 0,
-   "email": 0,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 0
+  },
+  {
+   "role": "Employee",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "report": 0,
    "export": 0,
    "print": 0,
-   "read": 1,
-   "report": 0,
-   "role": "Employee",
-   "write": 1
+   "email": 0
   }
  ],
  "sort_field": "modified",

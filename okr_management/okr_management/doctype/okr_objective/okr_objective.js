@@ -1,109 +1,179 @@
 frappe.ui.form.on('OKR Objective', {
-	refresh(frm) {
-		frm.set_df_property('naming_series', 'hidden', 1);
-		frm.set_df_property('company', 'read_only', 1);
-		frm.set_df_property('progress', 'read_only', 1);
-		frm.set_df_property('confidence', 'read_only', 1);
-		set_sprint_query(frm);
-		
-		if (frm.is_new() && (!frm.doc.status || frm.doc.status === 'Completed')) {
-			frm.set_value('status', 'Draft');
-		}
-		if (!frm.doc.owner_user) {
-			frm.set_value('owner_user', frappe.session.user);
-		}
-		
-		render_sprint_summary(frm);
-	},
-	parent_plan(frm) {
-		set_sprint_query(frm);
-		if (frm.doc.sprint) {
-			frappe.db.get_value('OKR Sprint', frm.doc.sprint, 'parent_plan').then(r => {
-				const sprint_plan = r.message ? r.message.parent_plan : '';
-				if (sprint_plan && sprint_plan !== frm.doc.parent_plan) {
-					frm.set_value('sprint', '');
-				}
-			});
-		}
-	},
-	sprint(frm) {
-		if (frm.doc.sprint) {
-			frappe.db.get_value('OKR Sprint', frm.doc.sprint, ['start_date', 'end_date', 'parent_plan', 'sprint_cycle', 'quarter', 'status']).then(r => {
-				const sprint = r.message || {};
-				if (sprint.parent_plan) frm.set_value('parent_plan', sprint.parent_plan);
-				if (sprint.start_date) frm.set_value('start_date', sprint.start_date);
-				if (sprint.end_date) frm.set_value('end_date', sprint.end_date);
-				
-				if (sprint.parent_plan) {
-					frappe.db.get_value('OKR Plan', sprint.parent_plan, ['company', 'department']).then(plan_res => {
-						const plan = plan_res.message || {};
-						if (plan.company) frm.set_value('company', plan.company);
-						if (frm.doc.level === 'Department' && plan.department && !frm.doc.department) {
-							frm.set_value('department', plan.department);
-						}
-					});
-				}
-				render_sprint_summary(frm);
-			});
-		} else {
-			frm.dashboard.clear_headline();
-		}
-	},
-	level(frm) {
-		frm.toggle_reqd('department', frm.doc.level === 'Department');
-		if (frm.doc.level === 'Organization') {
-			frm.set_value('department', '');
-		}
-	}
+    refresh(frm) {
+        frm.set_df_property('naming_series', 'hidden', 1);
+        set_sprint_query(frm);
+        set_static_properties(frm);
+        apply_lifecycle_locks(frm);
+        apply_completion_ui(frm);
+        fetch_and_cache_parent_plan_title(frm);
+
+        if (frm.is_new() && !frm.doc.status) {
+            frm.set_value('status', 'Draft');
+        }
+        if (!frm.doc.owner_user) {
+            frm.set_value('owner_user', frappe.session.user);
+        }
+        if (!frm.doc.priority) {
+            frm.set_value('priority', 'High');
+        }
+    },
+    sprint(frm) {
+        inherit_from_sprint(frm);
+    },
+    status(frm) {
+        apply_lifecycle_locks(frm);
+        apply_completion_ui(frm);
+    },
+    partial_completion_accepted(frm) {
+        apply_completion_ui(frm);
+    },
+    start_date(frm) {
+        validate_dates_within_sprint(frm);
+    },
+    end_date(frm) {
+        validate_dates_within_sprint(frm);
+    }
 });
 
 function set_sprint_query(frm) {
-	frm.set_query('sprint', () => {
-		const filters = {};
-		if (frm.doc.parent_plan) {
-			filters.parent_plan = frm.doc.parent_plan;
-		}
-		return { filters };
-	});
+    frm.set_query('sprint', () => ({
+        filters: {
+            status: ['not in', ['Closed', 'Archived']]
+        }
+    }));
 }
 
-function render_sprint_summary(frm) {
-	if (!frm.doc.sprint) {
-		frm.dashboard.clear_headline();
-		return;
-	}
-	frappe.db.get_value('OKR Sprint', frm.doc.sprint, ['parent_plan', 'sprint_cycle', 'quarter', 'status']).then(r => {
-		const sprint = r.message || {};
-		const plan = sprint.parent_plan || 'N/A';
-		const cycle = sprint.sprint_cycle || sprint.quarter || 'N/A';
-		const status = sprint.status || 'Draft';
-		
-		let status_class = 'okr-status-draft';
-		if (status === 'Active') status_class = 'okr-status-active';
-		else if (status === 'Completed') status_class = 'okr-status-completed';
-		else if (status === 'Closed') status_class = 'okr-status-completed';
+function set_static_properties(frm) {
+    [
+        'naming_series',
+        'parent_plan',
+        'financial_year',
+        'company',
+        'department',
+        'plan_owner',
+        'sprint_owner',
+        'start_date',
+        'end_date',
+        'progress',
+        'key_result_count',
+        'confidence'
+    ].forEach(fieldname => frm.set_df_property(fieldname, 'read_only', 1));
+}
 
-		const html = `
-			<div class="okr-summary-card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #ffffff; padding: 16px 24px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);">
-				<div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; font-weight: 600; margin-bottom: 8px;">Sprint Context Summary</div>
-				<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
-					<div>
-						<div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Parent Plan</div>
-						<div style="font-size: 14px; font-weight: 600; color: #f8fafc; margin-top: 4px;">${plan}</div>
-					</div>
-					<div>
-						<div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Sprint Cycle</div>
-						<div style="font-size: 14px; font-weight: 600; color: #f8fafc; margin-top: 4px;">${cycle}</div>
-					</div>
-					<div>
-						<div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Sprint Status</div>
-						<div style="font-size: 14px; font-weight: 600; color: #f8fafc; margin-top: 4px;">
-							<span class="okr-status-badge ${status_class}" style="padding: 2px 8px; border-radius: 9999px; font-size: 11px;">${status}</span>
-						</div>
-					</div>
-				</div>
-			</div>
-		`;
-		frm.dashboard.set_headline_html(html);
-	});
+function fetch_and_cache_parent_plan_title(frm) {
+    if (frm.doc.parent_plan) {
+        frappe.db.get_value('OKR Plan', frm.doc.parent_plan, 'plan_name').then(r => {
+            if (r.message && r.message.plan_name) {
+                frappe.utils.add_link_title("OKR Plan", frm.doc.parent_plan, r.message.plan_name);
+                frm.refresh_field('parent_plan');
+            }
+        });
+    }
+}
+
+function inherit_from_sprint(frm) {
+    if (!frm.doc.sprint) {
+        update_sprint_fields(frm, {});
+        return;
+    }
+
+    frappe.db.get_value('OKR Sprint', frm.doc.sprint, [
+        'parent_plan',
+        'financial_year',
+        'company',
+        'department',
+        'plan_owner',
+        'sprint_owner',
+        'start_date',
+        'end_date'
+    ]).then(r => {
+        const sprint = r.message || {};
+        if (sprint.parent_plan) {
+            frappe.db.get_value('OKR Plan', sprint.parent_plan, 'plan_name').then(p => {
+                const plan_name = p.message ? p.message.plan_name : '';
+                if (plan_name) {
+                    frappe.utils.add_link_title("OKR Plan", sprint.parent_plan, plan_name);
+                }
+                update_sprint_fields(frm, sprint);
+            });
+        } else {
+            update_sprint_fields(frm, sprint);
+        }
+    });
+}
+
+function update_sprint_fields(frm, sprint) {
+    const p1 = frm.set_value('parent_plan', sprint.parent_plan || '');
+    const p2 = frm.set_value('financial_year', sprint.financial_year || '');
+    const p3 = frm.set_value('company', sprint.company || '');
+    const p4 = frm.set_value('department', sprint.department || '');
+    const p5 = frm.set_value('plan_owner', sprint.plan_owner || '');
+    const p6 = frm.set_value('sprint_owner', sprint.sprint_owner || '');
+    const p7 = frm.set_value('start_date', sprint.start_date || '');
+    const p8 = frm.set_value('end_date', sprint.end_date || '');
+
+    frm.refresh_field('parent_plan');
+    frm.refresh_field('financial_year');
+    frm.refresh_field('company');
+    frm.refresh_field('department');
+    frm.refresh_field('plan_owner');
+    frm.refresh_field('sprint_owner');
+    frm.refresh_field('start_date');
+    frm.refresh_field('end_date');
+
+    Promise.all([p1, p2, p3, p4, p5, p6, p7, p8]).then(() => {
+        frm.refresh_field('parent_plan');
+        frm.refresh_field('financial_year');
+        frm.refresh_field('company');
+        frm.refresh_field('department');
+        frm.refresh_field('plan_owner');
+        frm.refresh_field('sprint_owner');
+        frm.refresh_field('start_date');
+        frm.refresh_field('end_date');
+    });
+}
+
+function validate_dates_within_sprint(frm, sprint_values) {
+    if (!frm.doc.sprint || !frm.doc.start_date || !frm.doc.end_date) {
+        return;
+    }
+    const validate = sprint => {
+        if (!sprint.start_date || !sprint.end_date) return;
+        if (frm.doc.start_date < sprint.start_date) {
+            frappe.msgprint(__('Objective Start Date cannot be before Sprint Start Date ({0}).', [frappe.datetime.str_to_user(sprint.start_date)]));
+        }
+        if (frm.doc.end_date > sprint.end_date) {
+            frappe.msgprint(__('Objective End Date cannot be after Sprint End Date ({0}).', [frappe.datetime.str_to_user(sprint.end_date)]));
+        }
+        if (frm.doc.start_date > frm.doc.end_date) {
+            frappe.msgprint(__('Objective End Date cannot be before Start Date.'));
+        }
+    };
+    if (sprint_values) {
+        validate(sprint_values);
+    } else {
+        frappe.db.get_value('OKR Sprint', frm.doc.sprint, ['start_date', 'end_date']).then(r => validate(r.message || {}));
+    }
+}
+
+function apply_lifecycle_locks(frm) {
+    const status = frm.doc.status || 'Draft';
+    const setup_locked = ['Active', 'On Hold', 'Completed', 'Closed'].includes(status);
+    const active_locked = ['Active', 'On Hold', 'Completed', 'Closed'].includes(status);
+    const closed_locked = ['Closed'].includes(status);
+
+    ['parent_plan', 'sprint', 'financial_year', 'company', 'department', 'plan_owner', 'sprint_owner', 'level', 'start_date', 'end_date']
+    .forEach(fieldname => frm.set_df_property(fieldname, 'read_only', setup_locked || frm.get_field(fieldname).df.read_only));
+
+    ['objective_title', 'owner_user'].forEach(fieldname => frm.set_df_property(fieldname, 'read_only', active_locked));
+    ['priority', 'reviewer', 'description', 'partial_completion_accepted', 'completion_notes']
+    .forEach(fieldname => frm.set_df_property(fieldname, 'read_only', closed_locked));
+
+    set_static_properties(frm);
+}
+
+function apply_completion_ui(frm) {
+    const is_completion_state = ['Completed', 'Closed'].includes(frm.doc.status);
+    frm.toggle_display('partial_completion_accepted', is_completion_state);
+    frm.toggle_display('completion_notes', is_completion_state && cint(frm.doc.partial_completion_accepted));
 }

@@ -51,19 +51,58 @@ def recalculate_key_result_progress(key_result_name: str | None) -> None:
 	if not key_result_name or not frappe.db.exists('OKR Key Result', key_result_name):
 		return
 
-	action_items = frappe.get_all(
-		'OKR Action Item',
-		filters={'parenttype': 'OKR Key Result', 'parent': key_result_name},
-		fields=['progress'],
+	key_result = frappe.db.get_value(
+		'OKR Key Result',
+		key_result_name,
+		['calculation_mode', 'metric_type', 'metric_direction', 'baseline_value', 'current_value', 'target_value'],
+		as_dict=True,
 	)
-	progress = average([item.get('progress') for item in action_items])
+	progress = get_key_result_progress(key_result_name, key_result)
 	values: dict[str, Any] = {}
 	set_if_has(values, 'OKR Key Result', 'target_progress', progress)
 	set_if_has(values, 'OKR Key Result', 'score', progress)
-	set_if_has(values, 'OKR Key Result', 'status', 'Achieved' if progress >= 100 else 'Active')
+
+	action_item_count = frappe.db.count('OKR Action Item', {'parent_key_result': key_result_name})
+	checkin_count = frappe.db.count('OKR Check In', {'key_result': key_result_name})
+	set_if_has(values, 'OKR Key Result', 'action_item_count', action_item_count)
+	set_if_has(values, 'OKR Key Result', 'checkin_count', checkin_count)
+
 	if values:
 		frappe.db.set_value('OKR Key Result', key_result_name, values, update_modified=False)
 	recalculate_from_key_result(key_result_name)
+
+
+def get_key_result_progress(key_result_name: str, key_result: Any) -> float:
+	"""Key Result Progress = Average(Action Item Progress).
+	When Action Items exist, their average always determines KR progress.
+	When no Action Items exist, fall back to metric-based calculation.
+	"""
+	# Always use average of action items when they exist (regardless of calculation_mode)
+	action_items = frappe.get_all(
+		'OKR Action Item',
+		filters={'parent_key_result': key_result_name, 'status': ['!=', 'Cancelled']},
+		fields=['progress'],
+	)
+	if action_items:
+		return average([item.get('progress') for item in action_items])
+
+	# No Action Items: fall back to metric-based calculation
+	if key_result and key_result.get('metric_type') == 'Boolean':
+		return 100.0 if flt(key_result.get('current_value')) else 0.0
+
+	if key_result and key_result.get('metric_direction') == 'Decrease':
+		baseline = flt(key_result.get('baseline_value'))
+		target = flt(key_result.get('target_value'))
+		if target == baseline:
+			return 0.0
+		progress = ((baseline - flt(key_result.get('current_value'))) / (baseline - target)) * 100.0
+		return round(min(100.0, max(0.0, progress)), 2)
+
+	return get_progress_from_values(
+		key_result.get('baseline_value') if key_result else 0,
+		key_result.get('current_value') if key_result else 0,
+		key_result.get('target_value') if key_result else 0,
+	)
 
 
 def recalculate_objective_progress(objective_name: str | None) -> None:
@@ -79,7 +118,7 @@ def recalculate_objective_progress(objective_name: str | None) -> None:
 	progress = average([item.get(progress_field) for item in key_results])
 	values: dict[str, Any] = {}
 	set_if_has(values, 'OKR Objective', 'progress', progress)
-	set_if_has(values, 'OKR Objective', 'status', 'Completed' if progress >= 100 else 'Active')
+	set_if_has(values, 'OKR Objective', 'key_result_count', len(key_results))
 	if values:
 		frappe.db.set_value('OKR Objective', objective_name, values, update_modified=False)
 	_recalculate_sprint_for_objective(objective_name)
@@ -99,7 +138,7 @@ def recalculate_sprint_progress(sprint_name: str | None) -> None:
 	progress = average([item.get('progress') for item in objectives])
 	values: dict[str, Any] = {}
 	set_if_has(values, 'OKR Sprint', 'progress', progress)
-	set_if_has(values, 'OKR Sprint', 'status', 'Completed' if progress >= 100 else 'Active')
+	set_if_has(values, 'OKR Sprint', 'objective_count', len(objectives))
 	if values:
 		frappe.db.set_value('OKR Sprint', sprint_name, values, update_modified=False)
 
@@ -116,7 +155,6 @@ def recalculate_plan_progress(plan_name: str | None) -> None:
 	progress = average([item.get('progress') for item in sprints])
 	values: dict[str, Any] = {}
 	set_if_has(values, 'OKR Plan', 'progress', progress)
-	set_if_has(values, 'OKR Plan', 'status', 'Completed' if progress >= 100 else 'Active')
 	if values:
 		frappe.db.set_value('OKR Plan', plan_name, values, update_modified=False)
 
@@ -141,12 +179,15 @@ def sync_checkin_progress(doc: Any, method: str | None = None) -> None:
 	if not key_result_name or not frappe.db.exists('OKR Key Result', key_result_name):
 		return
 
+	calculation_mode = frappe.db.get_value('OKR Key Result', key_result_name, 'calculation_mode')
+	if calculation_mode != 'Check-in Based':
+		return
+
 	values: dict[str, Any] = {}
 	progress = flt(safe_get(doc, 'progress', 0))
 	set_if_has(values, 'OKR Key Result', 'current_value', flt(safe_get(doc, 'current_value', 0)))
 	set_if_has(values, 'OKR Key Result', 'target_progress', progress)
 	set_if_has(values, 'OKR Key Result', 'score', progress)
-	set_if_has(values, 'OKR Key Result', 'status', 'Achieved' if progress >= 100 else 'Active')
 	if values:
 		frappe.db.set_value('OKR Key Result', key_result_name, values, update_modified=False)
 	recalculate_from_key_result(key_result_name)

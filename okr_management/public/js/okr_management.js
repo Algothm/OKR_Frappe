@@ -1,15 +1,5 @@
 frappe.provide("okr_management");
 
-okr_management.boot = function () {
-	return {
-		show_workspace_hint: function () {
-			if (frappe.get_route && frappe.get_route()[0] === "app") {
-				return;
-			}
-		},
-	};
-};
-
 (() => {
 	const OKR_GROUPS = new Set(["Planning", "Execution", "Administration"]);
 
@@ -32,7 +22,6 @@ okr_management.boot = function () {
 			item.find("> .desk-sidebar-item .drop-icon").trigger("click");
 		});
 	}
-
 
 	function bind_okr_sidebar() {
 		OKR_GROUPS.forEach(bind_group_toggle);

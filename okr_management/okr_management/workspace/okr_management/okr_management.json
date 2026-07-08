@@ -25,14 +25,14 @@
    "label": "Review Rating Distribution"
   }
  ],
- "content": "[{\"id\":\"okr_executive_summar\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Executive Summary</b></span>\",\"col\":12}},{\"id\":\"okr_total_objectives\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Objectives\",\"col\":4}},{\"id\":\"okr_active_draft_obj\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Active/Draft Objectives\",\"col\":4}},{\"id\":\"okr_completed_object\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Completed Objectives\",\"col\":4}},{\"id\":\"okr_at_risk_objectiv\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"At Risk Objectives\",\"col\":4}},{\"id\":\"okr_total_key_result\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Key Results\",\"col\":4}},{\"id\":\"okr_average_progress\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Average Progress\",\"col\":4}},{\"id\":\"okr_average_confiden\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Average Confidence\",\"col\":4}},{\"id\":\"okr_pending_reviews_\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Pending Reviews\",\"col\":4}},{\"id\":\"okr_check_ins_this_m\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Check-ins This Month\",\"col\":4}},{\"id\":\"okr_average_review_r\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Average Review Rating\",\"col\":4}},{\"id\":\"okr_executive_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"okr_planning_4\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Planning</b></span>\",\"col\":12}},{\"id\":\"okr_okr_plan_5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Plan\",\"col\":4}},{\"id\":\"okr_okr_sprint_6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Sprint\",\"col\":4}},{\"id\":\"okr_planning_spacer_\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"okr_execution_8\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Execution</b></span>\",\"col\":12}},{\"id\":\"okr_objectives_9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Objectives\",\"col\":4}},{\"id\":\"okr_key_results_10\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Key Results\",\"col\":4}},{\"id\":\"okr_action_items_11\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Action Items\",\"col\":4}},{\"id\":\"okr_check_ins_12\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Check-ins\",\"col\":4}},{\"id\":\"okr_execution_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"okr_administration_2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Administration</b></span>\",\"col\":12}},{\"id\":\"okr_settings_23\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Settings\",\"col\":4}},{\"id\":\"okr_approval_matrix\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Approval Matrix\",\"col\":4}},{\"id\":\"okr_administration_s\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"okr_executive_insights\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Executive Insights</b></span>\",\"col\":12}},{\"id\":\"okr_health_insights_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Health Insights\",\"col\":4}},{\"id\":\"okr_executive_insights_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"okr_analytics_13\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Analytics & Charts</b></span>\",\"col\":12}},{\"id\":\"okr_okr_objectives_b\",\"type\":\"chart\",\"data\":{\"chart_name\":\"OKR Objectives by Status\",\"col\":6}},{\"id\":\"okr_checkins_month\",\"type\":\"chart\",\"data\":{\"chart_name\":\"OKR Check-ins by Month\",\"col\":6}},{\"id\":\"okr_kr_progress_range\",\"type\":\"chart\",\"data\":{\"chart_name\":\"OKR Key Results by Progress Range\",\"col\":6}},{\"id\":\"okr_average_cycle\",\"type\":\"chart\",\"data\":{\"chart_name\":\"OKR Average Progress by Cycle\",\"col\":6}},{\"id\":\"okr_confidence_dist\",\"type\":\"chart\",\"data\":{\"chart_name\":\"OKR Confidence Distribution\",\"col\":6}},{\"id\":\"okr_review_rating\",\"type\":\"chart\",\"data\":{\"chart_name\":\"OKR Review Rating Distribution\",\"col\":6}},{\"id\":\"okr_analytics_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"okr_reports_7\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"okr_okr_summary_8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Summary\",\"col\":4}},{\"id\":\"okr_at_risk_report_9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"At Risk Report\",\"col\":4}},{\"id\":\"okr_employee_progres\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee Progress\",\"col\":4}},{\"id\":\"okr_cycle_review_11\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cycle Review\",\"col\":4}},{\"id\":\"okr_action_item_repo\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Action Item Report\",\"col\":4}},{\"id\":\"okr_reports_spacer_1\",\"type\":\"spacer\",\"data\":{\"col\":12}}]",
+ "content": "[{\"id\":\"okr_executive_summar\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Executive Summary</b></span>\",\"col\":12}},{\"id\":\"okr_total_objectives\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Objectives\",\"col\":4}},{\"id\":\"okr_active_draft_obj\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Active/Draft Objectives\",\"col\":4}},{\"id\":\"okr_completed_object\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Completed Objectives\",\"col\":4}},{\"id\":\"okr_at_risk_objectiv\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"At Risk Objectives\",\"col\":4}},{\"id\":\"okr_total_key_result\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Key Results\",\"col\":4}},{\"id\":\"okr_average_progress\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Average Progress\",\"col\":4}},{\"id\":\"okr_average_confiden\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Average Confidence\",\"col\":4}},{\"id\":\"okr_pending_reviews_\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Pending Reviews\",\"col\":4}},{\"id\":\"okr_check_ins_this_m\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Check-ins This Month\",\"col\":4}},{\"id\":\"okr_average_review_r\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Average Review Rating\",\"col\":4}},{\"id\":\"okr_executive_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"okr_executive_insights\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Executive Insights</b></span>\",\"col\":12}},{\"id\":\"okr_health_insights_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Health Insights\",\"col\":4}},{\"id\":\"okr_executive_insights_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"okr_analytics_13\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Analytics & Charts</b></span>\",\"col\":12}},{\"id\":\"okr_okr_objectives_b\",\"type\":\"chart\",\"data\":{\"chart_name\":\"OKR Objectives by Status\",\"col\":6}},{\"id\":\"okr_checkins_month\",\"type\":\"chart\",\"data\":{\"chart_name\":\"OKR Check-ins by Month\",\"col\":6}},{\"id\":\"okr_kr_progress_range\",\"type\":\"chart\",\"data\":{\"chart_name\":\"OKR Key Results by Progress Range\",\"col\":6}},{\"id\":\"okr_average_cycle\",\"type\":\"chart\",\"data\":{\"chart_name\":\"OKR Average Progress by Cycle\",\"col\":6}},{\"id\":\"okr_confidence_dist\",\"type\":\"chart\",\"data\":{\"chart_name\":\"OKR Confidence Distribution\",\"col\":6}},{\"id\":\"okr_review_rating\",\"type\":\"chart\",\"data\":{\"chart_name\":\"OKR Review Rating Distribution\",\"col\":6}},{\"id\":\"okr_analytics_spacer\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"okr_reports_7\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"okr_okr_summary_8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"OKR Summary\",\"col\":4}},{\"id\":\"okr_at_risk_report_9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"At Risk Report\",\"col\":4}},{\"id\":\"okr_employee_progres\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee Progress\",\"col\":4}},{\"id\":\"okr_cycle_review_11\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cycle Review\",\"col\":4}},{\"id\":\"okr_action_item_repo\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Action Item Report\",\"col\":4}},{\"id\":\"okr_reports_spacer_1\",\"type\":\"spacer\",\"data\":{\"col\":12}}]",
  "creation": "2026-07-02 15:10:15.527075",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 0,
- "icon": "folder",
+ "icon": "project",
  "idx": 0,
  "indicator_color": "green",
  "is_hidden": 0,
@@ -45,118 +45,6 @@
    "link_count": 0,
    "onboard": 0,
    "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Planning",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "OKR Plan",
-   "link_count": 0,
-   "link_to": "OKR Plan",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "OKR Sprint",
-   "link_count": 0,
-   "link_to": "OKR Sprint",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Execution",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Objectives",
-   "link_count": 0,
-   "link_to": "OKR Objective",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Key Results",
-   "link_count": 0,
-   "link_to": "OKR Key Result",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Action Items",
-   "link_count": 0,
-   "link_to": "OKR Action Item",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Check-ins",
-   "link_count": 0,
-   "link_to": "OKR Check In",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Administration",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Settings",
-   "link_count": 0,
-   "link_to": "OKR Settings",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "dependencies": "",
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Approval Matrix",
-   "link_count": 0,
-   "link_to": "OKR Approval Matrix",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
   },
   {
    "hidden": 0,
@@ -308,54 +196,6 @@
  "roles": [],
  "sequence_id": 1.0,
  "shortcuts": [
-  {
-   "doc_view": "List",
-   "label": "OKR Plan",
-   "link_to": "OKR Plan",
-   "type": "DocType"
-  },
-  {
-   "doc_view": "List",
-   "label": "OKR Sprint",
-   "link_to": "OKR Sprint",
-   "type": "DocType"
-  },
-  {
-   "doc_view": "List",
-   "label": "Objectives",
-   "link_to": "OKR Objective",
-   "type": "DocType"
-  },
-  {
-   "doc_view": "List",
-   "label": "Key Results",
-   "link_to": "OKR Key Result",
-   "type": "DocType"
-  },
-  {
-   "doc_view": "List",
-   "label": "Action Items",
-   "link_to": "OKR Action Item",
-   "type": "DocType"
-  },
-  {
-   "doc_view": "List",
-   "label": "Check-ins",
-   "link_to": "OKR Check In",
-   "type": "DocType"
-  },
-  {
-   "doc_view": "List",
-   "label": "Settings",
-   "link_to": "OKR Settings",
-   "type": "DocType"
-  },
-  {
-   "doc_view": "List",
-   "label": "Approval Matrix",
-   "link_to": "OKR Approval Matrix",
-   "type": "DocType"
-  },
   {
    "doc_view": "",
    "label": "Health Insights",

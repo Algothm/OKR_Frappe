@@ -57,25 +57,6 @@ def create_workflows() -> None:
 				{"state": "Active", "action": "Complete", "next_state": "Completed", "allowed": "OKR Manager"},
 			],
 		},
-		{
-			"workflow_name": "OKR Key Result Approval",
-			"document_type": "OKR Key Result",
-			"workflow_state_field": "approval_status",
-			"states": [
-				{"state": "Draft", "doc_status": 0, "allow_edit": "Employee"},
-				{"state": "Pending Approval", "doc_status": 0, "allow_edit": "OKR Manager"},
-				{"state": "Approved", "doc_status": 0, "allow_edit": "OKR Manager"},
-				{"state": "Returned for Changes", "doc_status": 0, "allow_edit": "Employee"},
-				{"state": "Rejected", "doc_status": 0, "allow_edit": "OKR Manager"},
-			],
-			"transitions": [
-				{"state": "Draft", "action": "Submit for Approval", "next_state": "Pending Approval", "allowed": "Employee"},
-				{"state": "Returned for Changes", "action": "Submit for Approval", "next_state": "Pending Approval", "allowed": "Employee"},
-				{"state": "Pending Approval", "action": "Approve", "next_state": "Approved", "allowed": "OKR Manager"},
-				{"state": "Pending Approval", "action": "Reject", "next_state": "Rejected", "allowed": "OKR Manager"},
-				{"state": "Pending Approval", "action": "Return for Changes", "next_state": "Returned for Changes", "allowed": "OKR Manager"},
-			],
-		},
 	]
 
 	for definition in workflow_definitions:

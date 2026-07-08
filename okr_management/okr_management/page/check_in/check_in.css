@@ -1,0 +1,52 @@
+.okr-checkin-page { padding: 24px 8px 40px; }
+.okr-checkin-topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; }
+.okr-checkin-eyebrow { color:#2563eb; font-weight:700; font-size:12px; text-transform:uppercase; }
+.okr-checkin-topbar h2 { margin:2px 0 0; font-size:26px; font-weight:800; }
+.okr-pending-count { background:#111827; color:#fff; border-radius:10px; padding:12px 16px; min-width:190px; text-align:right; }
+.okr-pending-count strong { display:block; font-size:24px; line-height:1; }
+.okr-pending-count span { font-size:12px; color:#d1d5db; }
+.okr-checkin-filters { display:flex; gap:8px; align-items:center; margin-bottom:14px; }
+.okr-checkin-filters .form-control { width:180px; height:32px; }
+.okr-checkin-layout { display:grid; gap:16px; }
+.okr-checkin-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 8px 24px rgba(15,23,42,.06); padding:18px 20px; }
+.okr-table-wrap { overflow-x:auto; }
+.okr-checkin-table { width:100%; border-collapse:collapse; min-width:980px; }
+.okr-checkin-table th, .okr-checkin-table td { padding:13px 12px; border-bottom:1px solid #e5e7eb; vertical-align:middle; }
+.okr-checkin-table th { background:#f8fafc; color:#111827; font-weight:750; }
+.okr-checkin-table tr:last-child td { border-bottom:0; }
+.okr-checkin-table tr.is-overdue { background:#fff5f5; }
+.okr-overdue-pill { display:inline-flex; margin-left:8px; padding:2px 7px; border-radius:999px; background:#fee2e2; color:#b91c1c; font-size:11px; font-weight:800; }
+.okr-progress-mini { display:grid; gap:5px; min-width:130px; }
+.okr-progress-mini span { font-weight:750; text-align:right; }
+.okr-progress-mini div { height:7px; background:#e8e8f2; border-radius:999px; overflow:hidden; }
+.okr-progress-mini i { display:block; height:100%; background:#2563eb; border-radius:inherit; }
+.okr-status-pill { display:inline-flex; padding:4px 9px; border-radius:7px; background:#dbeafe; color:#0758d8; font-weight:750; font-size:12px; }
+.okr-status-pill.blocked { background:#fee2e2; color:#b91c1c; }
+.okr-status-pill.completed { background:#dcfce7; color:#166534; }
+.okr-panel-head, .okr-panel-actions { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.okr-panel-head h3 { margin:0 0 16px; font-size:19px; font-weight:800; }
+.okr-panel-head h3 span { color:#2563eb; }
+.okr-panel-grid { display:grid; grid-template-columns:minmax(320px,.9fr) minmax(420px,1.1fr); gap:24px; }
+.okr-context-box { border:1px solid #e5e7eb; border-radius:10px; padding:16px; display:grid; grid-template-columns:1fr 1fr; gap:14px 18px; }
+.okr-context-pair span { display:block; color:#6b7280; font-size:12px; margin-bottom:3px; }
+.okr-context-pair strong { display:block; color:#111827; line-height:1.35; }
+.okr-input-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 18px; }
+.okr-field { display:flex; flex-direction:column; gap:6px; }
+.okr-field label { font-weight:650; margin:0; }
+.okr-field label span { color:#dc2626; }
+.okr-field textarea { resize:vertical; }
+.okr-attachment-field { grid-column:1 / -1; }
+.okr-file-chip { display:flex; align-items:center; justify-content:space-between; border:1px solid #e5e7eb; border-radius:8px; padding:8px 10px; margin-bottom:8px; }
+.okr-panel-actions { justify-content:flex-end; margin-top:18px; }
+.okr-card-head h3 { margin:0 0 12px; font-size:18px; font-weight:800; }
+.okr-recent-list { display:grid; gap:10px; }
+.okr-recent-item { display:flex; justify-content:space-between; gap:16px; border:1px solid #eef2f7; border-radius:9px; padding:11px 12px; }
+.okr-recent-item p { margin:4px 0 0; color:#4b5563; }
+.okr-recent-item span { display:block; font-weight:800; text-align:right; }
+.okr-recent-item small { color:#6b7280; }
+.okr-empty-state { color:#6b7280; text-align:center; padding:24px !important; }
+@media (max-width: 900px) {
+        .okr-checkin-topbar, .okr-panel-head { align-items:flex-start; flex-direction:column; }
+        .okr-pending-count { text-align:left; width:100%; }
+        .okr-panel-grid, .okr-context-box, .okr-input-grid { grid-template-columns:1fr; }
+}

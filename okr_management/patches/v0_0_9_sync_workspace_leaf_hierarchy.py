@@ -8,14 +8,10 @@ WORKSPACE_FILES = [
     "okr_management/okr_management.json",
     "planning/planning.json",
     "execution/execution.json",
-    "administration/administration.json",
 ]
 
 OBSOLETE_LEAF_WORKSPACES = [
-    "OKR Plan",
-    "OKR Sprint",
-    "Objectives",
-    "Key Results",
+    "Administration",
     "OKR Settings",
     "OKR Approval Matrix",
 ]
