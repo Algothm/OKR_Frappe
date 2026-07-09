@@ -88,7 +88,7 @@ def get_checkin_page_data(show_all: int = 0, status: str | None = None) -> dict:
 
 
 @frappe.whitelist()
-def save_quick_checkin(action_item: str, progress: float, update: str, blocker: str | None = None, dependency: str | None = None, attachment: str | None = None) -> dict:
+def save_quick_checkin(action_item: str, progress: float, update: str, blocker: str | None = None, dependency: str | None = None, attachment: str | None = None, status: str | None = None) -> dict:
     if not action_item or not frappe.db.exists("OKR Action Item", action_item):
         frappe.throw(_("Action Item is required."))
     if not update:
@@ -103,11 +103,18 @@ def save_quick_checkin(action_item: str, progress: float, update: str, blocker: 
         frappe.throw(_("Check-ins are only allowed when the Parent Key Result is Draft or Active."))
 
     progress = min(100.0, max(0.0, flt(progress)))
-    new_status = action.status
-    if progress >= 100 and action.status != "Cancelled":
+    
+    if status and status in {"Open", "In Progress", "Blocked", "Completed", "Cancelled", "On Hold"}:
+        new_status = status
+    else:
+        new_status = action.status
+        if progress >= 100 and action.status != "Cancelled":
+            new_status = "Completed"
+        elif action.status in {"Open", "Blocked"} and progress > 0:
+            new_status = "In Progress"
+
+    if progress >= 100:
         new_status = "Completed"
-    elif action.status in {"Open", "Blocked"} and progress > 0:
-        new_status = "In Progress"
 
     doc = frappe.get_doc(
         {

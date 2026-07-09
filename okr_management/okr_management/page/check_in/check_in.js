@@ -148,6 +148,7 @@ class OKRQuickCheckIn {
                 this.selected = item;
                 this.attachment = '';
                 const progress = flt(item.progress || 0, 2);
+                const currentStatus = item.status || 'In Progress';
                 this.$body.find('[data-panel-wrap]').show().html(`
                         <section class="okr-checkin-card okr-quick-panel">
                                 <div class="okr-panel-head">
@@ -167,6 +168,15 @@ class OKRQuickCheckIn {
                                         </div>
                                         <div class="okr-input-grid">
                                                 <div class="okr-field"><label>${__('Progress %')} <span>*</span></label><input class="form-control" type="number" min="0" max="100" step="0.01" data-progress value="${progress}"></div>
+                                                <div class="okr-field">
+                                                        <label>${__('Status')}</label>
+                                                        <select class="form-control" data-status>
+                                                                <option value="In Progress" ${currentStatus === 'In Progress' ? 'selected' : ''}>${__('In Progress')}</option>
+                                                                <option value="Blocked" ${currentStatus === 'Blocked' ? 'selected' : ''}>${__('Blocked')}</option>
+                                                                <option value="On Hold" ${currentStatus === 'On Hold' ? 'selected' : ''}>${__('On Hold')}</option>
+                                                                <option value="Open" ${currentStatus === 'Open' ? 'selected' : ''}>${__('Open')}</option>
+                                                        </select>
+                                                </div>
                                                 <div class="okr-field"><label>${__('Description / Update')} <span>*</span></label><textarea class="form-control" rows="3" data-update></textarea></div>
                                                 <div class="okr-field"><label>${__('Blocker')}</label><textarea class="form-control" rows="2" data-blocker></textarea></div>
                                                 <div class="okr-field"><label>${__('Dependency')}</label><textarea class="form-control" rows="2" data-dependency></textarea></div>
@@ -213,6 +223,7 @@ class OKRQuickCheckIn {
                 const args = {
                         action_item: this.selected.name,
                         progress: $panel.find('[data-progress]').val(),
+                        status: $panel.find('[data-status]').val(),
                         update: $panel.find('[data-update]').val(),
                         blocker: $panel.find('[data-blocker]').val(),
                         dependency: $panel.find('[data-dependency]').val(),

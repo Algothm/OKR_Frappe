@@ -338,6 +338,15 @@ function render_inline_checkin_panel(frm, item) {
 				</div>
 				<div class="okr-checkin-fields">
 					<div class="okr-field-row"><label>${__('Progress (%)')} <span class="text-danger">*</span></label><input type="number" min="0" max="100" step="0.01" class="form-control okr-checkin-progress" value="${progress}"></div>
+					<div class="okr-field-row">
+						<label>${__('Status')}</label>
+						<select class="form-control okr-checkin-status">
+							<option value="In Progress" ${item.status === 'In Progress' ? 'selected' : ''}>${__('In Progress')}</option>
+							<option value="Blocked" ${item.status === 'Blocked' ? 'selected' : ''}>${__('Blocked')}</option>
+							<option value="On Hold" ${item.status === 'On Hold' ? 'selected' : ''}>${__('On Hold')}</option>
+							<option value="Open" ${item.status === 'Open' ? 'selected' : ''}>${__('Open')}</option>
+						</select>
+					</div>
 					<div class="okr-field-row"><label>${__('What work was completed?')} <span class="text-danger">*</span></label><textarea class="form-control okr-checkin-update" rows="3"></textarea></div>
 					<div class="okr-field-row"><label>${__('Blockers (What is preventing progress?)')}</label><textarea class="form-control okr-checkin-blocker" rows="2"></textarea></div>
 					<div class="okr-field-row"><label>${__('Any cross-team/person dependency?')}</label><textarea class="form-control okr-checkin-dependency" rows="2"></textarea></div>
@@ -369,11 +378,13 @@ function save_inline_checkin(frm, wrapper) {
 	const panel = wrapper.find('.okr-inline-checkin-panel');
 	const action_item = panel.attr('data-action-item');
 	const progress = flt(panel.find('.okr-checkin-progress').val());
+	const checkin_status = panel.find('.okr-checkin-status').val();
 	const achievements = (panel.find('.okr-checkin-update').val() || '').trim();
 	if (!achievements) {
 		frappe.msgprint(__('Please enter what work was completed.'));
 		return;
 	}
+	const item = (frm.doc.action_items || []).find(row => row.action_item_id === action_item) || {};
 	frappe.call({
 		method: 'frappe.client.insert',
 		args: { doc: {
@@ -384,7 +395,19 @@ function save_inline_checkin(frm, wrapper) {
 			attachment: panel.find('.okr-checkin-file-url').val() || '',
 			reported_by: frappe.session.user, checkin_date: frappe.datetime.get_today(),
 			parent_plan: frm.doc.parent_plan, parent_sprint: frm.doc.parent_sprint,
-			company: frm.doc.company, department: frm.doc.department, financial_year: frm.doc.financial_year
+			company: frm.doc.company, department: frm.doc.department, financial_year: frm.doc.financial_year,
+			action_items: [
+				{
+					action_item_id: action_item,
+					action_item_title: item.action_item_title || '',
+					owner_user: item.owner_user || frappe.session.user,
+					priority: item.priority || 'Medium',
+					status: progress >= 100 ? 'Completed' : checkin_status,
+					progress: progress,
+					due_date: item.due_date,
+					notes: achievements
+				}
+			]
 		} },
 		freeze: true,
 		freeze_message: __('Saving Check-In...'),
@@ -418,6 +441,11 @@ function get_action_item_context(frm) {
 		financial_year: frm.doc.financial_year,
 		owner_user: frappe.session.user
 	};
+}
+
+function open_new_action_item(frm) {
+	frappe.kr_needs_reload = true;
+	frappe.new_doc('OKR Action Item', get_action_item_context(frm));
 }
 
 function get_checkin_context(frm, row) {
