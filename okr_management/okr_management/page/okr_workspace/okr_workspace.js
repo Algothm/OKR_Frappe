@@ -59,10 +59,61 @@ class OKRWorkspace {
                         this.$body.find('[data-filter-popover]').hide();
                         this.load();
                 });
-                this.$body.on('click', '[data-toggle-objective]', (e) => this.toggle('objectives', $(e.currentTarget).data('toggle-objective')));
-                this.$body.on('click', '[data-toggle-kr]', (e) => this.toggle('key_results', $(e.currentTarget).data('toggle-kr')));
-                this.$body.on('click', '[data-toggle-history]', (e) => this.toggle('action_history', $(e.currentTarget).data('toggle-history')));
-                this.$body.on('click', '[data-open-checkin]', (e) => this.open_checkin($(e.currentTarget).data('open-checkin')));
+                this.$body.on('click', '[data-toggle-objective]', (e) => {
+                        if ($(e.target).closest('a, button, input, select, textarea').length) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const objName = $(e.currentTarget).data('toggle-objective');
+                        const $card = $(e.currentTarget).closest('.okr-objective-card');
+                        const $collapse = $card.find('> .okr-collapse');
+                        const $chevron = $card.find('.okr-obj-chevron');
+
+                        this.state.objectives[objName] = !this.state.objectives[objName];
+
+                        $collapse.stop(true, true).slideToggle(180);
+                        if (this.state.objectives[objName]) {
+                                $chevron.removeClass('collapsed').addClass('expanded');
+                        } else {
+                                $chevron.removeClass('expanded').addClass('collapsed');
+                        }
+                });
+                this.$body.on('click', '[data-toggle-kr]', (e) => {
+                        if ($(e.target).closest('a, button, input, select, textarea').length) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const krName = $(e.currentTarget).data('toggle-kr');
+                        const $card = $(e.currentTarget).closest('.okr-kr-card');
+                        const $collapse = $card.find('> .okr-collapse');
+                        const $chevron = $card.find('.okr-kr-chevron');
+
+                        this.state.key_results[krName] = !this.state.key_results[krName];
+
+                        $collapse.stop(true, true).slideToggle(180);
+                        if (this.state.key_results[krName]) {
+                                $chevron.removeClass('collapsed').addClass('expanded');
+                        } else {
+                                $chevron.removeClass('expanded').addClass('collapsed');
+                        }
+                });
+                this.$body.on('click', '[data-toggle-history]', (e) => {
+                        if ($(e.target).closest('a, button, input, select, textarea').not('.okr-history-toggle').length) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const actionName = $(e.currentTarget).data('toggle-history');
+                        const $block = $(e.currentTarget).closest('.okr-action-block');
+                        const $collapse = $block.find('> .okr-history-collapse');
+                        const $chevron = $(e.currentTarget).find('.okr-history-chevron');
+
+                        this.state.action_history[actionName] = !this.state.action_history[actionName];
+                        $collapse.stop(true, true).slideToggle(180);
+                        $chevron.toggleClass('expanded', this.state.action_history[actionName]);
+                        $chevron.toggleClass('collapsed', !this.state.action_history[actionName]);
+                        $(e.currentTarget).find('.okr-history-toggle').attr('aria-expanded', this.state.action_history[actionName] ? 'true' : 'false');
+                });
+                this.$body.on('click', '[data-open-checkin]', (e) => {
+                        e.stopPropagation();
+                        this.open_checkin($(e.currentTarget).data('open-checkin'));
+                });
                 this.$body.on('click', '[data-cancel-checkin]', () => { this.state.action_checkin = null; this.render_content(); });
                 this.$body.on('click', '[data-save-checkin]', () => this.save_checkin());
                 this.$body.on('click', '[data-attach-file]', () => this.attach_file());
@@ -74,6 +125,9 @@ class OKRWorkspace {
                         this.state.objectives[this.state.selected_objective] = true;
                         this.state.action_checkin = null;
                         this.render_content();
+                });
+                this.$body.on('click', '.okr-open-link', (e) => {
+                        e.stopPropagation();
                 });
         }
 
@@ -101,10 +155,12 @@ class OKRWorkspace {
                                 if (!objectiveNames.includes(this.state.selected_objective)) {
                                         this.state.selected_objective = objectiveNames[0] || null;
                                 }
+                                this.state.objectives = {};
+                                this.state.key_results = {};
                                 (this.data.objectives || []).forEach(obj => {
-                                        if (this.state.objectives[obj.name] === undefined) this.state.objectives[obj.name] = true;
+                                        this.state.objectives[obj.name] = true;
                                         (obj.key_results || []).forEach(kr => {
-                                                if (this.state.key_results[kr.name] === undefined) this.state.key_results[kr.name] = true;
+                                                this.state.key_results[kr.name] = true;
                                         });
                                 });
                                 this.render_active_filters();
@@ -167,10 +223,12 @@ class OKRWorkspace {
                 return `
                         <section class="okr-objective-card" id="${obj.name}">
                                 <div class="okr-objective-head" data-toggle-objective="${obj.name}">
-                                        <div><span class="okr-type-dot">OBJ</span><h2>${frappe.utils.escape_html(obj.objective_title || obj.name)}</h2><span class="okr-status okr-${frappe.scrub(obj.status || '')}">${frappe.utils.escape_html(obj.status || '')}</span></div>
-                                        <div class="okr-gap-score"><small>${__('Progress')}</small><strong>${progress}%</strong></div>
+                                        <div><span class="okr-obj-chevron ${open ? 'expanded' : 'collapsed'}"></span><span class="okr-type-dot">OBJ</span><h2>${frappe.utils.escape_html(obj.objective_title || obj.name)}</h2><span class="okr-status okr-${frappe.scrub(obj.status || '')}">${frappe.utils.escape_html(obj.status || '')}</span></div>
+                                        <div class="okr-obj-meta">
+                                                <div class="okr-gap-score"><small>${__('Progress')}</small><strong>${progress}%</strong></div>
+                                        </div>
                                 </div>
-                                <div class="okr-collapse ${open ? 'open' : ''}">${(obj.key_results || []).map(kr => this.kr_card(kr)).join('')}</div>
+                                <div class="okr-collapse ${open ? 'open' : ''}" style="${open ? 'display: block;' : 'display: none;'}">${(obj.key_results || []).map(kr => this.kr_card(kr)).join('')}</div>
                         </section>
                 `;
         }
@@ -183,11 +241,13 @@ class OKRWorkspace {
                 return `
                         <div class="okr-kr-card">
                                 <div class="okr-kr-head" data-toggle-kr="${kr.name}">
-                                        <div><span class="okr-kr-icon">KR</span><strong>${frappe.utils.escape_html(kr.key_result_title || kr.name)}</strong></div>
-                                        <div class="okr-kr-meta"><span class="okr-signal ${statusClass}">${frappe.utils.escape_html(progressDisplay)}</span></div>
+                                        <div><span class="okr-kr-chevron ${open ? 'expanded' : 'collapsed'}"></span><span class="okr-kr-icon">KR</span><strong>${frappe.utils.escape_html(kr.key_result_title || kr.name)}</strong></div>
+                                        <div class="okr-kr-meta">
+                                                <span class="okr-signal ${statusClass}">${frappe.utils.escape_html(progressDisplay)}</span>
+                                        </div>
                                 </div>
                                 <div class="okr-bar"><i style="width:${Math.min(100, progress)}%"></i></div>
-                                <div class="okr-collapse ${open ? 'open' : ''}">${(kr.action_items || []).length ? kr.action_items.map(ai => this.action_row(ai, kr)).join('') : this.no_actions()}</div>
+                                <div class="okr-collapse ${open ? 'open' : ''}" style="${open ? 'display: block;' : 'display: none;'}">${(kr.action_items || []).length ? kr.action_items.map(ai => this.action_row(ai, kr)).join('') : this.no_actions()}</div>
                         </div>
                 `;
         }
@@ -196,10 +256,11 @@ class OKRWorkspace {
                 const progress = flt(ai.progress || 0, 2);
                 const historyOpen = this.state.action_history[ai.name];
                 const checkinOpen = this.state.action_checkin === ai.name;
+                const historyCount = (ai.history || []).length;
                 return `
                         <div class="okr-action-block">
-                                <div class="okr-action-row">
-                                        <div class="okr-action-title"><span class="okr-ai-icon">AI</span><div><strong>${frappe.utils.escape_html(ai.action_item_title || ai.name)}</strong><small>${ai.due_date ? frappe.datetime.str_to_user(ai.due_date) : '-'} · <button data-toggle-history="${ai.name}">${(ai.history || []).length} ${__('check-ins')}</button></small></div></div>
+                                <div class="okr-action-row" data-toggle-history="${ai.name}">
+                                        <div class="okr-action-title"><span class="okr-ai-icon">AI</span><div><strong>${frappe.utils.escape_html(ai.action_item_title || ai.name)}</strong><small>${ai.due_date ? frappe.datetime.str_to_user(ai.due_date) : '-'} · <button type="button" class="okr-history-toggle" aria-expanded="${historyOpen ? 'true' : 'false'}"><span class="okr-history-chevron ${historyOpen ? 'expanded' : 'collapsed'}"></span>${historyCount} ${__('Check-ins')}</button></small></div></div>
                                         <div class="okr-owner"><span>${this.initials(ai.owner_user)}</span>${frappe.utils.escape_html(ai.owner_user || '')}</div>
                                         <span class="okr-status ${frappe.scrub(ai.status || '')}">${frappe.utils.escape_html(ai.status || '')}</span>
                                         <div class="okr-action-progress"><div class="okr-bar"><i style="width:${Math.min(100, progress)}%"></i></div><strong>${progress}%</strong></div>
@@ -207,12 +268,13 @@ class OKRWorkspace {
                                         <a class="okr-open-link" href="/app/okr-action-item/${encodeURIComponent(ai.name)}">${frappe.utils.icon('external-link', 'sm')}</a>
                                 </div>
                                 ${checkinOpen ? this.checkin_panel(ai, kr) : ''}
-                                ${historyOpen ? this.history_timeline(ai) : ''}
+                                <div class="okr-history-collapse ${historyOpen ? 'open' : ''}" style="${historyOpen ? 'display: block;' : 'display: none;'}">${this.history_timeline(ai)}</div>
                         </div>
                 `;
         }
 
         checkin_panel(ai, kr) {
+                const currentStatus = ai.status || 'In Progress';
                 return `
                         <div class="okr-inline-checkin">
                                 <div class="okr-inline-context">
@@ -220,6 +282,14 @@ class OKRWorkspace {
                                 </div>
                                 <div class="okr-inline-fields">
                                         <label>${__('Progress %')} <input class="form-control" type="number" min="0" max="100" step="0.01" data-ws-progress value="${flt(ai.progress || 0, 2)}"></label>
+                                        <label>${__('Status')}
+                                                <select class="form-control" data-ws-status>
+                                                        <option value="In Progress" ${currentStatus === 'In Progress' ? 'selected' : ''}>${__('In Progress')}</option>
+                                                        <option value="Blocked" ${currentStatus === 'Blocked' ? 'selected' : ''}>${__('Blocked')}</option>
+                                                        <option value="On Hold" ${currentStatus === 'On Hold' ? 'selected' : ''}>${__('On Hold')}</option>
+                                                        <option value="Open" ${currentStatus === 'Open' ? 'selected' : ''}>${__('Open')}</option>
+                                                </select>
+                                        </label>
                                         <label>${__('Description / Update')} <textarea class="form-control" rows="2" data-ws-update></textarea></label>
                                         <label>${__('Blocker')} <textarea class="form-control" rows="2" data-ws-blocker></textarea></label>
                                         <label>${__('Dependency')} <textarea class="form-control" rows="2" data-ws-dependency></textarea></label>
@@ -305,6 +375,7 @@ class OKRWorkspace {
                 const args = {
                         action_item: action,
                         progress,
+                        status: ($panel.find('[data-ws-status]').val() || '').trim(),
                         update,
                         blocker: ($panel.find('[data-ws-blocker]').val() || '').trim(),
                         dependency: ($panel.find('[data-ws-dependency]').val() || '').trim(),
