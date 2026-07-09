@@ -78,8 +78,8 @@ def get_filter_options() -> dict:
 
 
 @frappe.whitelist()
-def save_workspace_checkin(action_item: str, progress: float, update: str, blocker: str | None = None, dependency: str | None = None, attachment: str | None = None) -> dict:
-    result = save_quick_checkin(action_item, progress, update, blocker, dependency, attachment)
+def save_workspace_checkin(action_item: str, progress: float, update: str, blocker: str | None = None, dependency: str | None = None, attachment: str | None = None, status: str | None = None) -> dict:
+    result = save_quick_checkin(action_item, progress, update, blocker, dependency, attachment, status)
 
     action = frappe.get_doc("OKR Action Item", action_item)
     key_result = frappe.db.get_value(
