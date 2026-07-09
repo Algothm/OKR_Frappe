@@ -54,6 +54,16 @@ WORKSPACES = [
         "shortcuts": [{"label": "OKR Sprint", "type": "DocType", "link_to": "OKR Sprint", "doc_view": "List"}],
     },
     {
+        "name": "Admin Workspace",
+        "title": "Admin Workspace",
+        "label": "Admin Workspace",
+        "parent_page": "Planning",
+        "icon": "folder-normal",
+        "sequence_id": 2.4,
+        "links": [{"label": "Admin Workspace", "link_type": "Page", "link_to": "admin-workspace"}],
+        "shortcuts": [{"label": "Admin Workspace", "type": "Page", "link_to": "admin-workspace"}],
+    },
+    {
         "name": "Execution",
         "title": "Execution",
         "label": "Execution",
