@@ -455,3 +455,13 @@
 	transform: rotate(45deg); /* Expanded state: Down chevron (▼) */
 }
 
+/* Hide drop chevron icons for specific OKR leaf nodes in the sidebar */
+.sidebar-item-container[item-name="OKR Plan"] .drop-icon,
+.sidebar-item-container[item-name="OKR Sprint"] .drop-icon,
+.sidebar-item-container[item-name="OKR Objective"] .drop-icon,
+.sidebar-item-container[item-name="OKR Key Result"] .drop-icon,
+.sidebar-item-container[item-name="Check-In"] .drop-icon {
+	display: none !important;
+}
+
+
