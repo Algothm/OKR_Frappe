@@ -31,13 +31,18 @@
 .okr-context-pair span { display:block; color:#6b7280; font-size:12px; margin-bottom:3px; }
 .okr-context-pair strong { display:block; color:#111827; line-height:1.35; }
 .okr-input-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 18px; }
+.okr-quick-checkin-form { grid-template-columns:1fr; gap:14px; }
+.okr-checkin-row { display:grid; grid-template-columns:minmax(120px, 180px) minmax(160px, 220px); gap:14px; align-items:end; }
+.okr-progress-field .form-control, .okr-status-field .form-control { height:36px; }
+.okr-update-field textarea { min-height:132px; }
 .okr-field { display:flex; flex-direction:column; gap:6px; }
 .okr-field label { font-weight:650; margin:0; }
 .okr-field label span { color:#dc2626; }
 .okr-field textarea { resize:vertical; }
-.okr-attachment-field { grid-column:1 / -1; }
+.okr-attachment-field { align-items:flex-start; gap:10px; }
+.okr-checkin-bottom-row { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; grid-column:1 / -1; }
 .okr-file-chip { display:flex; align-items:center; justify-content:space-between; border:1px solid #e5e7eb; border-radius:8px; padding:8px 10px; margin-bottom:8px; }
-.okr-panel-actions { justify-content:flex-end; margin-top:18px; }
+.okr-panel-actions { align-items:center; justify-content:flex-end; gap:10px; width:auto; margin:0; }
 .okr-card-head h3 { margin:0 0 12px; font-size:18px; font-weight:800; }
 .okr-recent-list { display:grid; gap:10px; }
 .okr-recent-item { display:flex; justify-content:space-between; gap:16px; border:1px solid #eef2f7; border-radius:9px; padding:11px 12px; }
@@ -46,7 +51,8 @@
 .okr-recent-item small { color:#6b7280; }
 .okr-empty-state { color:#6b7280; text-align:center; padding:24px !important; }
 @media (max-width: 900px) {
+        .okr-checkin-bottom-row { align-items:flex-start; flex-direction:column; }
         .okr-checkin-topbar, .okr-panel-head { align-items:flex-start; flex-direction:column; }
         .okr-pending-count { text-align:left; width:100%; }
-        .okr-panel-grid, .okr-context-box, .okr-input-grid { grid-template-columns:1fr; }
+        .okr-panel-grid, .okr-context-box, .okr-input-grid, .okr-checkin-row { grid-template-columns:1fr; }
 }

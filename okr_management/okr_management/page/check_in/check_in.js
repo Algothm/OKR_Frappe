@@ -153,7 +153,7 @@ class OKRQuickCheckIn {
                         <section class="okr-checkin-card okr-quick-panel">
                                 <div class="okr-panel-head">
                                         <h3>${__('Check-In for Action Item')}: <span>${frappe.utils.escape_html(item.action_item_title || '')}</span></h3>
-                                        <button class="btn btn-sm btn-default" data-cancel-checkin>${__('Cancel')}</button>
+                                        
                                 </div>
                                 <div class="okr-panel-grid">
                                         <div class="okr-context-box">
@@ -166,24 +166,26 @@ class OKRQuickCheckIn {
                                                 ${this.context_pair(__('Reported By'), frappe.session.user)}
                                                 ${this.context_pair(__('Current Progress'), `${progress}%`)}
                                         </div>
-                                        <div class="okr-input-grid">
-                                                <div class="okr-field"><label>${__('Progress %')} <span>*</span></label><input class="form-control" type="number" min="0" max="100" step="0.01" data-progress value="${progress}"></div>
-                                                <div class="okr-field">
-                                                        <label>${__('Status')}</label>
-                                                        <select class="form-control" data-status>
-                                                                <option value="In Progress" ${currentStatus === 'In Progress' ? 'selected' : ''}>${__('In Progress')}</option>
-                                                                <option value="Blocked" ${currentStatus === 'Blocked' ? 'selected' : ''}>${__('Blocked')}</option>
-                                                                <option value="On Hold" ${currentStatus === 'On Hold' ? 'selected' : ''}>${__('On Hold')}</option>
-                                                                <option value="Open" ${currentStatus === 'Open' ? 'selected' : ''}>${__('Open')}</option>
-                                                        </select>
+                                        <div class="okr-input-grid okr-quick-checkin-form">
+                                                <div class="okr-checkin-row">
+                                                        <div class="okr-field okr-progress-field"><label>${__('Progress %')} <span>*</span></label><input class="form-control" type="number" min="0" max="100" step="0.01" data-progress value="${progress}"></div>
+                                                        <div class="okr-field okr-status-field">
+                                                                <label>${__('Status')}</label>
+                                                                <select class="form-control" data-status>
+                                                                        <option value="In Progress" ${currentStatus === 'In Progress' ? 'selected' : ''}>${__('In Progress')}</option>
+                                                                        <option value="Blocked" ${currentStatus === 'Blocked' ? 'selected' : ''}>${__('Blocked')}</option>
+                                                                        <option value="On Hold" ${currentStatus === 'On Hold' ? 'selected' : ''}>${__('On Hold')}</option>
+                                                                        <option value="Open" ${currentStatus === 'Open' ? 'selected' : ''}>${__('Open')}</option>
+                                                                </select>
+                                                        </div>
                                                 </div>
-                                                <div class="okr-field"><label>${__('Description / Update')} <span>*</span></label><textarea class="form-control" rows="3" data-update></textarea></div>
-                                                <div class="okr-field"><label>${__('Blocker')}</label><textarea class="form-control" rows="2" data-blocker></textarea></div>
-                                                <div class="okr-field"><label>${__('Dependency')}</label><textarea class="form-control" rows="2" data-dependency></textarea></div>
-                                                <div class="okr-field okr-attachment-field"><label>${__('Attachment')}</label><div data-attachment></div><button class="btn btn-sm btn-default" data-attach-file>${__('Attach File')}</button></div>
+                                                <div class="okr-field okr-update-field"><label>${__('Description / Update')} <span>*</span></label><textarea class="form-control" rows="5" data-update></textarea></div>
+                                                <div class="okr-checkin-bottom-row">
+                                                        <div class="okr-field okr-attachment-field"><label>${__('Optional Proof Attachment')}</label><div data-attachment></div><button class="btn btn-sm btn-default" data-attach-file>${__('Attach File')}</button></div>
+                                                        <div class="okr-panel-actions"><button class="btn btn-default" data-cancel-checkin>${__('Cancel')}</button><button class="btn btn-dark" data-save-checkin>${__('Save Check-In')}</button></div>
+                                                </div>
                                         </div>
                                 </div>
-                                <div class="okr-panel-actions"><button class="btn btn-default" data-cancel-checkin>${__('Cancel')}</button><button class="btn btn-dark" data-save-checkin>${__('Save Check-In')}</button></div>
                         </section>
                 `);
                 this.$body.find('[data-update]').focus();
@@ -225,8 +227,8 @@ class OKRQuickCheckIn {
                         progress: $panel.find('[data-progress]').val(),
                         status: $panel.find('[data-status]').val(),
                         update: $panel.find('[data-update]').val(),
-                        blocker: $panel.find('[data-blocker]').val(),
-                        dependency: $panel.find('[data-dependency]').val(),
+                        blocker: '',
+                        dependency: '',
                         attachment: this.attachment
                 };
                 if (!args.update) {

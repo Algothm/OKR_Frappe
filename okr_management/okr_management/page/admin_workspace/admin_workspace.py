@@ -6,7 +6,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 
 import frappe
-from frappe.utils import add_days, cint, flt, getdate, today
+from frappe.utils import add_days, flt, getdate, today
 
 
 no_cache = 1
@@ -18,15 +18,10 @@ def get_context(context):
 
 @frappe.whitelist()
 def get_filter_options() -> dict:
-    years = frappe.get_all(
-        "Fiscal Year",
-        fields=["name"],
-        order_by="year_start_date desc",
-        limit_page_length=50,
-    )
+    years = frappe.get_all("Fiscal Year", fields=["name"], order_by="year_start_date desc", limit_page_length=50)
     sprints = frappe.get_all(
         "OKR Sprint",
-        fields=["name", "sprint_name", "financial_year", "financial_quarter", "status"],
+        fields=["name", "sprint_name", "parent_plan", "financial_year", "financial_quarter", "status", "end_date"],
         order_by="start_date desc, modified desc",
         limit_page_length=200,
     )
@@ -36,87 +31,86 @@ def get_filter_options() -> dict:
         order_by="department_name asc",
         limit_page_length=500,
     )
-    owners = get_owner_options()
+    plans = frappe.get_all(
+        "OKR Plan",
+        filters={"status": "Active"},
+        fields=["name", "plan_name", "financial_year", "status"],
+        order_by="modified desc",
+        limit_page_length=500,
+    )
     return {
         "years": years,
         "quarters": ["Q1", "Q2", "Q3", "Q4"],
         "sprints": sprints,
+        "plans": plans,
         "departments": departments,
-        "owners": owners,
+        "owners": get_owner_options(),
         "statuses": ["Draft", "Planned", "Active", "On Hold", "Completed", "Closed", "Archived"],
     }
 
 
 @frappe.whitelist()
-def get_dashboard_data(
-    year: str | None = None,
-    quarter: str | None = None,
-    sprint: str | None = None,
-    department: str | None = None,
-    owner: str | None = None,
-    status: str | None = None,
-) -> dict:
-    filters = scrub_filters(year, quarter, sprint, department, owner, status)
+def get_dashboard_data(year=None, quarter=None, plan=None, sprint=None, department=None, owner=None, status=None) -> dict:
+    filters = scrub_filters(year, quarter, plan, sprint, department, owner, status)
     sprint_names = get_sprint_names(filters)
     plan_names = get_plan_names(filters, sprint_names)
 
-    plans = get_plans(filters, plan_names)
-    sprints = get_sprints(filters, sprint_names)
     objectives = get_objectives(filters, sprint_names, plan_names)
-    key_results = get_key_results(filters, sprint_names, plan_names, [row.name for row in objectives])
-    action_items = get_action_items(filters, sprint_names, plan_names, [row.name for row in objectives], [row.name for row in key_results])
-    checkins = get_checkins(filters, sprint_names, plan_names, [row.name for row in objectives], [row.name for row in key_results])
+    objective_names = [row.name for row in objectives]
+    key_results = get_key_results(filters, sprint_names, plan_names, objective_names)
+    action_items = get_action_items(filters, sprint_names, plan_names, objective_names, [row.name for row in key_results])
+    checkins = get_checkins(filters, sprint_names, plan_names, objective_names, [row.name for row in key_results])
+    sprints = get_sprints(filters, sprint_names)
+
+    plan_summary_filters = dict(filters)
+    plan_summary_filters["plan"] = ""
+    plan_summary_sprint_names = get_sprint_names(plan_summary_filters)
+    plan_summary_plan_names = get_plan_names(plan_summary_filters, plan_summary_sprint_names)
+    plans = get_active_plans(plan_summary_filters, plan_summary_sprint_names)
+    plan_summary_objectives = get_objectives(plan_summary_filters, plan_summary_sprint_names, plan_summary_plan_names)
+    plan_summary_objective_names = [row.name for row in plan_summary_objectives]
+    plan_summary_key_results = get_key_results(plan_summary_filters, plan_summary_sprint_names, plan_summary_plan_names, plan_summary_objective_names)
+    plan_summary_action_items = get_action_items(plan_summary_filters, plan_summary_sprint_names, plan_summary_plan_names, plan_summary_objective_names, [row.name for row in plan_summary_key_results])
+    plan_summary_checkins = get_checkins(plan_summary_filters, plan_summary_sprint_names, plan_summary_plan_names, plan_summary_objective_names, [row.name for row in plan_summary_key_results])
+    plan_summary_sprints = get_sprints(plan_summary_filters, plan_summary_sprint_names)
+
+    department_performance = build_department_performance(objectives, key_results, action_items)
+    metrics = build_metrics(objectives, action_items)
+    metrics["departments_at_risk"] = len([row for row in department_performance if row["status"] in {"At Risk", "Critical"}])
 
     return {
         "filters": filters,
-        "metrics": build_metrics(plans, sprints, objectives, key_results, action_items, checkins),
-        "department_performance": build_department_performance(objectives, key_results),
-        "at_risk": build_at_risk(objectives, action_items, checkins),
-        "latest_activity": build_latest_activity(objectives, action_items, sprints, checkins),
-        "top_performers": build_top_performers(objectives, checkins),
-        "charts": build_charts(objectives, sprints, checkins),
+        "metrics": metrics,
+        "department_performance": department_performance,
+        "department_comparison": build_department_comparison(department_performance),
+        "attention_required": build_attention_required(objectives, action_items, checkins),
+        "critical_activity": build_critical_activity(objectives, action_items, sprints),
+        "manager_performance": build_manager_performance(objectives, action_items),
+        "plan_summaries": build_plan_summaries(plans, plan_summary_objectives, plan_summary_key_results, plan_summary_action_items, plan_summary_checkins, plan_summary_sprints),
         "updated_at": frappe.utils.now_datetime().strftime("%Y-%m-%d %H:%M:%S"),
     }
 
 
-def scrub_filters(year, quarter, sprint, department, owner, status) -> dict:
-    return {
-        "year": year or "",
-        "quarter": quarter or "",
-        "sprint": sprint or "",
-        "department": department or "",
-        "owner": owner or "",
-        "status": status or "",
-    }
+def scrub_filters(year, quarter, plan, sprint, department, owner, status) -> dict:
+    return {"year": year or "", "quarter": quarter or "", "plan": plan or "", "sprint": sprint or "", "department": department or "", "owner": owner or "", "status": status or ""}
 
 
 def get_owner_options() -> list[dict]:
     owners = set()
-    sources = [
-        ("OKR Objective", "owner_user"),
-        ("OKR Key Result", "owner_user"),
-        ("OKR Action Item", "owner_user"),
-        ("OKR Check In", "reported_by"),
-    ]
-    for doctype, fieldname in sources:
+    for doctype, fieldname in (("OKR Objective", "owner_user"), ("OKR Key Result", "owner_user"), ("OKR Action Item", "owner_user"), ("OKR Check In", "reported_by")):
         rows = frappe.get_all(doctype, fields=[fieldname], limit_page_length=1000)
         owners.update(row.get(fieldname) for row in rows if row.get(fieldname))
     if not owners:
         return []
-    users = frappe.get_all(
-        "User",
-        filters={"name": ["in", list(owners)]},
-        fields=["name", "full_name"],
-        order_by="full_name asc",
-        limit_page_length=1000,
-    )
-    return users
+    return frappe.get_all("User", filters={"name": ["in", list(owners)]}, fields=["name", "full_name"], order_by="full_name asc", limit_page_length=1000)
 
 
 def get_sprint_names(filters: dict) -> list[str] | None:
     if filters.get("sprint"):
         return [filters["sprint"]]
     sprint_filters = {}
+    if filters.get("plan"):
+        sprint_filters["parent_plan"] = filters["plan"]
     if filters.get("year"):
         sprint_filters["financial_year"] = filters["year"]
     if filters.get("quarter"):
@@ -131,17 +125,29 @@ def get_sprint_names(filters: dict) -> list[str] | None:
 
 
 def get_plan_names(filters: dict, sprint_names: list[str] | None) -> list[str] | None:
+    if filters.get("plan"):
+        return [filters["plan"]]
     if filters.get("quarter") or filters.get("sprint"):
         if not sprint_names:
             return []
-        return frappe.get_all(
-            "OKR Sprint",
-            filters={"name": ["in", sprint_names]},
-            pluck="parent_plan",
-            limit_page_length=1000,
-        )
+        return frappe.get_all("OKR Sprint", filters={"name": ["in", sprint_names]}, pluck="parent_plan", limit_page_length=1000)
     return None
 
+
+def get_active_plans(filters: dict, sprint_names: list[str] | None) -> list[dict]:
+    doc_filters = {"status": "Active"}
+    if filters.get("year"):
+        doc_filters["financial_year"] = filters["year"]
+    if sprint_names is not None:
+        plan_names = frappe.get_all("OKR Sprint", filters={"name": ["in", sprint_names or ["__none__"]]}, pluck="parent_plan", limit_page_length=1000)
+        doc_filters["name"] = ["in", plan_names or ["__none__"]]
+    return frappe.get_all(
+        "OKR Plan",
+        filters=doc_filters,
+        fields=["name", "plan_name", "financial_year", "department", "owner_user", "status", "modified", "creation"],
+        order_by="modified desc",
+        limit_page_length=500,
+    )
 
 def add_common_filters(out: dict, filters: dict, owner_field: str = "owner_user") -> None:
     if filters.get("year"):
@@ -157,18 +163,6 @@ def add_common_filters(out: dict, filters: dict, owner_field: str = "owner_user"
 def apply_names_filter(out: dict, fieldname: str, names: list[str] | None) -> None:
     if names is not None:
         out[fieldname] = ["in", names or ["__none__"]]
-
-
-def get_plans(filters: dict, plan_names: list[str] | None) -> list[dict]:
-    doc_filters = {}
-    add_common_filters(doc_filters, filters)
-    apply_names_filter(doc_filters, "name", plan_names)
-    return frappe.get_all(
-        "OKR Plan",
-        filters=doc_filters,
-        fields=["name", "plan_name", "financial_year", "department", "owner_user", "status", "progress", "modified", "creation"],
-        limit_page_length=5000,
-    )
 
 
 def get_sprints(filters: dict, sprint_names: list[str] | None) -> list[dict]:
@@ -191,8 +185,8 @@ def get_objectives(filters: dict, sprint_names: list[str] | None, plan_names: li
     return frappe.get_all(
         "OKR Objective",
         filters=doc_filters,
-        fields=["name", "objective_title", "sprint", "parent_plan", "financial_year", "department", "owner_user", "status", "progress", "confidence", "modified", "creation"],
-        order_by="progress desc, modified desc",
+        fields=["name", "objective_title", "sprint", "parent_plan", "financial_year", "department", "owner_user", "status", "priority", "progress", "confidence", "modified", "creation"],
+        order_by="progress asc, modified desc",
         limit_page_length=10000,
     )
 
@@ -211,7 +205,7 @@ def get_key_results(filters: dict, sprint_names: list[str] | None, plan_names: l
     return frappe.get_all(
         "OKR Key Result",
         filters=doc_filters,
-        fields=["name", "key_result_title", "objective", "parent_plan", "parent_sprint", "financial_year", "department", "owner_user", "status", "target_progress", "modified", "creation"],
+        fields=["name", "objective", "parent_plan", "parent_sprint", "financial_year", "department", "owner_user", "status", "target_progress", "modified", "creation"],
         limit_page_length=20000,
     )
 
@@ -232,7 +226,7 @@ def get_action_items(filters: dict, sprint_names: list[str] | None, plan_names: 
     return frappe.get_all(
         "OKR Action Item",
         filters=doc_filters,
-        fields=["name", "action_item_title", "parent_key_result", "parent_objective", "parent_sprint", "parent_plan", "financial_year", "department", "owner_user", "status", "progress", "due_date", "modified", "creation"],
+        fields=["name", "action_item_title", "parent_key_result", "parent_objective", "parent_sprint", "parent_plan", "financial_year", "department", "owner_user", "status", "priority", "progress", "due_date", "modified", "creation"],
         order_by="due_date asc, modified desc",
         limit_page_length=20000,
     )
@@ -263,126 +257,201 @@ def get_checkins(filters: dict, sprint_names: list[str] | None, plan_names: list
     )
 
 
-def build_metrics(plans, sprints, objectives, key_results, action_items, checkins) -> dict:
-    objective_progress = [flt(row.progress) for row in objectives]
-    active_statuses = {"Active", "In Progress", "Planned"}
-    completed_statuses = {"Completed", "Closed"}
+
+def build_plan_summaries(plans, objectives, key_results, action_items, checkins, sprints) -> list[dict]:
+    recent_cutoff = getdate(add_days(today(), -7))
+
+    objectives_by_plan = defaultdict(list)
+    key_results_by_plan = Counter()
+    blocked_objectives_by_plan = defaultdict(set)
+    overdue_actions_by_plan = Counter()
+    recent_checkins_by_plan = defaultdict(set)
+    departments_by_plan = defaultdict(set)
+    target_dates_by_plan = defaultdict(list)
+    modified_by_plan = defaultdict(list)
+
+    for row in sprints:
+        if row.parent_plan and row.end_date:
+            target_dates_by_plan[row.parent_plan].append(row.end_date)
+        if row.parent_plan and row.modified:
+            modified_by_plan[row.parent_plan].append(row.modified)
+
+    for row in objectives:
+        if not row.parent_plan:
+            continue
+        objectives_by_plan[row.parent_plan].append(row)
+        if row.department:
+            departments_by_plan[row.parent_plan].add(row.department)
+        if row.status == "Blocked":
+            blocked_objectives_by_plan[row.parent_plan].add(row.name)
+        if row.modified:
+            modified_by_plan[row.parent_plan].append(row.modified)
+
+    for row in key_results:
+        if row.parent_plan:
+            key_results_by_plan[row.parent_plan] += 1
+            if row.department:
+                departments_by_plan[row.parent_plan].add(row.department)
+            if row.modified:
+                modified_by_plan[row.parent_plan].append(row.modified)
+
+    for row in action_items:
+        if not row.parent_plan:
+            continue
+        if row.status == "Blocked" and row.parent_objective:
+            blocked_objectives_by_plan[row.parent_plan].add(row.parent_objective)
+        if is_overdue(row):
+            overdue_actions_by_plan[row.parent_plan] += 1
+        if row.department:
+            departments_by_plan[row.parent_plan].add(row.department)
+        if row.modified:
+            modified_by_plan[row.parent_plan].append(row.modified)
+
+    for row in checkins:
+        if row.parent_plan and row.objective and row.checkin_date and getdate(row.checkin_date) >= recent_cutoff:
+            recent_checkins_by_plan[row.parent_plan].add(row.objective)
+        if row.parent_plan and row.modified:
+            modified_by_plan[row.parent_plan].append(row.modified)
+
+    rows = []
+    for plan in plans:
+        plan_objectives = objectives_by_plan.get(plan.name, [])
+        active_objectives = [row for row in plan_objectives if is_active_objective(row)]
+        progress = average([row.progress for row in plan_objectives])
+        blocked_objectives = len(blocked_objectives_by_plan.get(plan.name, set()))
+        overdue_actions = overdue_actions_by_plan.get(plan.name, 0)
+        stale_checkins = len([row for row in active_objectives if row.name not in recent_checkins_by_plan.get(plan.name, set())])
+        last_updates = modified_by_plan.get(plan.name, []) + [plan.modified or plan.creation]
+        target_dates = target_dates_by_plan.get(plan.name, [])
+        rows.append({
+            "name": plan.name,
+            "plan_name": plan.plan_name or plan.name,
+            "financial_year": plan.financial_year or "",
+            "progress": progress,
+            "objectives": len(plan_objectives),
+            "key_results": key_results_by_plan.get(plan.name, 0),
+            "departments": len(departments_by_plan.get(plan.name, set())),
+            "blocked": blocked_objectives,
+            "blocked_objectives": blocked_objectives,
+            "overdue_action_items": overdue_actions,
+            "stale_checkins": stale_checkins,
+            "health": plan_health(progress, blocked_objectives, overdue_actions, stale_checkins),
+            "target_date": str(max(target_dates)) if target_dates else "",
+            "last_updated": str(max([value for value in last_updates if value], default=plan.modified or plan.creation or "")),
+        })
+    return rows
+
+
+def plan_health(progress: float, blocked_objectives: int, overdue_actions: int, stale_checkins: int) -> str:
+    if blocked_objectives > 0 or overdue_actions >= 3 or flt(progress) < 40:
+        return "Critical"
+    if overdue_actions > 0 or stale_checkins > 0 or flt(progress) < 70:
+        return "Watch"
+    return "Healthy"
+def build_metrics(objectives, action_items) -> dict:
     return {
-        "total_plans": len(plans),
-        "active_plans": count_status(plans, active_statuses),
-        "active_sprints": count_status(sprints, active_statuses),
-        "total_objectives": len(objectives),
-        "total_key_results": len(key_results),
-        "total_action_items": len(action_items),
-        "total_checkins": len(checkins),
-        "organization_progress": average(objective_progress),
-        "completed_objectives": len([row for row in objectives if row.status in completed_statuses or flt(row.progress) >= 100]),
-        "at_risk_objectives": len([row for row in objectives if is_active_objective(row) and flt(row.progress) < 50]),
-        "blocked_action_items": len([row for row in action_items if row.status == "Blocked"]),
+        "company_progress": average([row.progress for row in objectives]),
+        "objectives_on_track": len([row for row in objectives if is_active_objective(row) and flt(row.progress) >= 70]),
+        "departments_at_risk": 0,
+        "blocked_objectives": len({row.parent_objective for row in action_items if row.status == "Blocked" and row.parent_objective}),
         "overdue_action_items": len([row for row in action_items if is_overdue(row)]),
     }
 
 
-def build_department_performance(objectives, key_results) -> list[dict]:
+def build_department_performance(objectives, key_results, action_items) -> list[dict]:
     kr_count_by_department = Counter((row.department or "Unassigned") for row in key_results)
+    blocked_by_department = Counter((row.department or "Unassigned") for row in action_items if row.status == "Blocked")
     grouped = defaultdict(list)
     for row in objectives:
         grouped[row.department or "Unassigned"].append(row)
+
     rows = []
     for department, items in grouped.items():
-        progress = average([flt(row.progress) for row in items])
-        confidence = average([flt(row.confidence) for row in items if row.confidence not in (None, "")])
+        progress = average([row.progress for row in items])
+        confidence = average([row.confidence for row in items if row.confidence not in (None, "")])
         rows.append({
             "department": department,
-            "progress": progress,
+            "owner": most_common([row.owner_user for row in items if row.owner_user]) or "",
             "objectives": len(items),
             "key_results": kr_count_by_department.get(department, 0),
+            "progress": progress,
             "confidence": confidence,
-            "status": department_status(progress, items),
+            "blocked_items": blocked_by_department.get(department, 0),
+            "status": department_status(progress, blocked_by_department.get(department, 0)),
         })
-    return sorted(rows, key=lambda row: row["progress"], reverse=True)
+    return sorted(rows, key=lambda row: (row["progress"], -row["blocked_items"]))
 
 
-def build_at_risk(objectives, action_items, checkins) -> list[dict]:
+def build_department_comparison(department_rows) -> list[dict]:
+    return sorted(
+        [{"department": row["department"], "progress": row["progress"], "status": row["status"]} for row in department_rows],
+        key=lambda row: row["progress"],
+        reverse=True,
+    )
+
+
+def build_attention_required(objectives, action_items, checkins) -> list[dict]:
     recent_cutoff = getdate(add_days(today(), -7))
     recent_objectives = {row.objective for row in checkins if row.objective and row.checkin_date and getdate(row.checkin_date) >= recent_cutoff}
+    objective_by_name = {row.name: row for row in objectives}
     rows = []
+
+    for row in action_items:
+        objective = objective_by_name.get(row.parent_objective)
+        if row.status == "Blocked":
+            rows.append(attention_row(row, objective, "Blocked action item", row.priority or "Critical"))
+        if is_overdue(row):
+            rows.append(attention_row(row, objective, "Overdue action item", row.priority or "High"))
+
     for row in objectives:
         if is_active_objective(row) and flt(row.progress) < 50:
-            rows.append(risk_row("Objective below 50%", row, "OKR Objective", row.objective_title, f"{flt(row.progress, 1)}% progress", "high"))
+            rows.append(attention_row(row, row, "Low progress", row.priority or "High"))
         if is_active_objective(row) and row.name not in recent_objectives:
-            rows.append(risk_row("No check-in in last 7 days", row, "OKR Objective", row.objective_title, row.owner_user or "", "medium"))
+            rows.append(attention_row(row, row, "No check-in in last 7 days", "Medium"))
         if row.confidence not in (None, "") and flt(row.confidence) <= 2:
-            rows.append(risk_row("Low confidence objective", row, "OKR Objective", row.objective_title, f"Confidence {row.confidence}", "high"))
-    for row in action_items:
-        if row.status == "Blocked":
-            rows.append(risk_row("Blocked action item", row, "OKR Action Item", row.action_item_title, row.owner_user or "", "critical"))
-        if is_overdue(row):
-            rows.append(risk_row("Overdue action item", row, "OKR Action Item", row.action_item_title, str(row.due_date), "high"))
-    return sorted(rows, key=lambda row: severity_rank(row["severity"]), reverse=True)[:75]
+            rows.append(attention_row(row, row, f"Confidence {row.confidence}", row.priority or "High"))
+
+    return sorted(rows, key=lambda row: (priority_rank(row["priority"]), row["days_blocked"]), reverse=True)[:5]
 
 
-def build_latest_activity(objectives, action_items, sprints, checkins) -> list[dict]:
+def build_critical_activity(objectives, action_items, sprints) -> list[dict]:
     rows = []
     for row in objectives:
-        rows.append(activity_row("New Objective created", "OKR Objective", row.name, row.objective_title, row.owner_user, row.creation))
         if row.status in {"Completed", "Closed"} or flt(row.progress) >= 100:
-            rows.append(activity_row("Objective completed", "OKR Objective", row.name, row.objective_title, row.owner_user, row.modified))
-    for row in checkins:
-        rows.append(activity_row("Check-In submitted", "OKR Check In", row.name, row.objective or row.key_result, row.reported_by, row.creation))
+            rows.append(activity_row("Objective Completed", "OKR Objective", row.name, row.objective_title, row.owner_user, row.modified))
     for row in action_items:
         if row.status == "Blocked":
-            rows.append(activity_row("Action Item blocked", "OKR Action Item", row.name, row.action_item_title, row.owner_user, row.modified))
+            rows.append(activity_row("Objective Blocked", "OKR Action Item", row.name, row.action_item_title, row.owner_user, row.modified))
     for row in sprints:
         if row.status in {"Completed", "Closed"}:
-            rows.append(activity_row("Sprint completed", "OKR Sprint", row.name, row.sprint_name, row.sprint_owner, row.modified))
-    return sorted(rows, key=lambda row: row.get("when") or "", reverse=True)[:30]
+            rows.append(activity_row("Sprint Closed", "OKR Sprint", row.name, row.sprint_name, row.sprint_owner, row.modified))
+    return sorted(rows, key=lambda row: row.get("when") or "", reverse=True)[:10]
 
 
-def build_top_performers(objectives, checkins) -> list[dict]:
-    completed_by_owner = Counter()
-    for row in objectives:
-        if row.owner_user and (row.status in {"Completed", "Closed"} or flt(row.progress) >= 100):
-            completed_by_owner[row.owner_user] += 1
-
+def build_manager_performance(objectives, action_items) -> list[dict]:
     grouped = defaultdict(list)
-    for row in checkins:
-        if row.reported_by:
-            grouped[row.reported_by].append(row)
+    for row in objectives:
+        if row.owner_user:
+            grouped[row.owner_user].append(row)
+    blocked_by_owner = Counter(row.owner_user for row in action_items if row.owner_user and row.status == "Blocked")
 
-    user_names = list(grouped.keys() | completed_by_owner.keys())
-    full_names = get_user_names(user_names)
+    users = list(grouped.keys() | set(blocked_by_owner.keys()))
+    full_names = get_user_names(users)
     rows = []
-    for user in user_names:
-        user_checkins = grouped.get(user, [])
-        departments = [row.department for row in user_checkins if row.department]
+    for user in users:
+        user_objectives = grouped.get(user, [])
         rows.append({
-            "employee": user,
-            "employee_name": full_names.get(user) or user,
-            "department": most_common(departments) or "",
-            "completed_objectives": completed_by_owner.get(user, 0),
-            "average_progress": average([flt(row.progress) for row in user_checkins]),
-            "confidence": confidence_summary([row.confidence for row in user_checkins if row.confidence]),
-            "checkins": len(user_checkins),
+            "manager": user,
+            "manager_name": full_names.get(user) or user,
+            "objectives": len(user_objectives),
+            "average_progress": average([row.progress for row in user_objectives]),
+            "blocked_items": blocked_by_owner.get(user, 0),
+            "confidence": confidence_summary([row.confidence for row in user_objectives if row.confidence not in (None, "")]),
         })
-    return sorted(rows, key=lambda row: (row["completed_objectives"], row["average_progress"], row["checkins"]), reverse=True)[:20]
-
-
-def build_charts(objectives, sprints, checkins) -> dict:
-    return {
-        "progress_by_department": [
-            {"label": row["department"], "value": row["progress"]}
-            for row in build_department_performance(objectives, [])
-        ],
-        "objective_status_distribution": counter_chart([row.status or "Unspecified" for row in objectives]),
-        "monthly_checkins": monthly_chart(checkins, "checkin_date"),
-        "sprint_completion_trend": monthly_chart([row for row in sprints if row.status in {"Completed", "Closed"}], "modified"),
-        "confidence_distribution": counter_chart([str(row.confidence) for row in objectives if row.confidence not in (None, "")]),
-    }
-
-
-def count_status(rows, statuses: set[str]) -> int:
-    return len([row for row in rows if row.status in statuses])
+    ranked = sorted(rows, key=lambda row: (row["average_progress"], -row["blocked_items"], row["objectives"]), reverse=True)[:10]
+    for index, row in enumerate(ranked, start=1):
+        row["ranking"] = index
+    return ranked
 
 
 def average(values) -> float:
@@ -400,31 +469,35 @@ def is_overdue(row) -> bool:
     return bool(row.due_date and getdate(row.due_date) < getdate(today()) and row.status not in {"Completed", "Cancelled"})
 
 
-def department_status(progress: float, objectives) -> str:
-    if any(is_active_objective(row) and flt(row.progress) < 50 for row in objectives):
-        return "At Risk"
+def department_status(progress: float, blocked_items: int = 0) -> str:
+    if blocked_items:
+        return "Critical"
     if progress >= 80:
-        return "On Track"
+        return "Healthy"
     if progress >= 50:
         return "Watch"
+    if progress < 30:
+        return "Critical"
     return "At Risk"
 
 
-def risk_row(kind, row, doctype, title, detail, severity) -> dict:
+def attention_row(row, objective, reason, priority) -> dict:
+    opened_on = row.modified or row.creation
     return {
-        "type": kind,
-        "doctype": doctype,
-        "name": row.name,
-        "title": title or row.name,
-        "detail": detail or "",
-        "department": row.get("department") or "",
-        "owner": row.get("owner_user") or "",
-        "severity": severity,
+        "department": row.get("department") or (objective.get("department") if objective else "") or "Unassigned",
+        "objective": (objective.get("objective_title") if objective else "") or row.get("action_item_title") or row.name,
+        "owner": (objective.get("owner_user") if objective else "") or row.get("owner_user") or "",
+        "progress": flt(objective.get("progress")) if objective else flt(row.get("progress")),
+        "reason": reason,
+        "days_blocked": max(0, (getdate(today()) - getdate(opened_on)).days) if opened_on else 0,
+        "priority": priority or "Medium",
+        "doctype": "OKR Objective" if objective else "OKR Action Item",
+        "name": objective.name if objective else row.name,
     }
 
 
-def severity_rank(value: str) -> int:
-    return {"critical": 4, "high": 3, "medium": 2, "low": 1}.get(value, 0)
+def priority_rank(value: str) -> int:
+    return {"Critical": 4, "High": 3, "Medium": 2, "Low": 1}.get(value or "", 0)
 
 
 def activity_row(kind, doctype, name, title, owner, when) -> dict:
@@ -450,24 +523,5 @@ def confidence_summary(values: list[str]) -> str:
     scores = {"Green": 5, "Yellow": 3, "Red": 1, "Gray": 0}
     numeric = []
     for value in values:
-        if value in scores:
-            numeric.append(scores[value])
-        else:
-            numeric.append(flt(value))
+        numeric.append(scores[value] if value in scores else flt(value))
     return str(average(numeric)) if numeric else most_common(values)
-
-
-def counter_chart(values: list[str]) -> list[dict]:
-    counts = Counter(value or "Unspecified" for value in values)
-    return [{"label": label, "value": count} for label, count in counts.most_common()]
-
-
-def monthly_chart(rows, fieldname: str) -> list[dict]:
-    counts = Counter()
-    for row in rows:
-        value = row.get(fieldname)
-        if not value:
-            continue
-        date_value = getdate(value)
-        counts[f"{date_value.year}-{date_value.month:02d}"] += 1
-    return [{"label": label, "value": counts[label]} for label in sorted(counts.keys())]

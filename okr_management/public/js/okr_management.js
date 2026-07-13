@@ -3,7 +3,7 @@ frappe.provide("okr_management");
 (() => {
     const OKR_GROUPS = new Set(["Planning", "Execution", "Administration"]);
     const CUSTOM_PAGE_ROUTES = [
-        { name: "OKR Workspace", parent: "OKR Management", path: "/app/okr-workspace" },
+        { name: "OKR Workspace", parent: "Execution", path: "/app/okr-workspace" },
         { name: "Check-In", parent: "Execution", path: "/app/check-in" },
         { name: "Admin Workspace", parent: "Planning", path: "/app/admin-workspace" },
     ];
@@ -59,6 +59,28 @@ frappe.provide("okr_management");
         });
     }
 
+
+    function normalize_workspace_position() {
+        const root_item = get_item("OKR Workspace", "OKR Management");
+        const execution_item = get_item("Execution", "OKR Management");
+        const execution_child = get_item("OKR Workspace", "Execution");
+
+        if (execution_child.length && root_item.length) {
+            root_item.remove();
+            return;
+        }
+
+        if (!root_item.length || !execution_item.length) return;
+
+        const child_container = execution_item
+            .find("> .sidebar-child-item, > .sidebar-group-items, > .sidebar-items, > .collapse, > ul")
+            .first();
+
+        if (!child_container.length) return;
+
+        root_item.attr("item-parent", "Execution");
+        child_container.prepend(root_item);
+    }
     function update_custom_page_links() {
         CUSTOM_PAGE_ROUTES.forEach(({ name, parent, path }) => {
             get_item(name, parent).find("> .desk-sidebar-item > .item-anchor").attr("href", path);
@@ -68,6 +90,7 @@ frappe.provide("okr_management");
     function bind_okr_sidebar() {
         patch_router();
         OKR_GROUPS.forEach(bind_group_toggle);
+        normalize_workspace_position();
         update_custom_page_links();
     }
 

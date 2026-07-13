@@ -280,22 +280,24 @@ class OKRWorkspace {
                                 <div class="okr-inline-context">
                                         ${this.context(__('Key Result'), kr.key_result_title || kr.name)}${this.context(__('Objective'), kr.objective)}${this.context(__('Reported By'), frappe.session.user)}${this.context(__('Current Progress'), `${flt(ai.progress || 0, 2)}%`)}
                                 </div>
-                                <div class="okr-inline-fields">
-                                        <label>${__('Progress %')} <input class="form-control" type="number" min="0" max="100" step="0.01" data-ws-progress value="${flt(ai.progress || 0, 2)}"></label>
-                                        <label>${__('Status')}
-                                                <select class="form-control" data-ws-status>
-                                                        <option value="In Progress" ${currentStatus === 'In Progress' ? 'selected' : ''}>${__('In Progress')}</option>
-                                                        <option value="Blocked" ${currentStatus === 'Blocked' ? 'selected' : ''}>${__('Blocked')}</option>
-                                                        <option value="On Hold" ${currentStatus === 'On Hold' ? 'selected' : ''}>${__('On Hold')}</option>
-                                                        <option value="Open" ${currentStatus === 'Open' ? 'selected' : ''}>${__('Open')}</option>
-                                                </select>
-                                        </label>
-                                        <label>${__('Description / Update')} <textarea class="form-control" rows="2" data-ws-update></textarea></label>
-                                        <label>${__('Blocker')} <textarea class="form-control" rows="2" data-ws-blocker></textarea></label>
-                                        <label>${__('Dependency')} <textarea class="form-control" rows="2" data-ws-dependency></textarea></label>
-                                        <div class="okr-attach-line"><div data-ws-attachment></div><button class="btn btn-sm btn-default" data-attach-file>${__('Attach File')}</button></div>
+                                <div class="okr-inline-fields okr-quick-checkin-form">
+                                        <div class="okr-checkin-row">
+                                                <label>${__('Progress %')} <input class="form-control" type="number" min="0" max="100" step="0.01" data-ws-progress value="${flt(ai.progress || 0, 2)}"></label>
+                                                <label>${__('Status')}
+                                                        <select class="form-control" data-ws-status>
+                                                                <option value="In Progress" ${currentStatus === 'In Progress' ? 'selected' : ''}>${__('In Progress')}</option>
+                                                                <option value="Blocked" ${currentStatus === 'Blocked' ? 'selected' : ''}>${__('Blocked')}</option>
+                                                                <option value="On Hold" ${currentStatus === 'On Hold' ? 'selected' : ''}>${__('On Hold')}</option>
+                                                                <option value="Open" ${currentStatus === 'Open' ? 'selected' : ''}>${__('Open')}</option>
+                                                        </select>
+                                                </label>
+                                        </div>
+                                        <label class="okr-update-field">${__('Description / Update')} <textarea class="form-control" rows="4" data-ws-update></textarea></label>
+                                        <div class="okr-checkin-bottom-row">
+                                                <div class="okr-attach-line"><div data-ws-attachment></div><button class="btn btn-sm btn-default" data-attach-file>${__('Attach File')}</button></div>
+                                                <div class="okr-inline-actions"><button class="btn btn-sm btn-default" data-cancel-checkin>${__('Cancel')}</button><button class="btn btn-sm btn-dark" data-save-checkin>${__('Save Check-In')}</button></div>
+                                        </div>
                                 </div>
-                                <div class="okr-inline-actions"><button class="btn btn-sm btn-default" data-cancel-checkin>${__('Cancel')}</button><button class="btn btn-sm btn-dark" data-save-checkin>${__('Save Check-In')}</button></div>
                         </div>
                 `;
         }
@@ -377,8 +379,8 @@ class OKRWorkspace {
                         progress,
                         status: ($panel.find('[data-ws-status]').val() || '').trim(),
                         update,
-                        blocker: ($panel.find('[data-ws-blocker]').val() || '').trim(),
-                        dependency: ($panel.find('[data-ws-dependency]').val() || '').trim(),
+                        blocker: '',
+                        dependency: '',
                         attachment: this.attachment || ''
                 };
 
