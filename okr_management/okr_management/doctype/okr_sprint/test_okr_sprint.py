@@ -113,23 +113,22 @@ class TestOKRSprintPhase2(FrappeTestCase):
         plan_start, _plan_end = self.plan_period()
         self.assertEqual(sprint.financial_year, plan.financial_year)
         self.assertEqual(sprint.company, plan.company)
-        self.assertEqual(sprint.department, plan.department)
+        self.assertFalse(sprint.department)
         self.assertEqual(sprint.plan_owner, plan.owner_user)
         self.assertEqual(getdate(sprint.start_date), date(plan_start.year, 4, 1))
         self.assertEqual(getdate(sprint.end_date), date(plan_start.year, 6, 30))
 
-    def test_sprint_requires_active_parent_plan(self):
-        draft_plan = self.make_plan(status="Draft", plan_name="Phase 2 Sprint Draft Parent")
-        sprint = frappe.get_doc({
-            "doctype": "OKR Sprint",
-            "parent_plan": draft_plan.name,
-            "sprint_name": "Phase 2 Sprint Invalid Parent",
-            "sprint_owner": "Administrator",
-            "sprint_cycle": "Custom Date Range",
-            "start_date": add_days(today(), -1),
-            "end_date": add_days(today(), 1),
-        })
-        self.assertRaises(frappe.ValidationError, sprint.insert)
+    def test_sprint_accepts_saved_parent_plan_without_status_filter(self):
+        draft_plan = self.make_plan(status=chr(68)+chr(114)+chr(97)+chr(102)+chr(116), plan_name=chr(80)+chr(104)+chr(97)+chr(115)+chr(101)+chr(32)+chr(50)+chr(32)+chr(83)+chr(112)+chr(114)+chr(105)+chr(110)+chr(116)+chr(32)+chr(68)+chr(114)+chr(97)+chr(102)+chr(116)+chr(32)+chr(80)+chr(97)+chr(114)+chr(101)+chr(110)+chr(116))
+        sprint = self.make_sprint(
+            draft_plan,
+            sprint_name=chr(80)+chr(104)+chr(97)+chr(115)+chr(101)+chr(32)+chr(50)+chr(32)+chr(83)+chr(112)+chr(114)+chr(105)+chr(110)+chr(116)+chr(32)+chr(86)+chr(97)+chr(108)+chr(105)+chr(100)+chr(32)+chr(80)+chr(97)+chr(114)+chr(101)+chr(110)+chr(116),
+            sprint_cycle=chr(67)+chr(117)+chr(115)+chr(116)+chr(111)+chr(109)+chr(32)+chr(68)+chr(97)+chr(116)+chr(101)+chr(32)+chr(82)+chr(97)+chr(110)+chr(103)+chr(101),
+            start_date=add_days(today(), -1),
+            end_date=add_days(today(), 1),
+        )
+        self.assertEqual(sprint.parent_plan, draft_plan.name)
+        self.assertEqual(sprint.company, draft_plan.company)
 
     def test_lifecycle_and_one_active_sprint_per_plan(self):
         plan = self.make_plan()

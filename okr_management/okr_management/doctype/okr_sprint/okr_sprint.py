@@ -13,7 +13,6 @@ from okr_management.utils.okr_calculations import average, recalculate_plan_prog
 from okr_management.utils.okr_validations import ensure_date_range, ensure_required_link
 
 
-ACTIVE_PARENT_REQUIRED_STATUSES = {"Draft", "Planned", "Active"}
 FULLY_LOCKED_STATUSES = {"Planned", "Active", "Completed", "Closed", "Archived"}
 SPRINT_NAME_LOCKED_STATUSES = {"Active", "Completed", "Closed", "Archived"}
 STATUS_TRANSITIONS = {
@@ -91,6 +90,9 @@ class OKRSprint(Document):
             self.sprint_cycle = "Financial Quarter"
         if self.get("quarter") and not self.financial_quarter:
             self.financial_quarter = self.get("quarter")
+        quarter_labels = {'Q1':'Q1 (January - March)', 'Q2':'Q2 (April - June)', 'Q3':'Q3 (July - September)', 'Q4':'Q4 (October - December)'}
+        if self.financial_quarter in quarter_labels:
+            self.financial_quarter = quarter_labels[self.financial_quarter]
 
     def inherit_parent_plan_context(self) -> None:
         if not self.parent_plan:
@@ -99,7 +101,7 @@ class OKRSprint(Document):
         plan = self.get_parent_plan()
         self.financial_year = plan.financial_year
         self.company = plan.company
-        self.department = plan.department
+        self.department = ''
         self.plan_owner = plan.owner_user
 
     def set_default_sprint_owner(self) -> None:
@@ -110,7 +112,7 @@ class OKRSprint(Document):
         plan = frappe.db.get_value(
             "OKR Plan",
             self.parent_plan,
-            ["name", "status", "financial_year", "company", "department", "owner_user"],
+            ['name', 'status', 'financial_year', 'company', 'owner_user'],
             as_dict=True,
         )
         if not plan:
@@ -143,9 +145,9 @@ class OKRSprint(Document):
             return
 
         plan_start, _plan_end = self.get_parent_plan_period()
-        quarter_offsets = {"Q1": 0, "Q2": 3, "Q3": 6, "Q4": 9}
+        quarter_offsets = {'Q1': 0, 'Q2': 3, 'Q3': 6, 'Q4': 9, 'Q1 (January - March)': 0, 'Q2 (April - June)': 3, 'Q3 (July - September)': 6, 'Q4 (October - December)': 9}
         if self.financial_quarter not in quarter_offsets:
-            frappe.throw(_("Financial Quarter must be one of Q1, Q2, Q3, or Q4."))
+            frappe.throw(_("Financial Quarter must be Q1 (January - March), Q2 (April - June), Q3 (July - September), or Q4 (October - December)."))
 
         start = add_months(plan_start, quarter_offsets[self.financial_quarter])
         end = add_days(add_months(start, 3), -1)
@@ -195,10 +197,7 @@ class OKRSprint(Document):
         frappe.db.set_value("OKR Sprint", self.name, values, update_modified=False)
 
     def validate_parent_plan_dependency(self) -> None:
-        plan = self.get_parent_plan()
-        if self.is_new() or self.status in ACTIVE_PARENT_REQUIRED_STATUSES:
-            if plan.status != "Active":
-                frappe.throw(_("OKR Sprint requires an Active Parent Plan."))
+        self.get_parent_plan()
 
     def validate_lifecycle(self) -> None:
         if self.is_new():

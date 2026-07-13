@@ -8,20 +8,15 @@
  "engine": "InnoDB",
  "field_order": [
   "sprint_details_section",
-  "parent_plan",
   "sprint_name",
-  "sprint_owner",
-  "sprint_details_col_break",
   "description",
-  "inherited_context_section",
-  "company",
   "sprint_cycle",
   "financial_quarter",
   "sprint_month",
-  "inherited_context_col_break",
+  "sprint_details_col_break",
+  "parent_plan",
+  "company",
   "financial_year",
-  "start_date",
-  "end_date",
   "sprint_duration",
   "technical_section",
   "status",
@@ -30,6 +25,7 @@
   "sprint_year",
   "department",
   "plan_owner",
+  "sprint_owner",
   "naming_series"
  ],
  "fields": [
@@ -50,7 +46,8 @@
    "options": "OKR Plan",
    "reqd": 1,
    "in_list_view": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "description": "Defaults to the most recently created OKR Plan. Admins can select another existing plan."
   },
   {
    "fieldname": "sprint_name",
@@ -123,7 +120,7 @@
    "fieldname": "financial_quarter",
    "fieldtype": "Select",
    "label": "Financial Quarter",
-   "options": "Q1\nQ2\nQ3\nQ4",
+   "options": "Q1 (January - March)\nQ2 (April - June)\nQ3 (July - September)\nQ4 (October - December)",
    "depends_on": "eval:doc.sprint_cycle=='Financial Quarter'",
    "mandatory_depends_on": "eval:doc.sprint_cycle=='Financial Quarter'"
   },
@@ -147,7 +144,7 @@
    "fieldtype": "Data",
    "label": "Sprint Duration",
    "read_only": 1,
-   "hidden": 1,
+   "hidden": 0,
    "depends_on": "eval:doc.start_date && doc.end_date"
   },
   {
@@ -156,7 +153,9 @@
    "label": "Start Date",
    "reqd": 1,
    "read_only": 1,
-   "in_list_view": 1
+   "in_list_view": 0,
+   "hidden": 1,
+   "in_standard_filter": 0
   },
   {
    "fieldname": "end_date",
@@ -164,7 +163,9 @@
    "label": "End Date",
    "reqd": 1,
    "read_only": 1,
-   "in_list_view": 1
+   "in_list_view": 0,
+   "hidden": 1,
+   "in_standard_filter": 0
   },
   {
    "fieldname": "status",
@@ -199,20 +200,12 @@
   {
    "fieldname": "sprint_details_section",
    "fieldtype": "Section Break",
-   "label": "Sprint Details"
+   "label": "Sprint Setup"
   },
   {
    "fieldname": "sprint_details_col_break",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "inherited_context_section",
-   "fieldtype": "Section Break",
-   "label": "Inherited Context"
-  },
-  {
-   "fieldname": "inherited_context_col_break",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "label": "Plan Context & Preview"
   },
   {
    "fieldname": "technical_section",

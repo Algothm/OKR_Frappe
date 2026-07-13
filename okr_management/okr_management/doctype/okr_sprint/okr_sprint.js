@@ -5,14 +5,16 @@ frappe.ui.form.on('OKR Sprint', {
         console.log("refresh called");
         frm.set_df_property('naming_series', 'hidden', 1);
 
-        // Filter parent_plan to Active plans only
-        frm.set_query('parent_plan', () => ({ filters: { status: 'Active' } }));
+        // Allow Admins to choose any existing parent plan
+        frm.set_query('parent_plan', () => ({}));
 
         // Override get_filter_description to completely suppress the "Filters applied for..." banner
         const pf = frm.get_field('parent_plan');
         if (pf) {
             pf.get_filter_description = () => '';
         }
+
+        set_default_parent_plan(frm);
 
         set_default_sprint_owner(frm);
 
@@ -96,7 +98,7 @@ function apply_sprint_ui_rules(frm) {
     ['financial_year', 'company', 'department', 'plan_owner'].forEach((f) => {
         frm.set_df_property(f, 'read_only', 1);
     });
-    ['financial_year', 'company', 'start_date', 'end_date'].forEach((f) => {
+    ['financial_year', 'company'].forEach((f) => {
         frm.set_df_property(f, 'hidden', 0);
     });
 
@@ -108,12 +110,8 @@ function apply_sprint_ui_rules(frm) {
     frm.set_df_property('sprint_name',  'read_only', !is_before_active);
     frm.set_df_property('sprint_owner', 'read_only', !is_before_active);
 
-    // start_date and end_date: editable ONLY in custom cycle during setup (Draft)
-    frm.set_df_property('start_date', 'read_only', setup_locked || !is_custom);
-    frm.set_df_property('end_date',   'read_only', setup_locked || !is_custom);
-
     // Hidden system / raw fields (always hidden from UI)
-    ['status', 'progress', 'objective_count', 'sprint_year', 'department', 'plan_owner', 'sprint_duration', 'sprint_owner'].forEach((f) => {
+    ['status', 'progress', 'objective_count', 'sprint_year', 'department', 'plan_owner', 'sprint_owner'].forEach((f) => {
         frm.set_df_property(f, 'hidden', 1);
     });
 }
@@ -131,18 +129,16 @@ function inherit_parent_plan_context(frm) {
         frm.refresh_field('company');
         frm.refresh_field('department');
         frm.refresh_field('plan_owner');
-        frm.refresh_field('start_date');
-        frm.refresh_field('end_date');
         
         Promise.all([p1, p2, p3, p4, p5, p6]).then(() => {
             frm.refresh_field('financial_year');
             frm.refresh_field('company');
             frm.refresh_field('department');
             frm.refresh_field('plan_owner');
-            frm.refresh_field('start_date');
-            frm.refresh_field('end_date');
         });
         
+        set_default_parent_plan(frm);
+
         set_default_sprint_owner(frm);
         return;
     }
@@ -150,12 +146,12 @@ function inherit_parent_plan_context(frm) {
     frappe.db.get_value(
         'OKR Plan',
         frm.doc.parent_plan,
-        ['financial_year', 'company', 'department', 'owner_user']
+        ['financial_year', 'company', 'owner_user']
     ).then((r) => {
         const plan = r.message || {};
         const p1 = frm.set_value('financial_year', plan.financial_year || '');
         const p2 = frm.set_value('company', plan.company || '');
-        const p3 = frm.set_value('department', plan.department || '');
+        const p3 = frm.set_value('department', '');
         const p4 = frm.set_value('plan_owner', plan.owner_user || '');
         const p5 = frm.set_value('sprint_owner', plan.owner_user || frappe.session.user);
         
@@ -227,7 +223,7 @@ function calculate_financial_quarter_dates(frm) {
         if (!fy.year_start_date) return;
 
         const quarter_offsets = { Q1: 0, Q2: 3, Q3: 6, Q4: 9 };
-        const offset = quarter_offsets[frm.doc.financial_quarter];
+        const offset = quarter_offsets[get_quarter_code(frm.doc.financial_quarter)];
         if (offset === undefined) return;
 
         const start = moment(fy.year_start_date).add(offset, 'months').format('YYYY-MM-DD');
@@ -236,12 +232,9 @@ function calculate_financial_quarter_dates(frm) {
         const p1 = frm.set_value('start_date', start);
         const p2 = frm.set_value('end_date',   end);
         
-        frm.refresh_field('start_date');
-        frm.refresh_field('end_date');
         
         Promise.all([p1, p2]).then(() => {
-            frm.refresh_field('start_date');
-            frm.refresh_field('end_date');
+            update_sprint_preview(frm);
         });
     });
 }
@@ -278,12 +271,9 @@ function calculate_monthly_dates(frm) {
         const p2 = frm.set_value('start_date', start);
         const p3 = frm.set_value('end_date',   end);
         
-        frm.refresh_field('start_date');
-        frm.refresh_field('end_date');
         
         Promise.all([p1, p2, p3]).then(() => {
-            frm.refresh_field('start_date');
-            frm.refresh_field('end_date');
+            update_sprint_preview(frm);
         });
     });
 }
@@ -297,4 +287,47 @@ function fetch_and_cache_parent_plan_title(frm) {
             }
         });
     }
+}
+
+function set_default_parent_plan(frm) {
+    if (frm.is_new() === false || frm.doc.parent_plan) return;
+
+    frappe.db.get_list('OKR Plan', {
+        fields: ['name', 'plan_name'],
+        order_by: 'creation desc',
+        limit: 1
+    }).then((plans) => {
+        if (plans === undefined || plans.length === 0 || frm.doc.parent_plan) return;
+        const plan = plans[0];
+        if (plan.plan_name) {
+            frappe.utils.add_link_title('OKR Plan', plan.name, plan.plan_name);
+        }
+        frm.set_value('parent_plan', plan.name).then(() => {
+            inherit_parent_plan_context(frm);
+            calculate_sprint_dates(frm);
+        });
+    });
+}
+
+function get_quarter_code(value) {
+    if (value === undefined || value === null || value === '') return '';
+    return String(value).trim().substring(0, 2);
+}
+
+function update_sprint_preview(frm) {
+    if (frm.doc.start_date === undefined || frm.doc.end_date === undefined || frm.doc.start_date === '' || frm.doc.end_date === '') {
+        frm.set_value('sprint_duration', '');
+        return;
+    }
+
+    const start = moment(frm.doc.start_date);
+    const end = moment(frm.doc.end_date);
+    if (start.isValid() === false || end.isValid() === false) return;
+
+    const days = end.diff(start, 'days') + 1;
+    const label = frappe.datetime.str_to_user(frm.doc.start_date)
+        + ' to ' + frappe.datetime.str_to_user(frm.doc.end_date)
+        + ' (' + days + ' days)';
+    frm.set_value('sprint_duration', label);
+    frm.refresh_field('sprint_duration');
 }

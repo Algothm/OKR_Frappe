@@ -16,6 +16,10 @@ frappe.ui.form.on('OKR Objective', {
         if (!frm.doc.priority) {
             frm.set_value('priority', 'High');
         }
+        if (!frm.doc.level) {
+            frm.set_value('level', 'Department');
+        }
+        frm.toggle_reqd('department', true);
     },
     sprint(frm) {
         inherit_from_sprint(frm);
@@ -49,7 +53,6 @@ function set_static_properties(frm) {
         'parent_plan',
         'financial_year',
         'company',
-        'department',
         'plan_owner',
         'sprint_owner',
         'start_date',
@@ -81,7 +84,6 @@ function inherit_from_sprint(frm) {
         'parent_plan',
         'financial_year',
         'company',
-        'department',
         'plan_owner',
         'sprint_owner',
         'start_date',
@@ -106,7 +108,6 @@ function update_sprint_fields(frm, sprint) {
     const p1 = frm.set_value('parent_plan', sprint.parent_plan || '');
     const p2 = frm.set_value('financial_year', sprint.financial_year || '');
     const p3 = frm.set_value('company', sprint.company || '');
-    const p4 = frm.set_value('department', sprint.department || '');
     const p5 = frm.set_value('plan_owner', sprint.plan_owner || '');
     const p6 = frm.set_value('sprint_owner', sprint.sprint_owner || '');
     const p7 = frm.set_value('start_date', sprint.start_date || '');
@@ -121,7 +122,7 @@ function update_sprint_fields(frm, sprint) {
     frm.refresh_field('start_date');
     frm.refresh_field('end_date');
 
-    Promise.all([p1, p2, p3, p4, p5, p6, p7, p8]).then(() => {
+    Promise.all([p1, p2, p3, p5, p6, p7, p8]).then(() => {
         frm.refresh_field('parent_plan');
         frm.refresh_field('financial_year');
         frm.refresh_field('company');

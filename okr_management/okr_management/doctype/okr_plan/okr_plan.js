@@ -10,7 +10,7 @@ frappe.ui.form.on('OKR Plan', {
 		if (frm.doc.owner_user && (!frm.doc.members || frm.doc.members.length === 0)) {
 			frm.add_child('members', {
 				member_user: frm.doc.owner_user,
-				role: 'Owner'
+				role: 'Admin'
 			});
 			frm.refresh_field('members');
 		}
@@ -92,21 +92,19 @@ function customize_row_editor(frm, cdt, cdn) {
 
 function apply_plan_locks(frm) {
 	const is_draft = !frm.doc.status || frm.doc.status === 'Draft';
-	const is_closed = ['Closed', 'Archived'].includes(frm.doc.status);
+	const is_closed = frm.doc.status === 'Archived';
+	const can_manage_status = frm.perm && frm.perm[0] && frm.perm[0].write
+		&& (frappe.user.has_role('System Manager') || frappe.user.has_role('OKR Admin') || frappe.session.user === 'Administrator');
 
-	['financial_year', 'company', 'department', 'owner_user'].forEach((fieldname) => {
+	['financial_year', 'company', 'owner_user'].forEach((fieldname) => {
 		frm.set_df_property(fieldname, 'read_only', !is_draft);
 	});
 	frm.set_df_property('description', 'read_only', is_closed);
 	frm.set_df_property('progress', 'hidden', 1);
 
-	if (frm.is_new()) {
-		if (!frm.doc.status) {
-			frm.set_value('status', 'Draft');
-		}
-		frm.set_df_property('status', 'hidden', 1);
-	} else {
-		frm.set_df_property('status', 'hidden', 0);
-		frm.set_df_property('status', 'read_only', 1);
+	if (!frm.doc.status) {
+		frm.set_value('status', 'Draft');
 	}
+	frm.set_df_property('status', 'hidden', 0);
+	frm.set_df_property('status', 'read_only', !can_manage_status);
 }

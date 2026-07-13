@@ -46,6 +46,7 @@ class OKRObjective(Document):
     def before_validate(self) -> None:
         self.status = self.status or "Draft"
         self.priority = self.priority or "High"
+        self.level = self.level or "Department"
         self.owner_user = self.owner_user or frappe.session.user
         self.inherit_context_from_sprint()
         self.default_dates_from_sprint()
@@ -103,7 +104,6 @@ class OKRObjective(Document):
         self.company = sprint.company
         self.plan_owner = sprint.plan_owner
         self.sprint_owner = sprint.sprint_owner
-        self.department = sprint.department
 
     def default_dates_from_sprint(self) -> None:
         if not self.sprint or not frappe.db.exists("OKR Sprint", self.sprint):
@@ -119,9 +119,8 @@ class OKRObjective(Document):
     def validate_required_fields(self) -> None:
         required = {
             "objective_title": _("Objective Title"),
-            "sprint": _("Parent Sprint"),
+            "sprint": _("Sprint"),
             "parent_plan": _("Parent Plan"),
-            "level": _("Level"),
             "priority": _("Priority"),
             "company": _("Organization"),
             "owner_user": _("Objective Owner"),
@@ -133,18 +132,18 @@ class OKRObjective(Document):
             if not self.get(fieldname):
                 frappe.throw(_("{0} is required.").format(label))
 
-        if self.level == "Department" and not self.department:
-            frappe.throw(_("Department is required when Level is Department."))
+        if not self.department:
+            frappe.throw(_("Department is required."))
 
     def validate_parent_relationships(self) -> None:
         if not frappe.db.exists("OKR Sprint", self.sprint):
-            frappe.throw(_("Parent Sprint does not exist."))
+            frappe.throw(_("Sprint does not exist."))
 
         sprint_plan = frappe.db.get_value("OKR Sprint", self.sprint, "parent_plan")
         if not sprint_plan:
-            frappe.throw(_("Parent Sprint must belong to an OKR Plan."))
+            frappe.throw(_("Sprint must belong to an OKR Plan."))
         if self.parent_plan != sprint_plan:
-            frappe.throw(_("Parent Plan must match the selected Parent Sprint's Parent Plan."))
+            frappe.throw(_("Parent Plan must match the selected Sprint's Parent Plan."))
 
         if not frappe.db.exists("OKR Plan", self.parent_plan):
             frappe.throw(_("Parent Plan does not exist."))
@@ -184,7 +183,7 @@ class OKRObjective(Document):
             "OKR Sprint", self.sprint, ["status", "parent_plan"], as_dict=False
         ) or (None, None)
         if not sprint_status:
-            frappe.throw(_("Parent Sprint status is required."))
+            frappe.throw(_("Sprint status is required."))
 
         if sprint_status in {"Closed", "Archived"}:
             frappe.throw(_("Objective cannot be created or updated under a Closed or Archived Sprint."))
@@ -194,7 +193,7 @@ class OKRObjective(Document):
             frappe.throw(_("Objective cannot become {0} unless Parent Plan is Active.").format(self.status))
 
         if self.status in SPRINT_ACTIVE_REQUIRED_STATUSES and sprint_status != "Active":
-            frappe.throw(_("Objective cannot become {0} unless Parent Sprint is Active.").format(self.status))
+            frappe.throw(_("Objective cannot become {0} unless Sprint is Active.").format(self.status))
 
     def validate_dates_inside_sprint(self) -> None:
         start = getdate(self.start_date)
@@ -204,12 +203,12 @@ class OKRObjective(Document):
 
         sprint_dates = frappe.db.get_value("OKR Sprint", self.sprint, ["start_date", "end_date"], as_dict=True)
         if not sprint_dates or not sprint_dates.start_date or not sprint_dates.end_date:
-            frappe.throw(_("Parent Sprint must have Start Date and End Date."))
+            frappe.throw(_("Sprint must have Start Date and End Date."))
 
         sprint_start = getdate(sprint_dates.start_date)
         sprint_end = getdate(sprint_dates.end_date)
         if start < sprint_start or end > sprint_end:
-            frappe.throw(_("Objective dates must stay within the Parent Sprint date range."))
+            frappe.throw(_("Objective dates must stay within the Sprint date range."))
 
     def validate_duplicate_title_in_sprint(self) -> None:
         duplicate = frappe.db.exists(

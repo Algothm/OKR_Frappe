@@ -9,13 +9,11 @@ from okr_management.utils.okr_calculations import recalculate_plan_progress
 from okr_management.utils.okr_validations import ensure_required_link
 
 
-LOCKED_AFTER_ACTIVE_FIELDS = ("financial_year", "company", "department", "owner_user")
+LOCKED_AFTER_ACTIVE_FIELDS = ("financial_year", "company", "owner_user")
 STATUS_TRANSITIONS = {
-	"Draft": {"Active"},
-	"Active": {"Completed"},
-	"Completed": {"Closed"},
-	"Closed": {"Archived"},
-	"Archived": set(),
+	"Draft": {"Active", "Archived"},
+	"Active": {"Draft", "Archived"},
+	"Archived": {"Draft", "Active"},
 }
 
 
@@ -24,11 +22,11 @@ class OKRPlan(Document):
 		if not self.owner_user:
 			self.owner_user = frappe.session.user
 		
-		# Automatically add the current Plan Owner as the first Owner row if table is empty
+		# Automatically add the current Plan Admin as the first Admin row if table is empty
 		if self.owner_user and not self.get("members"):
 			self.append("members", {
 				"member_user": self.owner_user,
-				"role": "Owner"
+				"role": "Admin"
 			})
 
 		self.preserve_system_calculated_progress()
@@ -54,12 +52,12 @@ class OKRPlan(Document):
 				frappe.throw(_("User {0} is added more than once in the Plan Team.").format(member.member_user))
 			seen_users.add(member.member_user)
 			
-		# Filter roles that are Owner
-		owners = [m for m in members if m.role == "Owner"]
+		# Filter roles that are Admin
+		owners = [m for m in members if m.role == "Admin"]
 		if not owners:
-			frappe.throw(_("At least one Owner must always exist in the Plan Team."))
+			frappe.throw(_("At least one Admin must always exist in the Plan Team."))
 			
-		# Keep owner_user in sync with the first Owner in the table
+		# Keep owner_user in sync with the first Admin in the table
 		self.owner_user = owners[0].member_user
 
 	def on_update(self) -> None:
@@ -70,8 +68,10 @@ class OKRPlan(Document):
 
 	def validate_lifecycle(self) -> None:
 		if self.is_new():
-			if self.status != "Draft":
-				frappe.throw(_("New OKR Plans must start in Draft status."))
+			if self.status not in {"Draft", "Active"}:
+				frappe.throw(_("New OKR Plans must start in Draft or Active status."))
+			if self.status == "Active":
+				self.validate_activation_requirements()
 			return
 
 		previous = self.get_doc_before_save()
@@ -83,11 +83,8 @@ class OKRPlan(Document):
 				_("OKR Plan status cannot move from {0} to {1}.").format(previous.status, self.status)
 			)
 
-		if previous.status == "Draft" and self.status == "Active":
+		if self.status == "Active":
 			self.validate_activation_requirements()
-
-		elif previous.status == "Completed" and self.status == "Closed":
-			self.validate_closing_requirements()
 
 	def validate_activation_requirements(self) -> None:
 		if self.status != "Active":
@@ -95,7 +92,7 @@ class OKRPlan(Document):
 		ensure_required_link(self.financial_year, "Financial Year")
 		ensure_required_link(self.plan_name, "Plan Name")
 		ensure_required_link(self.company, "Organization")
-		ensure_required_link(self.owner_user, "Plan Owner")
+		ensure_required_link(self.owner_user, "Plan Admin")
 
 	def validate_locked_fields(self) -> None:
 		if self.is_new():

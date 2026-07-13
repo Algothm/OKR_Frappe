@@ -9,23 +9,15 @@
  "field_order": [
   "objective_details_section",
   "objective_title",
-  "sprint",
-  "level",
-  "objective_details_col_break",
   "description",
-  "inherited_context_section",
+  "sprint",
+  "department",
+  "priority",
+  "objective_details_col_break",
   "parent_plan",
   "company",
-  "plan_owner",
-  "inherited_context_col_break",
   "financial_year",
-  "department",
-  "sprint_owner",
   "timeline_section",
-  "owner_user",
-  "reviewer",
-  "priority",
-  "timeline_col_break",
   "start_date",
   "end_date",
   "status",
@@ -38,6 +30,10 @@
   "objective_type",
   "parent_objective",
   "confidence",
+  "owner_user",
+  "reviewer",
+  "plan_owner",
+  "sprint_owner",
   "objective_alignment_section",
   "alignment_map"
  ],
@@ -63,11 +59,12 @@
   {
    "fieldname": "sprint",
    "fieldtype": "Link",
-   "label": "Parent Sprint",
+   "label": "Sprint",
    "options": "OKR Sprint",
    "reqd": 1,
    "in_list_view": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "description": "Select the sprint this objective belongs to. Plan, organization, and financial year are filled from the sprint."
   },
   {
    "fieldname": "level",
@@ -75,9 +72,10 @@
    "label": "Level",
    "options": "Organization\nDepartment\nTeam\nIndividual",
    "default": "Department",
-   "reqd": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1
+   "reqd": 0,
+   "in_list_view": 0,
+   "in_standard_filter": 0,
+   "hidden": 1
   },
   {
    "fieldname": "priority",
@@ -94,17 +92,20 @@
    "fieldtype": "Link",
    "label": "Objective Owner",
    "options": "User",
-   "reqd": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1
+   "reqd": 0,
+   "in_list_view": 0,
+   "in_standard_filter": 0,
+   "hidden": 1
   },
   {
    "fieldname": "reviewer",
    "fieldtype": "Link",
    "label": "Reviewer",
    "options": "User",
-   "in_standard_filter": 1,
-   "description": "Reviewer (Optional) – Person responsible for reviewing and approving progress updates."
+   "in_standard_filter": 0,
+   "description": "",
+   "hidden": 1,
+   "in_list_view": 0
   },
   {
    "fieldname": "description",
@@ -145,8 +146,12 @@
    "fieldtype": "Link",
    "label": "Department",
    "options": "Department",
-   "read_only": 1,
-   "in_standard_filter": 1
+   "read_only": 0,
+   "in_standard_filter": 1,
+   "hidden": 0,
+   "reqd": 1,
+   "description": "Select the department for this objective.",
+   "in_list_view": 1
   },
   {
    "fieldname": "plan_owner",
@@ -154,7 +159,9 @@
    "label": "Plan Owner",
    "options": "User",
    "read_only": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 0,
+   "hidden": 1,
+   "in_list_view": 0
   },
   {
    "fieldname": "sprint_owner",
@@ -162,7 +169,9 @@
    "label": "Sprint Owner",
    "options": "User",
    "read_only": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 0,
+   "hidden": 1,
+   "in_list_view": 0
   },
   {
    "fieldname": "start_date",
@@ -253,29 +262,17 @@
   {
    "fieldname": "objective_details_section",
    "fieldtype": "Section Break",
-   "label": "Objective Details"
+   "label": "Objective Setup"
   },
   {
    "fieldname": "objective_details_col_break",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "inherited_context_section",
-   "fieldtype": "Section Break",
-   "label": "Inherited Context"
-  },
-  {
-   "fieldname": "inherited_context_col_break",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "label": "Sprint Context & Preview"
   },
   {
    "fieldname": "timeline_section",
    "fieldtype": "Section Break",
    "label": "Assignment"
-  },
-  {
-   "fieldname": "timeline_col_break",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "technical_section",

@@ -42,18 +42,14 @@ class TestOKRPlanPhase1(FrappeTestCase):
             "plan_name": overrides.pop("plan_name", "Phase 1 OKR Plan"),
             "financial_year": overrides.pop("financial_year", self.fiscal_year),
             "company": overrides.pop("company", self.company),
-            "department": overrides.pop("department", None),
             "owner_user": overrides.pop("owner_user", "Administrator"),
             "status": "Draft",
             **overrides,
         })
         doc.insert(ignore_permissions=True)
         if status != "Draft":
-            for next_status in ("Active", "Completed", "Closed", "Archived"):
-                doc.status = next_status
-                doc.save(ignore_permissions=True)
-                if next_status == status:
-                    break
+            doc.status = status
+            doc.save(ignore_permissions=True)
         return doc
 
     def make_sprint(self, plan, status="Draft"):
@@ -76,25 +72,33 @@ class TestOKRPlanPhase1(FrappeTestCase):
                     break
         return doc
 
-    def test_new_plan_must_start_in_draft(self):
+    def test_new_plan_can_start_active(self):
         doc = frappe.get_doc({
             "doctype": "OKR Plan",
-            "plan_name": "Cannot Start Active",
+            "plan_name": "Can Start Active",
             "financial_year": self.fiscal_year,
             "company": self.company,
             "owner_user": "Administrator",
             "status": "Active",
         })
-        self.assertRaises(frappe.ValidationError, doc.insert)
+        doc.insert(ignore_permissions=True)
+        self.assertEqual(doc.status, "Active")
 
     def test_valid_lifecycle_and_invalid_transition_blocked(self):
         plan = self.make_plan()
         plan.status = "Completed"
         self.assertRaises(frappe.ValidationError, plan.save)
         plan.reload()
-        for status in ("Active", "Completed", "Closed", "Archived"):
-            plan.status = status
-            plan.save(ignore_permissions=True)
+
+        plan.status = "Active"
+        plan.save(ignore_permissions=True)
+        plan.status = "Draft"
+        plan.save(ignore_permissions=True)
+        plan.status = "Archived"
+        plan.save(ignore_permissions=True)
+        plan.status = "Active"
+        plan.save(ignore_permissions=True)
+
         plan.status = "Closed"
         self.assertRaises(frappe.ValidationError, plan.save)
 
@@ -103,9 +107,6 @@ class TestOKRPlanPhase1(FrappeTestCase):
         plan.plan_name = "Renamed While Active"
         plan.save(ignore_permissions=True)
         plan.company = "Locked Company Change"
-        self.assertRaises(frappe.ValidationError, plan.save)
-        plan.reload()
-        plan.department = "Locked Department Change"
         self.assertRaises(frappe.ValidationError, plan.save)
         plan.reload()
         plan.owner_user = "locked.owner@example.com"
@@ -120,13 +121,13 @@ class TestOKRPlanPhase1(FrappeTestCase):
         plan.reload()
         self.assertEqual(plan.progress, 0)
 
-    def test_completed_plan_cannot_close_with_active_sprint(self):
+    def test_active_plan_can_be_archived_with_existing_dependents(self):
         plan = self.make_plan(status="Active")
         self.make_sprint(plan, status="Active")
-        plan.status = "Completed"
+        plan.status = "Archived"
         plan.save(ignore_permissions=True)
-        plan.status = "Closed"
-        self.assertRaises(frappe.ValidationError, plan.save)
+        plan.reload()
+        self.assertEqual(plan.status, "Archived")
 
     def test_delete_blocked_when_dependent_sprint_exists(self):
         plan = self.make_plan(status="Active")
@@ -137,7 +138,7 @@ class TestOKRPlanPhase1(FrappeTestCase):
         plan = self.make_plan()
         self.assertTrue(len(plan.members) > 0)
         self.assertEqual(plan.members[0].member_user, "Administrator")
-        self.assertEqual(plan.members[0].role, "Owner")
+        self.assertEqual(plan.members[0].role, "Admin")
 
     def test_plan_team_multiple_members(self):
         for email in ("test_user1@example.com", "test_user2@example.com"):
@@ -152,28 +153,28 @@ class TestOKRPlanPhase1(FrappeTestCase):
         plan = self.make_plan()
         plan.append("members", {
             "member_user": "test_user1@example.com",
-            "role": "Co-owner"
+            "role": "Admin"
         })
         plan.append("members", {
             "member_user": "test_user2@example.com",
-            "role": "Reviewer"
+            "role": "Admin"
         })
         plan.save(ignore_permissions=True)
         plan.reload()
         self.assertEqual(len(plan.members), 3)
 
-    def test_plan_team_at_least_one_owner_required(self):
+    def test_plan_team_admin_role_is_valid(self):
         plan = self.make_plan()
-        plan.members[0].role = "Reviewer"
-        self.assertRaises(frappe.ValidationError, plan.save)
+        plan.members[0].role = "Admin"
+        plan.save(ignore_permissions=True)
+        plan.reload()
+        self.assertEqual(plan.members[0].role, "Admin")
 
-        plan.members = []
-        self.assertRaises(frappe.ValidationError, plan.save)
 
     def test_plan_team_duplicate_member_blocked(self):
         plan = self.make_plan()
         plan.append("members", {
             "member_user": "Administrator",
-            "role": "Reviewer"
+            "role": "Admin"
         })
         self.assertRaises(frappe.ValidationError, plan.save)

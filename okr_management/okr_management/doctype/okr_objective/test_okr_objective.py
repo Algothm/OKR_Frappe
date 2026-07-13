@@ -16,6 +16,7 @@ class TestOKRObjectivePhase3(FrappeTestCase):
         if not self.company:
             self.skipTest("No Company exists on this site.")
         self.fiscal_year = self.ensure_current_fiscal_year()
+        self.department = frappe.db.get_value('Department', {'company': self.company}, 'name') or frappe.db.get_value('Department', {}, 'name')
         self.cleanup_records()
 
     def tearDown(self):
@@ -87,7 +88,8 @@ class TestOKRObjectivePhase3(FrappeTestCase):
             "doctype": "OKR Objective",
             "objective_title": overrides.pop("objective_title", "Phase 3 Objective " + frappe.generate_hash(length=6)),
             "sprint": sprint.name,
-            "level": overrides.pop("level", "Organization"),
+            'level': overrides.pop('level', 'Department'),
+            'department': overrides.pop('department', self.department),
             "priority": overrides.pop("priority", "High"),
             "owner_user": overrides.pop("owner_user", "Administrator"),
             "status": overrides.pop("status", "Draft"),

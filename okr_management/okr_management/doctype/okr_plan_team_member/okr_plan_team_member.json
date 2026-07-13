@@ -21,7 +21,7 @@
    "fieldname": "role",
    "fieldtype": "Select",
    "label": "Role",
-   "options": "Owner\nCo-owner\nManager\nReviewer\nViewer",
+   "options": "Admin",
    "reqd": 1,
    "in_list_view": 1
   }
