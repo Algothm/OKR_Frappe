@@ -6,9 +6,21 @@ from frappe.utils import flt, getdate, nowdate, today
 from okr_management.okr_management.page.check_in.check_in import save_quick_checkin
 
 
+def get_active_plan_names() -> list[str]:
+    return frappe.get_all("OKR Plan", filters={"status": "Active"}, pluck="name")
+
+
+def empty_workspace_response(year, quarter, sprint, level, owner) -> dict:
+    return base_response([], year, quarter, sprint, level, owner)
+
+
 @frappe.whitelist()
 def get_workspace_data(year: str | None = None, quarter: str | None = None, sprint: str | None = None, level: str | None = None, owner: str | None = "me") -> dict:
-    filters = {}
+    active_plan_names = get_active_plan_names()
+    if not active_plan_names:
+        return empty_workspace_response(year, quarter, sprint, level, owner)
+
+    filters = {"parent_plan": ["in", active_plan_names]}
     if year:
         filters["financial_year"] = year
     if sprint:
@@ -19,7 +31,11 @@ def get_workspace_data(year: str | None = None, quarter: str | None = None, spri
         filters["owner_user"] = frappe.session.user
 
     if quarter and not sprint:
-        sprint_names = frappe.get_all("OKR Sprint", filters={"financial_quarter": quarter}, pluck="name")
+        sprint_names = frappe.get_all(
+            "OKR Sprint",
+            filters={"financial_quarter": quarter, "parent_plan": ["in", active_plan_names]},
+            pluck="name",
+        )
         if not sprint_names:
             return base_response([], year, quarter, sprint, level, owner)
         filters["sprint"] = ["in", sprint_names]
@@ -67,11 +83,18 @@ def get_workspace_data(year: str | None = None, quarter: str | None = None, spri
 
 @frappe.whitelist()
 def get_filter_options() -> dict:
+    active_plan_names = get_active_plan_names()
     years = frappe.get_all("Fiscal Year", fields=["name"], order_by="year_start_date desc", limit_page_length=80)
     years = sorted(years, key=lambda row: (0 if row.name == "2026-2027" else 1 if not row.name.startswith("_Test") else 2, row.name), reverse=False)
     return {
         "years": years[:30],
-        "sprints": frappe.get_all("OKR Sprint", fields=["name", "sprint_name", "financial_quarter", "financial_year", "status"], order_by="start_date desc", limit_page_length=100),
+        "sprints": frappe.get_all(
+            "OKR Sprint",
+            filters={"parent_plan": ["in", active_plan_names]} if active_plan_names else {"name": ["is", "not set"]},
+            fields=["name", "sprint_name", "financial_quarter", "financial_year", "status"],
+            order_by="start_date desc",
+            limit_page_length=100,
+        ),
         "quarters": ["Q1", "Q2", "Q3", "Q4"],
         "levels": ["Organization", "Department", "Team", "Individual"],
     }
@@ -129,12 +152,16 @@ def base_response(objectives, year, quarter, sprint, level, owner) -> dict:
 
 def include_objectives_with_my_action_items(objectives, filters) -> list:
     names = {row.name for row in objectives}
-    action_filters = {"owner_user": frappe.session.user, "status": ["!=", "Cancelled"]}
+    action_filters = {
+        "owner_user": frappe.session.user,
+        "status": ["!=", "Cancelled"],
+        "parent_plan": filters["parent_plan"],
+    }
     actions = frappe.get_all("OKR Action Item", filters=action_filters, fields=["parent_objective"])
     extra_names = {row.parent_objective for row in actions if row.parent_objective and row.parent_objective not in names}
     if not extra_names:
         return objectives
-    extra_filters = {"name": ["in", list(extra_names)]}
+    extra_filters = {"name": ["in", list(extra_names)], "parent_plan": filters["parent_plan"]}
     if filters.get("financial_year"):
         extra_filters["financial_year"] = filters["financial_year"]
     if filters.get("sprint"):

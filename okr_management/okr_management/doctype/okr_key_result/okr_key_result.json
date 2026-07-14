@@ -8,40 +8,29 @@
  "engine": "InnoDB",
  "field_order": [
   "kr_details_section",
-  "key_result_title",
   "objective",
-  "kr_details_col_break",
+  "key_result_title",
   "description",
-  "inherited_context_section",
+  "priority",
+  "status",
+  "kr_details_col_break",
   "parent_plan",
   "parent_sprint",
   "objective_title",
   "company",
   "financial_year",
   "department",
-  "inherited_context_col_break",
-  "plan_owner",
-  "sprint_owner",
-  "objective_owner",
-  "objective_level",
-  "start_date",
-  "end_date",
-  "ownership_section",
-  "owner_user",
-  "ownership_col_break",
-  "priority",
-  "ownership_status_col_break",
-  "status",
+  "date_range",
   "measurement_section",
-  "calculation_mode",
   "metric_type",
+  "currency",
   "metric_direction",
   "unit_of_measure",
   "measurement_col_break",
   "baseline_value",
   "target_value",
   "current_value",
-  "currency",
+  "calculation_mode",
   "summary_sidebar_section",
   "target_progress",
   "summary_sidebar_col_break",
@@ -51,13 +40,18 @@
   "action_items_section",
   "action_items",
   "action_items_html",
+  "owner_user",
+  "objective_level",
+  "ownership_section",
+  "ownership_col_break",
+  "ownership_status_col_break",
   "naming_series"
  ],
  "fields": [
   {
    "fieldname": "kr_details_section",
    "fieldtype": "Section Break",
-   "label": "Key Result Details"
+   "label": "Key Result Setup"
   },
   {
    "fieldname": "key_result_title",
@@ -70,15 +64,17 @@
   {
    "fieldname": "objective",
    "fieldtype": "Link",
-   "label": "Parent Objective",
+   "label": "Objective",
    "options": "OKR Objective",
    "reqd": 1,
    "in_list_view": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "description": "Select the objective this key result belongs to. Plan, sprint, organization, dates, and ownership context are filled from the objective."
   },
   {
    "fieldname": "kr_details_col_break",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "label": "Context and Preview"
   },
   {
    "fieldname": "description",
@@ -93,7 +89,7 @@
   {
    "fieldname": "parent_plan",
    "fieldtype": "Link",
-   "label": "Parent Plan",
+   "label": "Plan",
    "options": "OKR Plan",
    "read_only": 1,
    "in_list_view": 1,
@@ -102,7 +98,7 @@
   {
    "fieldname": "parent_sprint",
    "fieldtype": "Link",
-   "label": "Parent Sprint",
+   "label": "Sprint",
    "options": "OKR Sprint",
    "read_only": 1,
    "in_list_view": 1,
@@ -111,7 +107,7 @@
   {
    "fieldname": "objective_title",
    "fieldtype": "Data",
-   "label": "Parent Objective Title",
+   "label": "Objective Title",
    "read_only": 1
   },
   {
@@ -150,7 +146,9 @@
    "label": "Plan Owner",
    "options": "User",
    "read_only": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 0,
+   "hidden": 1,
+   "in_list_view": 0
   },
   {
    "fieldname": "sprint_owner",
@@ -158,7 +156,9 @@
    "label": "Sprint Owner",
    "options": "User",
    "read_only": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 0,
+   "hidden": 1,
+   "in_list_view": 0
   },
   {
    "fieldname": "objective_owner",
@@ -166,33 +166,51 @@
    "label": "Objective Owner",
    "options": "User",
    "read_only": 1,
-   "in_standard_filter": 1
+   "in_standard_filter": 0,
+   "hidden": 1,
+   "in_list_view": 0
   },
   {
    "fieldname": "objective_level",
    "fieldtype": "Select",
    "label": "Objective Level",
    "options": "Organization\nDepartment",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1,
+   "in_list_view": 0,
+   "in_standard_filter": 0
   },
   {
    "fieldname": "start_date",
    "fieldtype": "Date",
    "label": "Start Date",
    "read_only": 1,
-   "in_list_view": 1
+   "in_list_view": 0,
+   "hidden": 1,
+   "in_standard_filter": 0
   },
   {
    "fieldname": "end_date",
    "fieldtype": "Date",
    "label": "End Date",
    "read_only": 1,
-   "in_list_view": 1
+   "in_list_view": 0,
+   "hidden": 1,
+   "in_standard_filter": 0
+  },
+  {
+   "fieldname": "date_range",
+   "fieldtype": "Data",
+   "label": "Timeline",
+   "read_only": 1
   },
   {
    "fieldname": "ownership_section",
    "fieldtype": "Section Break",
-   "label": "Assignment"
+   "label": "Assignment",
+   "hidden": 1,
+   "in_list_view": 0,
+   "in_standard_filter": 0
   },
   {
    "fieldname": "owner_user",
@@ -200,8 +218,9 @@
    "label": "Key Result Owner",
    "options": "User",
    "reqd": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1
+   "in_list_view": 0,
+   "in_standard_filter": 0,
+   "hidden": 1
   },
   {
    "fieldname": "reviewer",
@@ -221,18 +240,25 @@
   },
   {
    "fieldname": "ownership_col_break",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "hidden": 1,
+   "in_list_view": 0,
+   "in_standard_filter": 0
   },
   {
    "fieldname": "priority",
    "fieldtype": "Select",
    "label": "Priority",
    "options": "Low\nMedium\nHigh",
-   "default": "Medium"
+   "default": "Medium",
+   "in_list_view": 0
   },
   {
    "fieldname": "ownership_status_col_break",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "hidden": 1,
+   "in_list_view": 0,
+   "in_standard_filter": 0
   },
   {
    "fieldname": "status",
@@ -241,7 +267,7 @@
    "options": "Draft\nPlanned\nActive\nOn Hold\nCompleted\nClosed\nArchived",
    "default": "Draft",
    "reqd": 1,
-   "in_list_view": 1,
+   "in_list_view": 0,
    "in_standard_filter": 1
   },
   {
@@ -255,15 +281,16 @@
    "label": "Calculation Mode",
    "options": "Manual\nAutomatic",
    "default": "Manual",
-   "reqd": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1
+   "reqd": 0,
+   "in_list_view": 0,
+   "in_standard_filter": 0,
+   "hidden": 1
   },
   {
    "fieldname": "metric_type",
    "fieldtype": "Select",
    "label": "Measurement Type",
-   "options": "Percentage\nNumber\nCurrency\nBoolean",
+   "options": "Percentage\nNumber\nCurrency",
    "default": "Percentage",
    "reqd": 1,
    "in_list_view": 1,
@@ -280,7 +307,8 @@
    "fieldname": "unit_of_measure",
    "fieldtype": "Data",
    "label": "Unit of Measure",
-   "default": "%"
+   "default": "%",
+   "placeholder": "e.g., Customers, Leads, Orders, Hours, Tasks, Bottles, Calls"
   },
   {
    "fieldname": "measurement_col_break",
@@ -289,23 +317,22 @@
   {
    "fieldname": "baseline_value",
    "fieldtype": "Float",
-   "label": "Baseline Value",
+   "label": "Current Starting Value",
    "default": 0
   },
   {
    "fieldname": "target_value",
    "fieldtype": "Float",
-   "label": "Target Value",
+   "label": "Target to Achieve",
    "default": 100,
    "in_list_view": 1
   },
   {
    "fieldname": "current_value",
    "fieldtype": "Float",
-   "label": "Current Value",
+   "label": "Current Progress Value",
    "default": 0,
-   "in_list_view": 1,
-   "description": "Editable only when Calculation Mode is Manual."
+   "in_list_view": 1
   },
   {
    "fieldname": "currency",
