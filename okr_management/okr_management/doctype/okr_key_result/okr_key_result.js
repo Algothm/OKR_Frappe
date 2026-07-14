@@ -8,6 +8,7 @@ frappe.ui.form.on('OKR Key Result', {
 		apply_key_result_ui(frm);
 		fetch_and_cache_parent_plan_title(frm);
 		render_action_items_list(frm);
+		update_objective_date_range(frm);
 	},
 	objective(frm) {
 		populate_objective_context(frm);
@@ -80,6 +81,7 @@ const INHERITED_FIELDS = [
 	'sprint_owner',
 	'objective_owner',
 	'objective_level',
+	'date_range',
 	'start_date',
 	'end_date'
 ];
@@ -114,9 +116,11 @@ function populate_objective_context(frm) {
 		frm.set_value('plan_owner', objective.plan_owner || '');
 		frm.set_value('sprint_owner', objective.sprint_owner || '');
 		frm.set_value('objective_owner', objective.owner_user || '');
+		frm.set_value('owner_user', objective.owner_user || frappe.session.user || '');
 		frm.set_value('objective_level', objective.level || '');
 		frm.set_value('start_date', objective.start_date || '');
 		frm.set_value('end_date', objective.end_date || '');
+		update_objective_date_range(frm, objective.start_date, objective.end_date);
 
 		fetch_and_cache_parent_plan_title(frm);
 	});
@@ -126,11 +130,28 @@ function clear_objective_context(frm) {
 	INHERITED_FIELDS.forEach(fieldname => frm.set_value(fieldname, ''));
 }
 
+function update_objective_date_range(frm, start_date, end_date) {
+	const start = start_date || frm.doc.start_date;
+	const end = end_date || frm.doc.end_date;
+	if (start === undefined || start === null || start === '' || end === undefined || end === null || end === '') {
+		frm.set_value('date_range', '');
+		return;
+	}
+
+	const days = moment(end).diff(moment(start), 'days') + 1;
+	const label = frappe.datetime.str_to_user(start) + ' to ' + frappe.datetime.str_to_user(end)
+		+ (days > 0 ? ' (' + days + ' days)' : '');
+	frm.set_value('date_range', label);
+}
+
 function apply_key_result_ui(frm) {
 	frm.set_df_property('naming_series', 'hidden', 1);
 
 	INHERITED_FIELDS.forEach(fieldname => {
 		frm.set_df_property(fieldname, 'read_only', 1);
+	});
+	['owner_user', 'ownership_section', 'ownership_col_break', 'ownership_status_col_break', 'plan_owner', 'sprint_owner', 'objective_owner', 'objective_level', 'start_date', 'end_date'].forEach(fieldname => {
+		frm.set_df_property(fieldname, 'hidden', 1);
 	});
 
 	['target_progress', 'score', 'action_item_count', 'checkin_count'].forEach(fieldname => {
@@ -138,11 +159,12 @@ function apply_key_result_ui(frm) {
 	});
 
 	const has_action_items = cint(frm.doc.action_item_count || 0) > 0;
-	frm.set_df_property('current_value', 'read_only', has_action_items || frm.doc.calculation_mode !== 'Manual');
+	frm.set_df_property('current_value', 'read_only', has_action_items);
 	frm.toggle_display('currency', frm.doc.metric_type === 'Currency');
 
 	const metric_type = frm.doc.metric_type;
-	frm.toggle_reqd('target_value', ['Percentage', 'Boolean'].includes(metric_type));
+	frm.toggle_reqd('target_value', metric_type === 'Percentage');
+	frm.set_df_property('unit_of_measure', 'placeholder', 'e.g., Customers, Leads, Orders, Hours, Tasks, Bottles, Calls');
 
 	if (metric_type === 'Boolean') {
 		frm.toggle_display('unit_of_measure', 0);
@@ -150,12 +172,15 @@ function apply_key_result_ui(frm) {
 	} else if (metric_type === 'Percentage') {
 		frm.toggle_display('unit_of_measure', 1);
 		frm.set_df_property('unit_of_measure', 'read_only', 1);
-		if (frm.is_new() && !frm.doc.unit_of_measure) {
+		if (frm.doc.unit_of_measure != '%') {
 			frm.set_value('unit_of_measure', '%');
 		}
 	} else if (metric_type === 'Number') {
 		frm.toggle_display('unit_of_measure', 1);
 		frm.set_df_property('unit_of_measure', 'read_only', 0);
+		if (frm.doc.unit_of_measure === '%') {
+			frm.set_value('unit_of_measure', '');
+		}
 	} else {
 		frm.toggle_display('unit_of_measure', 0);
 		frm.set_df_property('unit_of_measure', 'read_only', 1);
@@ -220,7 +245,7 @@ function render_action_items_list(frm) {
 			row.due_date = item.due_date;
 		});
 		frm.doc.action_item_count = (items || []).length;
-		frm.set_df_property('current_value', 'read_only', (items || []).length > 0 || frm.doc.calculation_mode !== 'Manual');
+		frm.set_df_property('current_value', 'read_only', (items || []).length > 0);
 		frm.refresh_field('action_items');
 		render_action_items_panel(frm, items || []);
 	});

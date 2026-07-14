@@ -1,6 +1,11 @@
 console.log("OKR Sprint JS Loaded");
 
 frappe.ui.form.on('OKR Sprint', {
+    onload_post_render(frm) {
+        apply_sprint_description_layout(frm);
+        apply_sprint_preview_layout(frm);
+    },
+
     refresh(frm) {
         console.log("refresh called");
         frm.set_df_property('naming_series', 'hidden', 1);
@@ -19,6 +24,9 @@ frappe.ui.form.on('OKR Sprint', {
         set_default_sprint_owner(frm);
 
         apply_sprint_ui_rules(frm);
+
+        apply_sprint_description_layout(frm);
+        apply_sprint_preview_layout(frm);
 
         fetch_and_cache_parent_plan_title(frm);
     },
@@ -74,6 +82,44 @@ frappe.ui.form.on('OKR Sprint', {
         apply_sprint_ui_rules(frm);
     }
 });
+
+function apply_sprint_description_layout(frm) {
+    const field = frm.fields_dict.description;
+    if (!field || !field.$wrapper) return;
+
+    field.$wrapper.find('textarea').css({
+        height: '96px',
+        minHeight: '80px',
+        maxHeight: '120px',
+        resize: 'vertical'
+    });
+}
+
+function apply_sprint_preview_layout(frm) {
+    ['financial_year', 'sprint_duration'].forEach((fieldname) => {
+        const field = frm.fields_dict[fieldname];
+        if (!field || !field.$wrapper) return;
+
+        field.$wrapper.css({
+            width: '100%',
+            marginLeft: '0',
+            marginRight: '0'
+        });
+
+        field.$wrapper.find('.control-input-wrapper, .control-value, .like-disabled-input').css({
+            width: '100%',
+            boxSizing: 'border-box'
+        });
+
+        field.$wrapper.find('.control-value, .like-disabled-input').css({
+            minHeight: '38px',
+            display: 'flex',
+            alignItems: 'center',
+            padding: '8px 12px',
+            borderRadius: '8px'
+        });
+    });
+}
 
 function apply_sprint_ui_rules(frm) {
     const status = frm.doc.status || 'Draft';
@@ -330,4 +376,5 @@ function update_sprint_preview(frm) {
         + ' (' + days + ' days)';
     frm.set_value('sprint_duration', label);
     frm.refresh_field('sprint_duration');
+    apply_sprint_preview_layout(frm);
 }

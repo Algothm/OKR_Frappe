@@ -5,7 +5,7 @@ frappe.pages['okr-workspace'].on_page_load = function(wrapper) {
 class OKRWorkspace {
         constructor(wrapper) {
                 this.wrapper = wrapper;
-                this.page = frappe.ui.make_app_page({ parent: wrapper, title: __('OKR Workspace'), single_column: true });
+                this.page = frappe.ui.make_app_page({ parent: wrapper, single_column: true });
                 this.$body = $('<div class="okr-workspace-page"></div>').appendTo(this.page.main);
                 this.filters = Object.assign({ year: '', quarter: '', sprint: '', level: 'Department', owner: 'me' }, frappe.session.okr_workspace_filters || {});
                 this.state = { objectives: {}, key_results: {}, action_history: {}, action_checkin: null, selected_objective: null };
@@ -20,7 +20,7 @@ class OKRWorkspace {
                 this.$body.html(`
                         <div class="okr-ws-shell">
                                 <aside class="okr-ws-rail">
-                                        <div class="okr-ws-brand"><span></span>${__('OKR Workspace')}</div>
+                                        <div class="okr-ws-brand">${__('OKR Workspace')}</div>
                                         <div class="okr-ws-rail-title">${__('Objectives')}</div>
                                         <div data-objective-rail></div>
                                 </aside>
