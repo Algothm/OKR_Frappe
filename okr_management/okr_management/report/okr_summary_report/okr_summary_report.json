@@ -2,7 +2,7 @@
  "doctype": "Report",
  "name": "OKR Summary Report",
  "report_name": "OKR Summary Report",
- "ref_doctype": "OKR Cycle",
+ "ref_doctype": "OKR Sprint",
  "report_type": "Script Report",
  "is_standard": "Yes",
  "module": "OKR Management",

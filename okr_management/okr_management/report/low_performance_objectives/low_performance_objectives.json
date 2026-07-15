@@ -9,5 +9,5 @@
   "ref_doctype": "OKR Objective",
   "report_name": "Low Performance Objectives",
   "report_type": "Query Report",
-  "query": "select name, objective_title, cycle, company, department, owner_user, progress, confidence, status from `tabOKR Objective` where progress < 60 order by progress asc"
+  "query": "select name, objective_title, sprint, company, department, owner_user, progress, confidence, status from `tabOKR Objective` where progress < 60 order by progress asc"
 }

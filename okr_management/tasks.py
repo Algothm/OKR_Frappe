@@ -25,6 +25,6 @@ def publish_sprint_reminders() -> None:
 
 
 def publish_at_risk_updates() -> None:
-	items = frappe.get_all("OKR Key Result", filters={"status": ["=", "At Risk"]}, pluck="name")
+	items = frappe.get_all("OKR Key Result", filters={"status": "Active", "target_progress": ["<", 60]}, pluck="name")
 	for item in items:
 		frappe.publish_realtime("okr_key_result_at_risk", {"key_result": item})

@@ -9,6 +9,6 @@
   "ref_doctype": "OKR Check In",
   "report_name": "Pending Reviews",
   "report_type": "Query Report",
-  "query": "select name, key_result, objective, cycle, reported_by, round(self_rating * 5) as 'Employee Rating', round(manager_rating * 5) as 'Manager Rating', review_status, checkin_date from `tabOKR Check In` where review_status in ('Draft', 'Submitted') order by checkin_date desc"
+  "query": "select name, key_result, objective, parent_sprint as sprint, reported_by, round(self_rating * 5) as 'Employee Rating', round(manager_rating * 5) as 'Manager Rating', review_status, checkin_date from `tabOKR Check In` where review_status in ('Draft', 'Submitted') order by checkin_date desc"
 }
 
