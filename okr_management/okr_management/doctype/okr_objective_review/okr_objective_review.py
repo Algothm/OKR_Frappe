@@ -31,20 +31,20 @@ class OKRObjectiveReview(Document):
 		if not self.reviewer:
 			self.reviewer = frappe.session.user
 		if self.objective and frappe.db.exists("OKR Objective", self.objective):
-			objective = frappe.db.get_value("OKR Objective", self.objective, ["cycle", "end_date"], as_dict=True)
-			if objective and not self.cycle:
-				self.cycle = objective.cycle
+			objective = frappe.db.get_value("OKR Objective", self.objective, ["sprint", "end_date"], as_dict=True)
+			if objective and not self.sprint:
+				self.sprint = objective.sprint
 
 	def validate(self) -> None:
 		ensure_required_link(self.objective, "Objective")
-		ensure_required_link(self.cycle, "OKR Cycle")
+		ensure_required_link(self.sprint, "OKR Sprint")
 		ensure_required_link(self.reviewer, "Reviewer")
 		if self.objective:
-			objective = frappe.db.get_value("OKR Objective", self.objective, ["cycle", "end_date"], as_dict=True)
-			if objective and self.cycle != objective.cycle:
-				frappe.throw("Objective Review Cycle must match the selected Objective Cycle.")
+			objective = frappe.db.get_value("OKR Objective", self.objective, ["sprint", "end_date"], as_dict=True)
+			if objective and self.sprint != objective.sprint:
+				frappe.throw("Objective Review Sprint must match the selected Objective Sprint.")
 			if objective and self.review_date and objective.end_date and getdate(self.review_date) < getdate(objective.end_date):
-				frappe.msgprint("This review is dated before the Objective End Date. This is allowed for mid-cycle reviews.")
+				frappe.msgprint("This review is dated before the Objective End Date. This is allowed for mid-sprint reviews.")
 		if not user_can_update_manager_review():
 			manager_fields = ("manager_rating", "manager_feedback", "rating", "decision", "review_status", "next_actions")
 			if any(review_value_changed(self, fieldname) for fieldname in manager_fields):
