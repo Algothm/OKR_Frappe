@@ -3,7 +3,6 @@ from __future__ import annotations
 import frappe
 
 SERIES = {
-	"OKR Cycle": "OKR-CYCLE-.YYYY.-",
 	"OKR Objective": "OKR-OBJ-.YYYY.-",
 	"OKR Key Result": "OKR-KR-.YYYY.-",
 	"OKR Check In": "OKR-CHECKIN-.YYYY.-",

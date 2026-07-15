@@ -12,8 +12,6 @@ WORKSPACE_FILES = [
 
 OBSOLETE_LEAF_WORKSPACES = [
     "Administration",
-    "OKR Settings",
-    "OKR Approval Matrix",
 ]
 
 

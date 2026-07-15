@@ -7,8 +7,6 @@ def execute():
         "OKR Sprint": "Planning",
         "Objectives": "Execution",
         "Key Results": "Execution",
-        "OKR Settings": "Administration",
-        "OKR Approval Matrix": "Administration",
     }
 
     for name, parent_page in obsolete_workspaces.items():
