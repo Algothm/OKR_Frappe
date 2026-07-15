@@ -22,54 +22,6 @@ frappe.ui.form.on('OKR Key Result', {
 	}
 });
 
-frappe.ui.form.on('OKR Action Item Row', {
-	open_action_item(frm, cdt, cdn) {
-		const row = frappe.get_doc(cdt, cdn);
-		if (row && row.action_item_id) {
-			frappe.set_route('Form', 'OKR Action Item', row.action_item_id);
-		}
-	},
-	check_in(frm, cdt, cdn) {
-		const row = frappe.get_doc(cdt, cdn);
-		open_action_item_checkin(frm, row);
-	},
-	save_row(frm, cdt, cdn) {
-		const row = frappe.get_doc(cdt, cdn);
-		if (row && row.action_item_id) {
-			frappe.call({
-				method: 'frappe.client.set_value',
-				args: {
-					doctype: 'OKR Action Item',
-					name: row.action_item_id,
-					fieldname: {
-						progress: flt(row.progress),
-						status: row.status,
-						priority: row.priority
-					}
-				},
-				callback: function(r) {
-					if (!r.exc) {
-						frappe.show_alert({
-							message: __('Action Item saved and progress updated successfully'),
-							indicator: 'green'
-						});
-						// Close the row edit popover/dialog
-						if (frm.fields_dict.action_items && frm.fields_dict.action_items.grid) {
-							frm.fields_dict.action_items.grid.grid_rows.forEach(gr => {
-								if (gr.doc.name === row.name) {
-									gr.toggle_view(false);
-								}
-							});
-						}
-						// Reload the parent OKR Key Result
-						frm.reload_doc();
-					}
-				}
-			});
-		}
-	}
-});
-
 const INHERITED_FIELDS = [
 	'parent_plan',
 	'parent_sprint',
@@ -217,12 +169,9 @@ function handle_metric_type_change(frm) {
 }
 
 function render_action_items_list(frm) {
-	frm.set_df_property('action_items', 'hidden', 1);
 	frm.set_df_property('action_items_html', 'hidden', 0);
 
 	if (frm.is_new()) {
-		frm.clear_table('action_items');
-		frm.refresh_field('action_items');
 		render_action_items_panel(frm, []);
 		return;
 	}
@@ -233,20 +182,9 @@ function render_action_items_list(frm) {
 		order_by: 'creation asc',
 		limit: 100
 	}).then(items => {
-		frm.clear_table('action_items');
-		(items || []).forEach(item => {
-			const row = frm.add_child('action_items');
-			row.action_item_id = item.name;
-			row.action_item_title = item.action_item_title;
-			row.owner_user = item.owner_user;
-			row.priority = item.priority;
-			row.status = item.status;
-			row.progress = item.progress;
-			row.due_date = item.due_date;
-		});
+		frm._okr_action_items = items || [];
 		frm.doc.action_item_count = (items || []).length;
 		frm.set_df_property('current_value', 'read_only', (items || []).length > 0);
-		frm.refresh_field('action_items');
 		render_action_items_panel(frm, items || []);
 	});
 }
@@ -409,7 +347,7 @@ function save_inline_checkin(frm, wrapper) {
 		frappe.msgprint(__('Please enter what work was completed.'));
 		return;
 	}
-	const item = (frm.doc.action_items || []).find(row => row.action_item_id === action_item) || {};
+	const item = (frm._okr_action_items || []).find(row => row.name === action_item) || {};
 	frappe.call({
 		method: 'frappe.client.insert',
 		args: { doc: {
@@ -421,18 +359,6 @@ function save_inline_checkin(frm, wrapper) {
 			reported_by: frappe.session.user, checkin_date: frappe.datetime.get_today(),
 			parent_plan: frm.doc.parent_plan, parent_sprint: frm.doc.parent_sprint,
 			company: frm.doc.company, department: frm.doc.department, financial_year: frm.doc.financial_year,
-			action_items: [
-				{
-					action_item_id: action_item,
-					action_item_title: item.action_item_title || '',
-					owner_user: item.owner_user || frappe.session.user,
-					priority: item.priority || 'Medium',
-					status: progress >= 100 ? 'Completed' : checkin_status,
-					progress: progress,
-					due_date: item.due_date,
-					notes: achievements
-				}
-			]
 		} },
 		freeze: true,
 		freeze_message: __('Saving Check-In...'),

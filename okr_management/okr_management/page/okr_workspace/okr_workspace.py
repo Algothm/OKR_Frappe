@@ -220,21 +220,14 @@ def get_action_items(kr_names: list[str]) -> list:
 def get_checkin_history(action_item_names: list[str]) -> dict:
     if not action_item_names:
         return {}
-    rows = frappe.db.sql(
-        """
-        select row.action_item_id, ci.name, ci.checkin_date, ci.progress, ci.achievements,
-               ci.blockers, ci.dependency_description, ci.attachment, ci.reported_by
-        from `tabOKR Action Item Row` row
-        inner join `tabOKR Check In` ci on ci.name = row.parent
-        where row.parenttype = 'OKR Check In'
-          and row.action_item_id in %(action_items)s
-          and ci.status = 'Submitted'
-        order by ci.checkin_date desc, ci.creation desc
-        """,
-        {"action_items": tuple(action_item_names)},
-        as_dict=True,
+    rows = frappe.get_all(
+        "OKR Check In",
+        filters={"action_item": ["in", action_item_names], "status": "Submitted"},
+        fields=["action_item", "name", "checkin_date", "progress", "achievements", "blockers", "reported_by"],
+        order_by="checkin_date desc, creation desc",
+        limit_page_length=2000,
     )
     out = {}
     for row in rows:
-        out.setdefault(row.action_item_id, []).append(row)
+        out.setdefault(row.action_item, []).append(row)
     return out

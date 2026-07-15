@@ -30,29 +30,6 @@ INHERITED_FIELDS = {
 
 
 class OKRKeyResult(Document):
-    def sync_action_items_to_db(self) -> None:
-        import os
-        with open("/tmp/kr_save.log", "a") as lf:
-            lf.write(f"sync_action_items_to_db called for {self.name}\n")
-            for row in self.get("action_items") or []:
-                lf.write(f"  Row id: {row.action_item_id}, title: {row.action_item_title}, progress: {row.progress}\n")
-        for row in self.get("action_items") or []:
-            if row.action_item_id and frappe.db.exists("OKR Action Item", row.action_item_id):
-                ai = frappe.get_doc("OKR Action Item", row.action_item_id)
-                updated = False
-                if ai.progress != row.progress:
-                    ai.progress = row.progress
-                    updated = True
-                if ai.status != row.status:
-                    ai.status = row.status
-                    updated = True
-                if ai.priority != row.priority:
-                    ai.priority = row.priority
-                    updated = True
-                if updated:
-                    ai.flags.ignore_permissions = True
-                    ai.save()
-
     def before_validate(self) -> None:
         self.priority = self.priority or "Medium"
         self.status = self.status or "Draft"
@@ -77,7 +54,6 @@ class OKRKeyResult(Document):
             self.unit_of_measure = None
 
         self.inherit_context_from_objective()
-        self.sync_action_items_to_db()
         
         # Calculate count of standalone Action Items and check-ins
         if self.name:
@@ -93,7 +69,6 @@ class OKRKeyResult(Document):
             self.target_progress = 0.0
             self.score = 0.0
 
-        self.sync_action_item_parent()
 
     def validate(self) -> None:
         self.inherit_context_from_objective()
@@ -151,10 +126,6 @@ class OKRKeyResult(Document):
             setattr(self, fieldname, None)
 
     # Placeholder setter removed
-
-    def sync_action_item_parent(self) -> None:
-        for action_item in self.get("action_items") or []:
-            action_item.parent_key_result = self.name
 
     def validate_required_fields(self) -> None:
         required = {
