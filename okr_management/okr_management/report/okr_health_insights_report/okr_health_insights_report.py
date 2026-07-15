@@ -12,7 +12,7 @@ def execute(filters=None):
 	rating_by_objective = {row.get("objective"): row for row in get_review_rating_signals(include_normal=True)}
 	data = []
 	for row in get_health_rows():
-		if filters.get("cycle") and row.get("cycle") != filters.cycle:
+		if filters.get("sprint") and row.get("sprint") != filters.sprint:
 			continue
 		if filters.get("department") and row.get("department") != filters.department:
 			continue
@@ -35,8 +35,8 @@ def execute(filters=None):
 			"record": row.get("record"),
 			"title": row.get("title"),
 			"department": row.get("department"),
-			"cycle": row.get("cycle"),
-			"cycle_title": row.get("cycle_title"),
+			"sprint": row.get("sprint"),
+			"sprint_title": row.get("sprint_title"),
 			"owner": row.get("owner"),
 			"progress": row.get("progress"),
 			"confidence": row.get("confidence"),
@@ -51,7 +51,7 @@ def execute(filters=None):
 			"rating_gap": rating.get("rating_gap") if rating else None,
 		})
 	for rating in get_review_rating_rows(include_normal=True):
-		if filters.get("cycle") and rating.get("cycle") != filters.cycle:
+		if filters.get("sprint") and rating.get("sprint") != filters.sprint:
 			continue
 		if filters.get("department") and rating.get("department") != filters.department:
 			continue
@@ -64,8 +64,8 @@ def execute(filters=None):
 			"objective": rating.get("objective"),
 			"title": rating.get("objective_title"),
 			"department": rating.get("department"),
-			"cycle": rating.get("cycle"),
-			"cycle_title": None,
+			"sprint": rating.get("sprint"),
+			"sprint_title": None,
 			"owner": rating.get("owner"),
 			"progress": None,
 			"confidence": None,
@@ -92,8 +92,8 @@ def get_columns():
 		{"label": "Objective", "fieldname": "objective", "fieldtype": "Link", "options": "OKR Objective", "width": 170},
 		{"label": "Title", "fieldname": "title", "fieldtype": "Data", "width": 260},
 		{"label": "Department", "fieldname": "department", "fieldtype": "Link", "options": "Department", "width": 180},
-		{"label": "Cycle", "fieldname": "cycle", "fieldtype": "Link", "options": "OKR Cycle", "width": 160},
-		{"label": "Cycle Title", "fieldname": "cycle_title", "fieldtype": "Data", "width": 180},
+		{"label": "Sprint", "fieldname": "sprint", "fieldtype": "Link", "options": "OKR Sprint", "width": 160},
+		{"label": "Sprint Title", "fieldname": "sprint_title", "fieldtype": "Data", "width": 180},
 		{"label": "Owner", "fieldname": "owner", "fieldtype": "Link", "options": "User", "width": 190},
 		{"label": "Progress", "fieldname": "progress", "fieldtype": "Percent", "width": 95},
 		{"label": "Confidence", "fieldname": "confidence", "fieldtype": "Float", "width": 95},

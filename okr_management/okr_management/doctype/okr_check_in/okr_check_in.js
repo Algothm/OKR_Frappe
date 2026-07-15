@@ -38,7 +38,7 @@ function apply_fast_checkin_ui(frm) {
 		frm.set_df_property(field, 'read_only', 1);
 	});
 	['financial_year', 'current_value', 'confidence', 'next_steps', 'notes', 'status', 'self_rating',
-		'action_items_section', 'action_items', 'dependency_section', 'has_dependency', 'dependent_department',
+		'dependency_section', 'has_dependency', 'dependent_department',
 		'impact_level', 'escalation_section', 'escalate_to_department', 'reason_for_escalation',
 		'expected_resolution_date', 'summary_sidebar_section', 'review_status', 'manager_feedback',
 		'action_required', 'review_date', 'reviewed_by', 'technical_section'].forEach(field => {
@@ -58,9 +58,9 @@ function apply_route_context(frm) {
 
 	const route_options = frappe.route_options || {};
 	if (route_options.action_item) {
-		frm.action_item_filter = route_options.action_item;
+		frm.set_value('action_item', route_options.action_item);
 	} else if (frappe.okr_checkin_action_item) {
-		frm.action_item_filter = frappe.okr_checkin_action_item;
+		frm.set_value('action_item', frappe.okr_checkin_action_item);
 	}
 	frappe.okr_checkin_action_item = null;
 
@@ -76,12 +76,6 @@ function apply_route_context(frm) {
 
 function fill_from_key_result(frm) {
 	if (!frm.doc.key_result) return;
-
-	let action_item_id = frm.action_item_filter;
-	let filters = { parent_key_result: frm.doc.key_result };
-	if (action_item_id) {
-		filters.name = action_item_id;
-	}
 
 	frappe.db.get_value('OKR Key Result', frm.doc.key_result, [
 		'objective', 'parent_sprint', 'parent_plan', 'financial_year', 'company', 'department'
@@ -104,27 +98,6 @@ function fill_from_key_result(frm) {
 		if (!frm.doc.reported_by) frm.set_value('reported_by', frappe.session.user);
 	});
 
-	frappe.db.get_list('OKR Action Item', {
-		filters: filters,
-		fields: ['name', 'action_item_title', 'owner_user', 'status', 'progress', 'due_date', 'notes', 'parent_key_result'],
-		order_by: 'creation asc',
-		limit: action_item_id ? 1 : 100
-	}).then(items => {
-		frm.clear_table('action_items');
-		(items || []).forEach(item => {
-			const row = frm.add_child('action_items');
-			row.name = item.name;
-			row.action_item_id = item.name;
-			row.parent_key_result = item.parent_key_result;
-			row.action_item_title = item.action_item_title;
-			row.owner_user = item.owner_user;
-			row.status = item.status;
-			row.progress = item.progress;
-			row.due_date = item.due_date;
-			row.notes = item.notes;
-		});
-		frm.refresh_field('action_items');
-	});
 }
 
 function toggle_dependency_fields(frm) {

@@ -180,12 +180,3 @@ def get_checkin_permission_query_conditions(user: str | None = None) -> str:
 	if not clauses:
 		clauses.append(f"`tabOKR Check In`.reported_by = {_escape(user)}")
 	return "(" + " or ".join(clauses) + ")"
-
-
-
-
-def get_initiative_permission_query_conditions(user: str | None = None) -> str:
-	user = user or frappe.session.user
-	if _is_executive(user):
-		return ""
-	return _department_clause("OKR Initiative", user=user) or f"`tabOKR Initiative`.owner = {_escape(user)}"

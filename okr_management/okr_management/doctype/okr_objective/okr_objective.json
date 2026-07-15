@@ -8,21 +8,21 @@
  "engine": "InnoDB",
  "field_order": [
   "objective_details_section",
+  "sprint",
   "objective_title",
   "description",
-  "sprint",
   "department",
   "priority",
+  "status",
+  "partial_completion_accepted",
+  "completion_notes",
   "objective_details_col_break",
   "parent_plan",
   "company",
   "financial_year",
-  "timeline_section",
   "start_date",
   "end_date",
-  "status",
-  "partial_completion_accepted",
-  "completion_notes",
+  "timeline_section",
   "technical_section",
   "naming_series",
   "progress",
@@ -272,7 +272,8 @@
   {
    "fieldname": "timeline_section",
    "fieldtype": "Section Break",
-   "label": "Assignment"
+   "label": "Assignment",
+   "hidden": 1
   },
   {
    "fieldname": "technical_section",

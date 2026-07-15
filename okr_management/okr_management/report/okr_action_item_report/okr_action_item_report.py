@@ -9,14 +9,14 @@ def execute(filters=None):
     columns = get_columns()
     conditions = []
     values = {}
-    if filters.get("cycle"):
-        conditions.append("ai.cycle = %(cycle)s")
-        values["cycle"] = filters.cycle
+    if filters.get("sprint"):
+        conditions.append("ai.parent_sprint = %(sprint)s")
+        values["sprint"] = filters.sprint
     if filters.get("objective"):
-        conditions.append("ai.objective = %(objective)s")
+        conditions.append("ai.parent_objective = %(objective)s")
         values["objective"] = filters.objective
     if filters.get("key_result"):
-        conditions.append("ai.key_result = %(key_result)s")
+        conditions.append("ai.parent_key_result = %(key_result)s")
         values["key_result"] = filters.key_result
     if filters.get("owner"):
         conditions.append("ai.owner_user = %(owner)s")
@@ -31,10 +31,10 @@ def execute(filters=None):
     rows = frappe.db.sql(
         f"""
         select
-            ai.cycle,
-            ai.objective,
+            ai.parent_sprint,
+            ai.parent_objective,
             obj.objective_title,
-            ai.key_result,
+            ai.parent_key_result,
             kr.key_result_title,
             ai.name as action_item,
             ai.action_item_title,
@@ -44,10 +44,10 @@ def execute(filters=None):
             ai.priority,
             ai.start_date,
             ai.due_date,
-            ai.blockers
+            ai.notes
         from `tabOKR Action Item` ai
-        left join `tabOKR Objective` obj on obj.name = ai.objective
-        left join `tabOKR Key Result` kr on kr.name = ai.key_result
+        left join `tabOKR Objective` obj on obj.name = ai.parent_objective
+        left join `tabOKR Key Result` kr on kr.name = ai.parent_key_result
         {where}
         order by ai.due_date asc, ai.priority desc, ai.modified desc
         """,
@@ -62,7 +62,7 @@ def execute(filters=None):
 
 def get_columns():
     return [
-        {"label": "Cycle", "fieldname": "cycle", "fieldtype": "Link", "options": "OKR Cycle", "width": 160},
+        {"label": "Sprint", "fieldname": "sprint", "fieldtype": "Link", "options": "OKR Sprint", "width": 160},
         {"label": "Objective", "fieldname": "objective", "fieldtype": "Link", "options": "OKR Objective", "width": 170},
         {"label": "Objective Title", "fieldname": "objective_title", "fieldtype": "Data", "width": 220},
         {"label": "Key Result", "fieldname": "key_result", "fieldtype": "Link", "options": "OKR Key Result", "width": 170},

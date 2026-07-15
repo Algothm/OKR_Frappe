@@ -27,7 +27,7 @@
   "dependency_description",
   "attachment",
   "technical_section",
-  "action_items",
+  "action_item",
   "status",
   "progress_percent",
   "naming_series"
@@ -50,6 +50,13 @@
    "options": "OKR Key Result",
    "reqd": 1,
    "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "action_item",
+   "fieldtype": "Link",
+   "label": "Action Item",
+   "options": "OKR Action Item",
    "read_only": 1
   },
   {
@@ -202,21 +209,6 @@
    "fieldname": "self_rating",
    "fieldtype": "Rating",
    "label": "Self Rating",
-   "hidden": 1,
-   "reqd": 0
-  },
-  {
-   "fieldname": "action_items",
-   "fieldtype": "Table",
-   "label": "Action Items",
-   "options": "OKR Action Item Row",
-   "hidden": 1,
-   "read_only": 1
-  },
-  {
-   "fieldname": "action_items_section",
-   "fieldtype": "Section Break",
-   "label": "Action Items Checklist",
    "hidden": 1,
    "reqd": 0
   },

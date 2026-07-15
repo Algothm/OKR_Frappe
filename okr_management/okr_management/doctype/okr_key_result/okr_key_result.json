@@ -38,7 +38,6 @@
   "summary_checkin_col_break",
   "checkin_count",
   "action_items_section",
-  "action_items",
   "action_items_html",
   "owner_user",
   "objective_level",
@@ -389,15 +388,6 @@
    "fieldname": "action_items_section",
    "fieldtype": "Section Break",
    "label": "Action Items"
-  },
-  {
-   "fieldname": "action_items",
-   "fieldtype": "Table",
-   "label": "Action Items",
-   "options": "OKR Action Item Row",
-   "read_only": 0,
-   "cannot_add_rows": 1,
-   "cannot_delete_rows": 1
   },
   {
    "fieldname": "action_items_html",

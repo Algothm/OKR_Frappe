@@ -122,7 +122,6 @@ permission_query_conditions = {
 	"OKR Sprint": "okr_management.permissions.get_sprint_permission_query_conditions",
 	"OKR Objective": "okr_management.permissions.get_objective_permission_query_conditions",
 	"OKR Key Result": "okr_management.permissions.get_key_result_permission_query_conditions",
-	"OKR Initiative": "okr_management.permissions.get_initiative_permission_query_conditions",
 	"OKR Check In": "okr_management.permissions.get_checkin_permission_query_conditions",
 	"OKR Action Item": "okr_management.permissions.get_action_item_permission_query_conditions",
 }

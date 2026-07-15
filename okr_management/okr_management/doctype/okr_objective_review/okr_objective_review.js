@@ -1,7 +1,7 @@
 frappe.ui.form.on('OKR Objective Review', {
 	refresh(frm) {
 		frm.set_df_property('naming_series', 'hidden', 1);
-		frm.set_df_property('cycle', 'read_only', 1);
+		frm.set_df_property('sprint', 'read_only', 1);
 		frm.set_df_property('self_rating', 'read_only', 1);
 		if (!frm.doc.reviewer) {
 			frm.set_value('reviewer', frappe.session.user);
@@ -28,9 +28,9 @@ function apply_review_permissions(frm) {
 
 function fill_from_objective(frm) {
 	if (!frm.doc.objective) return;
-	frappe.db.get_value('OKR Objective', frm.doc.objective, ['cycle']).then(r => {
+	frappe.db.get_value('OKR Objective', frm.doc.objective, ['sprint']).then(r => {
 		const objective = r.message || {};
-		if (objective.cycle) frm.set_value('cycle', objective.cycle);
+		if (objective.sprint) frm.set_value('sprint', objective.sprint);
 		if (!frm.doc.reviewer) frm.set_value('reviewer', frappe.session.user);
 	});
 }

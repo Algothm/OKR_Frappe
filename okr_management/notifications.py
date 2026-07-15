@@ -66,7 +66,7 @@ def notify_review_status(doc, method=None):
 	)
 
 
-def notify_cycle_completion(doc, method=None):
+def notify_sprint_completion(doc, method=None):
 	previous = getattr(doc, "get_doc_before_save", lambda: None)()
 	if getattr(doc, "status", None) != "Closed":
 		return

@@ -7,7 +7,7 @@
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 1,
- "icon": "folder-normal",
+ "icon": "organization",
  "idx": 0,
  "indicator_color": "green",
  "is_hidden": 0,
@@ -39,7 +39,7 @@
  "name": "Admin Workspace",
  "number_cards": [],
  "owner": "Administrator",
- "parent_page": "Planning",
+ "parent_page": "OKR Management",
  "public": 1,
  "quick_lists": [],
  "roles": [
@@ -62,7 +62,7 @@
    "role": "HR Manager"
   }
  ],
- "sequence_id": 2.4,
+ "sequence_id": 2.0,
  "shortcuts": [
   {
    "doc_view": "",

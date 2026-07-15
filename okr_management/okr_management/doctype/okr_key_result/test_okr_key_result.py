@@ -41,6 +41,7 @@ class TestOKRKeyResultPhase4(FrappeTestCase):
 
     def cleanup_records(self):
         frappe.db.delete("OKR Check In", {"key_result": ["like", "OKR-KR-%"]})
+        frappe.db.delete("OKR Action Item", {"action_item_title": ["like", "Phase 4 KR%"]})
         frappe.db.delete("OKR Key Result", {"key_result_title": ["like", "Phase 4 KR%"]})
         frappe.db.delete("OKR Objective", {"objective_title": ["like", "Phase 4 KR%"]})
         frappe.db.delete("OKR Sprint", {"sprint_name": ["like", "Phase 4 KR%"]})
@@ -165,14 +166,18 @@ class TestOKRKeyResultPhase4(FrappeTestCase):
         self.assertEqual(milestone_kr.target_progress, 50)
 
     def test_action_item_based_progress_averages_action_items_without_status_change(self):
-        kr = self.make_key_result(
-            calculation_mode="Action Item Based",
-            current_value=0,
-            action_items=[
-                {"action_item_title": "Phase 4 KR Action 1", "owner_user": "Administrator", "progress": 20, "weight": 0},
-                {"action_item_title": "Phase 4 KR Action 2", "owner_user": "Administrator", "progress": 80, "weight": 0},
-            ],
-        )
+        kr = self.make_key_result(current_value=0)
+        for title, progress in (("Phase 4 KR Action 1", 20), ("Phase 4 KR Action 2", 80)):
+            frappe.get_doc({
+                "doctype": "OKR Action Item",
+                "action_item_title": title,
+                "owner_user": "Administrator",
+                "parent_key_result": kr.name,
+                "progress": progress,
+            }).insert(ignore_permissions=True)
+        from okr_management.utils.okr_calculations import recalculate_key_result_progress
+        recalculate_key_result_progress(kr.name)
+        kr.reload()
         self.assertEqual(kr.target_progress, 50)
         self.assertEqual(kr.score, 50)
         self.assertEqual(kr.status, "Draft")
@@ -225,9 +230,13 @@ class TestOKRKeyResultPhase4(FrappeTestCase):
         self.assertRaises(frappe.ValidationError, kr.save)
 
     def test_delete_blocked_when_action_items_exist(self):
-        kr = self.make_key_result(action_items=[
-            {"action_item_title": "Phase 4 KR Delete Block", "owner_user": "Administrator", "progress": 0, "weight": 0}
-        ])
+        kr = self.make_key_result()
+        frappe.get_doc({
+            "doctype": "OKR Action Item",
+            "action_item_title": "Phase 4 KR Delete Block",
+            "owner_user": "Administrator",
+            "parent_key_result": kr.name,
+        }).insert(ignore_permissions=True)
         self.assertRaises(frappe.ValidationError, kr.delete)
 
     def test_rolls_up_to_objective_progress_and_count(self):

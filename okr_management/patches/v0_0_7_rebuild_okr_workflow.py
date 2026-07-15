@@ -6,8 +6,6 @@ WORKSPACE_LINKS = [
 	{'hidden': 0, 'is_query_report': 0, 'label': 'OKR Sprint', 'link_to': 'OKR Sprint', 'link_type': 'DocType', 'type': 'Link'},
 	{'hidden': 0, 'is_query_report': 0, 'label': 'Objectives', 'link_to': 'OKR Objective', 'link_type': 'DocType', 'type': 'Link'},
 	{'hidden': 0, 'is_query_report': 0, 'label': 'Key Results', 'link_to': 'OKR Key Result', 'link_type': 'DocType', 'type': 'Link'},
-	{'hidden': 0, 'is_query_report': 0, 'label': 'OKR Settings', 'link_to': 'OKR Settings', 'link_type': 'DocType', 'type': 'Link'},
-	{'hidden': 0, 'is_query_report': 0, 'label': 'Approval Matrix', 'link_to': 'OKR Approval Matrix', 'link_type': 'DocType', 'type': 'Link'},
 ]
 
 
@@ -16,8 +14,6 @@ OBSOLETE_WORKSPACES = [
 	'OKR Sprint',
 	'Objectives',
 	'Key Results',
-	'OKR Settings',
-	'OKR Approval Matrix',
 	'Executive',
 	'Review',
 	'Reports',

@@ -7,7 +7,7 @@
  "field_order": [
   "review_context_section",
   "objective",
-  "cycle",
+  "sprint",
   "reviewer",
   "context_col_break",
   "review_date",
@@ -48,10 +48,10 @@
    "in_list_view": 1
   },
   {
-   "fieldname": "cycle",
+   "fieldname": "sprint",
    "fieldtype": "Link",
-   "label": "OKR Cycle",
-   "options": "OKR Cycle",
+   "label": "OKR Sprint",
+   "options": "OKR Sprint",
    "req": 1,
    "read_only": 1,
    "description": "Auto-filled from the selected Objective."

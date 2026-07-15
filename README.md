@@ -4,18 +4,18 @@ A Frappe v15 / ERPNext custom app for managing Objectives and Key Results across
 
 ## Overview
 
-`okr_management` helps an organization define OKR cycles, create objectives, track measurable key results, capture check-ins, review progress, and present management-level analytics in a clean ERP-style workspace.
+`okr_management` helps an organization define OKR plans and sprints, create objectives, track measurable key results, capture check-ins, review progress, and present management-level analytics in a clean ERP-style workspace.
 
 ## Features
 
-- OKR cycle, objective, key result, check-in, review, and action item DocTypes
+- OKR plan, sprint, objective, key result, check-in, review, and action item DocTypes
 - Automatic progress and confidence rollups
 - Employee-friendly check-in workflow
 - Manager review workflow
 - Executive dashboard with number cards and charts
 - Executive Attention and rule-based OKR health insights
 - Hierarchy view for Cycle → Objective → Key Result → Action Item
-- Reports for summaries, at-risk OKRs, employee progress, health insights, cycle reviews, and action items
+- Reports for summaries, at-risk OKRs, employee progress, health insights, sprint reviews, and action items
 - Realistic demo data generator for CTO/client demos
 - Role-based visibility for executives, department heads, managers, and employees
 - ERPNext-style workspace navigation
@@ -57,7 +57,7 @@ bench --site your-site.local execute okr_management.demo_data.clear_demo_data
 
 1. Open `/app/okr-management`.
 2. Review the dashboard summary cards and analytics charts.
-3. Go to Planning and create or inspect OKR Cycles and Objectives.
+3. Go to Planning and create or inspect OKR Sprints and Objectives.
 4. Go to Execution and review Key Results, Action Items, and Check-ins.
 5. Go to Performance and inspect Objective Reviews.
 6. Go to Analytics for Executive Attention, Health Insights, and management reports.

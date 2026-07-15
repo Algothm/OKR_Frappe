@@ -16,7 +16,7 @@ def execute(filters=None):
 		{"label": "Check-in Count", "fieldname": "checkin_count", "fieldtype": "Int", "width": 130},
 		{"label": "Last Check-in", "fieldname": "last_checkin", "fieldtype": "Date", "width": 120},
 	]
-	base_filters = {"cycle": filters.cycle} if filters.get("cycle") else {}
+	base_filters = {"sprint": filters.sprint} if filters.get("sprint") else {}
 	owners = set(frappe.get_all("OKR Objective", filters=base_filters, pluck="owner_user")) | set(frappe.get_all("OKR Key Result", filters=base_filters, pluck="owner_user")) | set(frappe.get_all("OKR Check In", filters=base_filters, pluck="reported_by"))
 	if filters.get("owner"):
 		owners = {filters.owner}

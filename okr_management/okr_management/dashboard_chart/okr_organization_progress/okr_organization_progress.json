@@ -1,7 +1,7 @@
 {
   "chart_name": "Organization Progress",
   "chart_type": "Percentage",
-  "document_type": "OKR Cycle",
+  "document_type": "OKR Sprint",
   "based_on": "status",
   "value_based_on": "Count",
   "is_public": 1,

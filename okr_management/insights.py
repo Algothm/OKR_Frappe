@@ -139,18 +139,18 @@ def _objective_last_checkin(objective, latest_by_kr, kr_objective_map=None):
 
 
 def _get_objective_rows() -> list[frappe._dict]:
-	fields = ["name", "objective_title", "cycle", "company", "department", "owner_user", "status", "progress", "confidence", "end_date", "objective_type", "parent_objective"]
+	fields = ["name", "objective_title", "sprint", "company", "department", "owner_user", "status", "progress", "confidence", "end_date", "objective_type", "parent_objective"]
 	fields = [field for field in fields if field == "name" or _has_field("OKR Objective", field)]
 	return frappe.get_all("OKR Objective", fields=fields, order_by="modified desc", limit_page_length=1000)
 
 
 def _get_key_result_rows() -> list[frappe._dict]:
-	fields = ["name", "key_result_title", "objective", "cycle", "owner_user", "status", "target_progress", "confidence", "end_date"]
+	fields = ["name", "key_result_title", "objective", "parent_sprint", "owner_user", "status", "target_progress", "confidence", "end_date"]
 	fields = [field for field in fields if field == "name" or _has_field("OKR Key Result", field)]
 	return frappe.get_all("OKR Key Result", fields=fields, order_by="modified desc", limit_page_length=2000)
 
 
-def _health_row(kind: str, record: str, title: str, owner: str | None, cycle: str | None, department: str | None, progress: float, confidence: float, end_date: Any, reasons: list[str]) -> dict[str, Any]:
+def _health_row(kind: str, record: str, title: str, owner: str | None, sprint: str | None, department: str | None, progress: float, confidence: float, end_date: Any, reasons: list[str]) -> dict[str, Any]:
 	days = _days_until(end_date)
 	stale = "No recent update" in reasons or "Missed check-in" in reasons
 	low_rating = "Low Review Rating" in reasons
@@ -160,8 +160,8 @@ def _health_row(kind: str, record: str, title: str, owner: str | None, cycle: st
 		"record": record,
 		"title": title,
 		"owner": owner,
-		"cycle": cycle,
-		"cycle_title": _title("OKR Cycle", cycle, "cycle_name") if cycle else "",
+		"sprint": sprint,
+		"sprint_title": _title("OKR Sprint", sprint, "sprint_name") if sprint else "",
 		"department": department,
 		"progress": round(flt(progress), 2),
 		"confidence": round(flt(confidence), 2),
@@ -223,7 +223,7 @@ def get_health_rows() -> list[dict[str, Any]]:
 				reasons.append("Low Review Rating")
 
 		if reasons:
-			rows.append(_health_row("Objective", objective.name, objective.get("objective_title") or objective.name, objective.get("owner_user"), objective.get("cycle"), objective.get("department"), progress, confidence, objective.get("end_date"), reasons))
+			rows.append(_health_row("Objective", objective.name, objective.get("objective_title") or objective.name, objective.get("owner_user"), objective.get("sprint"), objective.get("department"), progress, confidence, objective.get("end_date"), reasons))
 
 
 	for kr in _get_key_result_rows():
@@ -248,7 +248,7 @@ def get_health_rows() -> list[dict[str, Any]]:
 			reasons.append("Missed check-in")
 		if reasons:
 			department = frappe.db.get_value("OKR Objective", kr.get("objective"), "department") if kr.get("objective") else None
-			rows.append(_health_row("Key Result", kr.name, kr.get("key_result_title") or kr.name, kr.get("owner_user"), kr.get("cycle"), department, progress, confidence, kr.get("end_date"), reasons))
+			rows.append(_health_row("Key Result", kr.name, kr.get("key_result_title") or kr.name, kr.get("owner_user"), kr.get("parent_sprint"), department, progress, confidence, kr.get("end_date"), reasons))
 
 	rank = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
 	return sorted(rows, key=lambda row: (rank.get(row["risk_level"], 9), row.get("days_remaining") if row.get("days_remaining") is not None else 9999, row["progress"]))
@@ -276,10 +276,10 @@ def get_department_performance() -> list[dict[str, Any]]:
 	return sorted(rows, key=lambda row: row["average_progress"], reverse=True)
 
 
-def _cycle_company(cycle: str | None) -> str | None:
-	if not cycle:
+def _sprint_company(sprint: str | None) -> str | None:
+	if not sprint:
 		return None
-	return frappe.db.get_value("OKR Cycle", cycle, "company") if _has_field("OKR Cycle", "company") else None
+	return frappe.db.get_value("OKR Sprint", sprint, "company") if _has_field("OKR Sprint", "company") else None
 
 
 def _key_results_for_alignment() -> dict[str, list[dict[str, Any]]]:
@@ -324,11 +324,11 @@ def _objective_alignment_node(objective: frappe._dict, children_by_parent: dict[
 
 
 @frappe.whitelist()
-def get_alignment_tree(cycle: str | None = None) -> list[dict[str, Any]]:
+def get_alignment_tree(sprint: str | None = None) -> list[dict[str, Any]]:
 	"""Return Company -> Department -> Objective hierarchy -> Key Results using existing OKR links."""
 	objectives = _get_objective_rows()
-	if cycle:
-		objectives = [row for row in objectives if row.get("cycle") == cycle]
+	if sprint:
+		objectives = [row for row in objectives if row.get("sprint") == sprint]
 	objective_names = {row.name for row in objectives}
 	children_by_parent: dict[str, list[frappe._dict]] = defaultdict(list)
 	roots: list[frappe._dict] = []
@@ -342,7 +342,7 @@ def get_alignment_tree(cycle: str | None = None) -> list[dict[str, Any]]:
 	krs_by_objective = _key_results_for_alignment()
 	companies: dict[str, dict[str, Any]] = {}
 	for root in roots:
-		company = root.get("company") or _cycle_company(root.get("cycle")) or "No Company"
+		company = root.get("company") or _sprint_company(root.get("sprint")) or "No Company"
 		department = root.get("department") or "No Department"
 		company_node = companies.setdefault(company, {"company": company, "departments": {}})
 		dept_node = company_node["departments"].setdefault(department, {"department": department, "objectives": []})
@@ -366,7 +366,7 @@ def get_review_rating_rows(include_normal: bool = True, limit: int | None = None
         "OKR Objective Review",
         filters={"docstatus": ["<", 2]},
         fields=[
-            "name", "objective", "cycle", "reviewer", "self_rating", "manager_rating",
+            "name", "objective", "sprint", "reviewer", "self_rating", "manager_rating",
             "rating", "decision", "review_status", "manager_feedback", "review_date", "modified",
         ],
         order_by="review_date desc, modified desc",
@@ -401,7 +401,7 @@ def get_review_rating_rows(include_normal: bool = True, limit: int | None = None
             "objective_title": objective_row.get("objective_title") or review.objective,
             "owner": objective_row.get("owner_user"),
             "department": objective_row.get("department"),
-            "cycle": review.cycle,
+            "sprint": review.sprint,
             "reviewer": review.reviewer,
             "self_rating": self_rating,
             "manager_rating": manager_rating,
@@ -467,15 +467,15 @@ def get_action_item_signals(limit: int = 20) -> dict[str, Any]:
 	due_soon_date = getdate(add_days(nowdate(), 7))
 	rows = frappe.get_all(
 		"OKR Action Item",
-		fields=["name", "action_item_title", "key_result", "objective", "cycle", "owner_user", "department", "status", "priority", "start_date", "due_date", "blockers", "modified"],
+		fields=["name", "action_item_title", "parent_key_result", "parent_objective", "parent_sprint", "owner_user", "department", "status", "priority", "start_date", "due_date", "notes", "modified"],
 		filters={"status": ["not in", ["Completed", "Cancelled"]]},
 		order_by="due_date asc, modified desc",
 		limit_page_length=1000,
 	)
 	for row in rows:
 		row["days_remaining"] = _days_until(row.get("due_date"))
-		row["key_result_title"] = _title("OKR Key Result", row.get("key_result"), "key_result_title") if row.get("key_result") else ""
-		row["objective_title"] = _title("OKR Objective", row.get("objective"), "objective_title") if row.get("objective") else ""
+		row["key_result_title"] = _title("OKR Key Result", row.get("parent_key_result"), "key_result_title") if row.get("parent_key_result") else ""
+		row["objective_title"] = _title("OKR Objective", row.get("parent_objective"), "objective_title") if row.get("parent_objective") else ""
 		row["recommended_action"] = "Resolve blocker with owner." if row.get("status") == "Blocked" else "Review execution plan before due date."
 	blocked = [row for row in rows if row.get("status") == "Blocked"]
 	overdue = [row for row in rows if row.get("due_date") and getdate(row.get("due_date")) < today]
@@ -910,7 +910,7 @@ EXECUTIVE_REPORT_TEMPLATE = """
 		<div class="okr-section">
 			<h2>{{ _("Review Ratings Summary") }}</h2>
 			<div class="section-note">{{ _("CTO Overview of objective review ratings.") }}</div>
-			
+
 			<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
 				<div class="okr-kpi" style="box-shadow: none; border: 1px solid #e5eaf1; background: #f8fafc;">
 					<div class="label">{{ _("Average Employee Self Rating") }}</div>
@@ -1179,23 +1179,23 @@ def _get_company_and_sprint():
 	company = ""
 	active_sprint_name = ""
 	try:
-		if _has_field("OKR Cycle", "company"):
-			cycle_row = frappe.db.get_value(
-				"OKR Cycle",
+		if _has_field("OKR Sprint", "company"):
+			sprint_row = frappe.db.get_value(
+				"OKR Sprint",
 				{"status": ["in", ["Active", "Draft"]]},
-				["cycle_name", "company"],
+				["sprint_name", "company"],
 				order_by="modified desc",
 				as_dict=True,
 			)
-			if cycle_row:
-				active_sprint_name = cycle_row.get("cycle_name") or ""
-				company = cycle_row.get("company") or ""
+			if sprint_row:
+				active_sprint_name = sprint_row.get("sprint_name") or ""
+				company = sprint_row.get("company") or ""
 		if not company:
 			company = frappe.defaults.get_global_default("company") or ""
 		if not company:
 			company = frappe.db.get_value("Company", {}, "name") or ""
-		if not active_sprint_name and _has_field("OKR Cycle", "cycle_name"):
-			active_sprint_name = frappe.db.get_value("OKR Cycle", {}, "cycle_name", order_by="modified desc") or ""
+		if not active_sprint_name and _has_field("OKR Sprint", "sprint_name"):
+			active_sprint_name = frappe.db.get_value("OKR Sprint", {}, "sprint_name", order_by="modified desc") or ""
 	except Exception:
 		pass
 	return company, active_sprint_name
