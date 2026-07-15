@@ -128,18 +128,7 @@ def save_quick_checkin(action_item: str, progress: float, update: str, blocker: 
             "blockers": blocker or "",
             "dependency_description": dependency or "",
             "attachment": attachment or "",
-            "action_items": [
-                {
-                    "action_item_id": action.name,
-                    "action_item_title": action.action_item_title,
-                    "owner_user": action.owner_user,
-                    "priority": action.priority,
-                    "status": new_status,
-                    "progress": progress,
-                    "due_date": action.due_date,
-                    "notes": update,
-                }
-            ],
+            "action_item": action.name,
         }
     )
     doc.insert(ignore_permissions=True)
@@ -163,42 +152,29 @@ def get_key_result_map(names: list[str]) -> dict:
 def get_latest_checkin_map(action_items: list[str]) -> dict:
     if not action_items:
         return {}
-    rows = frappe.db.sql(
-        """
-        select row.action_item_id, ci.name, ci.checkin_date, ci.progress
-        from `tabOKR Action Item Row` row
-        inner join `tabOKR Check In` ci on ci.name = row.parent
-        where row.parenttype = 'OKR Check In'
-          and row.action_item_id in %(action_items)s
-          and ci.status = 'Submitted'
-        order by ci.checkin_date desc, ci.creation desc
-        """,
-        {"action_items": tuple(action_items)},
-        as_dict=True,
+    rows = frappe.get_all(
+        "OKR Check In",
+        filters={"action_item": ["in", action_items], "status": "Submitted"},
+        fields=["action_item", "name", "checkin_date", "progress"],
+        order_by="checkin_date desc, creation desc",
+        limit_page_length=1000,
     )
     out = {}
     for row in rows:
-        out.setdefault(row.action_item_id, row)
+        out.setdefault(row.action_item, row)
     return out
 
 
 def get_today_checkin_map(action_items: list[str]) -> dict:
     if not action_items:
         return {}
-    rows = frappe.db.sql(
-        """
-        select row.action_item_id, ci.name
-        from `tabOKR Action Item Row` row
-        inner join `tabOKR Check In` ci on ci.name = row.parent
-        where row.parenttype = 'OKR Check In'
-          and row.action_item_id in %(action_items)s
-          and ci.status = 'Submitted'
-          and ci.checkin_date = %(today)s
-        """,
-        {"action_items": tuple(action_items), "today": nowdate()},
-        as_dict=True,
+    rows = frappe.get_all(
+        "OKR Check In",
+        filters={"action_item": ["in", action_items], "status": "Submitted", "checkin_date": nowdate()},
+        fields=["action_item", "name"],
+        limit_page_length=1000,
     )
-    return {row.action_item_id: row.name for row in rows}
+    return {row.action_item: row.name for row in rows}
 
 
 def get_recent_checkins(user: str) -> list[dict]:

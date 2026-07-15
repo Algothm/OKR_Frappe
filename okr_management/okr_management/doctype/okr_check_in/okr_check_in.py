@@ -136,42 +136,15 @@ class OKRCheckIn(Document):
 			frappe.throw(_("Submitted Check-ins cannot be deleted."))
 
 	def on_update(self) -> None:
-		# Update standalone OKR Action Items directly
-		for ci_item in getattr(self, "action_items", []):
-			ai_doc = None
-			action_item_id = ci_item.get("action_item_id") or ci_item.name
-			if action_item_id and frappe.db.exists("OKR Action Item", action_item_id):
-				ai_doc = frappe.get_doc("OKR Action Item", action_item_id)
-			else:
-				# Fallback lookup by title and parent key result
-				ai_list = frappe.get_all(
-					"OKR Action Item",
-					filters={"action_item_title": ci_item.action_item_title, "parent_key_result": self.key_result},
-					limit=1
-				)
-				if ai_list:
-					ai_doc = frappe.get_doc("OKR Action Item", ai_list[0].name)
-			
-			if ai_doc:
-				new_progress = self.progress if action_item_id else ci_item.progress
-				new_status = ci_item.status
-				if flt(new_progress) >= 100 and ai_doc.status != "Cancelled":
-					new_status = "Completed"
+		if self.action_item and frappe.db.exists("OKR Action Item", self.action_item):
+			action_item = frappe.get_doc("OKR Action Item", self.action_item)
+			new_status = "Completed" if flt(self.progress) >= 100 else action_item.status
+			if flt(action_item.progress) != flt(self.progress) or action_item.status != new_status:
+				action_item.progress = self.progress
+				action_item.status = new_status
+				action_item.flags.ignore_permissions = True
+				action_item.save()
 
-				if (
-					flt(ai_doc.progress) != flt(new_progress)
-					or ai_doc.status != new_status
-					or ai_doc.notes != ci_item.get("notes")
-					or ai_doc.due_date != ci_item.due_date
-				):
-					ai_doc.progress = new_progress
-					ai_doc.status = new_status
-					ai_doc.notes = ci_item.get("notes")
-					ai_doc.due_date = ci_item.due_date
-					ai_doc.flags.ignore_permissions = True
-					ai_doc.save()
-
-		# Sync checkin progress values
 		if self.status == "Submitted":
 			sync_checkin_progress(self)
 
