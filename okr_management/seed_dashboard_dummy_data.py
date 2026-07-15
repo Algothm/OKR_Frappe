@@ -586,18 +586,7 @@ def create_checkin(key_result, action_item, checkin_date: date, progress: float,
             "dependency_description": dependency,
             "confidence": "Green" if progress >= 70 else "Yellow" if progress >= 35 else "Red",
             "attachment": "",
-            "action_items": [
-                {
-                    "action_item_id": action_item.name,
-                    "action_item_title": action_item.action_item_title,
-                    "owner_user": action_item.owner_user,
-                    "priority": action_item.priority,
-                    "status": status,
-                    "progress": progress,
-                    "due_date": action_item.due_date,
-                    "notes": f"Check-in update at {progress}% for dashboard seed data.",
-                }
-            ],
+            "action_item": action_item.name,
         }
     )
     doc.insert(ignore_permissions=True)
