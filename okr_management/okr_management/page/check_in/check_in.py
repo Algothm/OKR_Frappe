@@ -29,7 +29,7 @@ def get_checkin_page_data(show_all: int = 0, status: str | None = None) -> dict:
             "due_date",
             "parent_key_result",
             "parent_objective",
-            "parent_sprint",
+            "parent_plan",
             "parent_plan",
             "company",
             "department",
@@ -64,7 +64,7 @@ def get_checkin_page_data(show_all: int = 0, status: str | None = None) -> dict:
                 "objective": row.parent_objective or kr.get("objective"),
                 "objective_title": kr.get("objective_title") or row.parent_objective,
                 "parent_plan": row.parent_plan or kr.get("parent_plan"),
-                "parent_sprint": row.parent_sprint or kr.get("parent_sprint"),
+                "parent_plan": row.parent_plan or kr.get("parent_plan"),
                 "company": row.company or kr.get("company"),
                 "department": row.department or kr.get("department"),
                 "owner_user": row.owner_user,
@@ -143,7 +143,7 @@ def get_key_result_map(names: list[str]) -> dict:
     rows = frappe.get_all(
         "OKR Key Result",
         filters={"name": ["in", list(set(names))]},
-        fields=["name", "key_result_title", "objective", "objective_title", "parent_plan", "parent_sprint", "company", "department"],
+        fields=["name", "key_result_title", "objective", "objective_title", "parent_plan", "company", "department"],
         limit_page_length=500,
     )
     return {row.name: row for row in rows}

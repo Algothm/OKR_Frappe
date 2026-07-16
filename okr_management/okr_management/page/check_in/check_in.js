@@ -160,7 +160,7 @@ class OKRQuickCheckIn {
                                                 ${this.context_pair(__('Key Result'), item.key_result_title || item.key_result)}
                                                 ${this.context_pair(__('Objective'), item.objective_title || item.objective)}
                                                 ${this.context_pair(__('Plan'), item.parent_plan)}
-                                                ${this.context_pair(__('Sprint'), item.parent_sprint)}
+                                                ${this.context_pair(__('Plan Period'), item.parent_plan)}
                                                 ${this.context_pair(__('Company'), item.company)}
                                                 ${this.context_pair(__('Department'), item.department)}
                                                 ${this.context_pair(__('Reported By'), frappe.session.user)}

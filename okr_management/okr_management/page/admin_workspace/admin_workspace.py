@@ -19,135 +19,83 @@ def get_context(context):
 @frappe.whitelist()
 def get_filter_options() -> dict:
     years = frappe.get_all("Fiscal Year", fields=["name"], order_by="year_start_date desc", limit_page_length=50)
-    sprints = frappe.get_all(
-        "OKR Sprint",
-        fields=["name", "sprint_name", "parent_plan", "financial_year", "financial_quarter", "status", "end_date"],
-        order_by="start_date desc, modified desc",
-        limit_page_length=200,
-    )
-    departments = frappe.get_all(
-        "Department",
-        fields=["name", "department_name"],
-        order_by="department_name asc",
-        limit_page_length=500,
-    )
     plans = frappe.get_all(
         "OKR Plan",
-        filters={"status": "Active"},
-        fields=["name", "plan_name", "financial_year", "status"],
+        fields=["name", "plan_name", "financial_year", "period_selection", "sprint_frequency", "status"],
         order_by="modified desc",
         limit_page_length=500,
     )
+    departments = frappe.get_all(
+        "Department", fields=["name", "department_name"], order_by="department_name asc", limit_page_length=500
+    )
     return {
-        "years": years,
-        "quarters": ["Q1", "Q2", "Q3", "Q4"],
-        "sprints": sprints,
-        "plans": plans,
-        "departments": departments,
+        "years": years, "quarters": ["Q1", "Q2", "Q3", "Q4"],
+        "sprints": plans, "plans": plans, "departments": departments,
         "owners": get_owner_options(),
-        "statuses": ["Draft", "Planned", "Active", "On Hold", "Completed", "Closed", "Archived"],
+        "statuses": ["Draft", "Active", "On Hold", "Completed", "Closed", "Archived"],
     }
 
 
 @frappe.whitelist()
 def get_dashboard_data(year=None, quarter=None, plan=None, sprint=None, department=None, owner=None, status=None) -> dict:
-    filters = scrub_filters(year, quarter, plan, sprint, department, owner, status)
-    sprint_names = get_sprint_names(filters)
-    plan_names = get_plan_names(filters, sprint_names)
-
-    objectives = get_objectives(filters, sprint_names, plan_names)
+    filters = scrub_filters(year, quarter, plan or sprint, department, owner, status)
+    plan_names = get_plan_names(filters)
+    objectives = get_objectives(filters, plan_names)
     objective_names = [row.name for row in objectives]
-    key_results = get_key_results(filters, sprint_names, plan_names, objective_names)
-    action_items = get_action_items(filters, sprint_names, plan_names, objective_names, [row.name for row in key_results])
-    checkins = get_checkins(filters, sprint_names, plan_names, objective_names, [row.name for row in key_results])
-    sprints = get_sprints(filters, sprint_names)
-
-    plan_summary_filters = dict(filters)
-    plan_summary_filters["plan"] = ""
-    plan_summary_sprint_names = get_sprint_names(plan_summary_filters)
-    plan_summary_plan_names = get_plan_names(plan_summary_filters, plan_summary_sprint_names)
-    plans = get_active_plans(plan_summary_filters, plan_summary_sprint_names)
-    plan_summary_objectives = get_objectives(plan_summary_filters, plan_summary_sprint_names, plan_summary_plan_names)
-    plan_summary_objective_names = [row.name for row in plan_summary_objectives]
-    plan_summary_key_results = get_key_results(plan_summary_filters, plan_summary_sprint_names, plan_summary_plan_names, plan_summary_objective_names)
-    plan_summary_action_items = get_action_items(plan_summary_filters, plan_summary_sprint_names, plan_summary_plan_names, plan_summary_objective_names, [row.name for row in plan_summary_key_results])
-    plan_summary_checkins = get_checkins(plan_summary_filters, plan_summary_sprint_names, plan_summary_plan_names, plan_summary_objective_names, [row.name for row in plan_summary_key_results])
-    plan_summary_sprints = get_sprints(plan_summary_filters, plan_summary_sprint_names)
-
+    key_results = get_key_results(filters, plan_names, objective_names)
+    kr_names = [row.name for row in key_results]
+    action_items = get_action_items(filters, plan_names, objective_names, kr_names)
+    checkins = get_checkins(filters, plan_names, objective_names, kr_names)
+    plans = get_plans(filters, plan_names)
     department_performance = build_department_performance(objectives, key_results, action_items)
     metrics = build_metrics(objectives, action_items)
     metrics["departments_at_risk"] = len([row for row in department_performance if row["status"] in {"At Risk", "Critical"}])
-
     return {
-        "filters": filters,
-        "metrics": metrics,
+        "filters": filters, "metrics": metrics,
         "department_performance": department_performance,
         "department_comparison": build_department_comparison(department_performance),
         "attention_required": build_attention_required(objectives, action_items, checkins),
-        "critical_activity": build_critical_activity(objectives, action_items, sprints),
+        "critical_activity": build_critical_activity(objectives, action_items, plans),
         "manager_performance": build_manager_performance(objectives, action_items),
-        "plan_summaries": build_plan_summaries(plans, plan_summary_objectives, plan_summary_key_results, plan_summary_action_items, plan_summary_checkins, plan_summary_sprints),
+        "plan_summaries": build_plan_summaries(plans, objectives, key_results, action_items, checkins, []),
         "updated_at": frappe.utils.now_datetime().strftime("%Y-%m-%d %H:%M:%S"),
     }
 
 
-def scrub_filters(year, quarter, plan, sprint, department, owner, status) -> dict:
-    return {"year": year or "", "quarter": quarter or "", "plan": plan or "", "sprint": sprint or "", "department": department or "", "owner": owner or "", "status": status or ""}
+def scrub_filters(year, quarter, plan, department, owner, status) -> dict:
+    return {"year": year or "", "quarter": quarter or "", "plan": plan or "",
+            "department": department or "", "owner": owner or "", "status": status or ""}
 
 
 def get_owner_options() -> list[dict]:
     owners = set()
-    for doctype, fieldname in (("OKR Objective", "owner_user"), ("OKR Key Result", "owner_user"), ("OKR Action Item", "owner_user"), ("OKR Check In", "reported_by")):
+    for doctype, fieldname in (("OKR Objective", "owner_user"), ("OKR Key Result", "owner_user"),
+                               ("OKR Action Item", "owner_user"), ("OKR Check In", "reported_by")):
         rows = frappe.get_all(doctype, fields=[fieldname], limit_page_length=1000)
         owners.update(row.get(fieldname) for row in rows if row.get(fieldname))
     if not owners:
         return []
-    return frappe.get_all("User", filters={"name": ["in", list(owners)]}, fields=["name", "full_name"], order_by="full_name asc", limit_page_length=1000)
+    return frappe.get_all("User", filters={"name": ["in", list(owners)]},
+                          fields=["name", "full_name"], order_by="full_name asc", limit_page_length=1000)
 
 
-def get_sprint_names(filters: dict) -> list[str] | None:
-    if filters.get("sprint"):
-        return [filters["sprint"]]
-    sprint_filters = {}
+def get_plan_names(filters: dict) -> list[str] | None:
+    plan_filters = {}
     if filters.get("plan"):
-        sprint_filters["parent_plan"] = filters["plan"]
+        plan_filters["name"] = filters["plan"]
     if filters.get("year"):
-        sprint_filters["financial_year"] = filters["year"]
+        plan_filters["financial_year"] = filters["year"]
     if filters.get("quarter"):
-        sprint_filters["financial_quarter"] = filters["quarter"]
-    if filters.get("department"):
-        sprint_filters["department"] = filters["department"]
+        plan_filters["period_selection"] = filters["quarter"]
     if filters.get("owner"):
-        sprint_filters["sprint_owner"] = filters["owner"]
-    if not sprint_filters:
+        plan_filters["owner_user"] = filters["owner"]
+    if filters.get("department"):
+        names = frappe.get_all("OKR Objective", filters={"department": filters["department"]}, pluck="parent_plan")
+        plan_filters["name"] = ["in", names or ["__none__"]]
+    if not plan_filters:
         return None
-    return frappe.get_all("OKR Sprint", filters=sprint_filters, pluck="name", limit_page_length=1000)
+    return frappe.get_all("OKR Plan", filters=plan_filters, pluck="name", limit_page_length=1000)
 
-
-def get_plan_names(filters: dict, sprint_names: list[str] | None) -> list[str] | None:
-    if filters.get("plan"):
-        return [filters["plan"]]
-    if filters.get("quarter") or filters.get("sprint"):
-        if not sprint_names:
-            return []
-        return frappe.get_all("OKR Sprint", filters={"name": ["in", sprint_names]}, pluck="parent_plan", limit_page_length=1000)
-    return None
-
-
-def get_active_plans(filters: dict, sprint_names: list[str] | None) -> list[dict]:
-    doc_filters = {"status": "Active"}
-    if filters.get("year"):
-        doc_filters["financial_year"] = filters["year"]
-    if sprint_names is not None:
-        plan_names = frappe.get_all("OKR Sprint", filters={"name": ["in", sprint_names or ["__none__"]]}, pluck="parent_plan", limit_page_length=1000)
-        doc_filters["name"] = ["in", plan_names or ["__none__"]]
-    return frappe.get_all(
-        "OKR Plan",
-        filters=doc_filters,
-        fields=["name", "plan_name", "financial_year", "department", "owner_user", "status", "modified", "creation"],
-        order_by="modified desc",
-        limit_page_length=500,
-    )
 
 def add_common_filters(out: dict, filters: dict, owner_field: str = "owner_user") -> None:
     if filters.get("year"):
@@ -165,74 +113,67 @@ def apply_names_filter(out: dict, fieldname: str, names: list[str] | None) -> No
         out[fieldname] = ["in", names or ["__none__"]]
 
 
-def get_sprints(filters: dict, sprint_names: list[str] | None) -> list[dict]:
+def get_plans(filters: dict, plan_names: list[str] | None) -> list[dict]:
     doc_filters = {}
-    add_common_filters(doc_filters, filters, owner_field="sprint_owner")
-    apply_names_filter(doc_filters, "name", sprint_names)
+    if filters.get("year"):
+        doc_filters["financial_year"] = filters["year"]
+    if filters.get("owner"):
+        doc_filters["owner_user"] = filters["owner"]
+    apply_names_filter(doc_filters, "name", plan_names)
     return frappe.get_all(
-        "OKR Sprint",
-        filters=doc_filters,
-        fields=["name", "sprint_name", "parent_plan", "financial_year", "financial_quarter", "department", "sprint_owner", "status", "progress", "modified", "creation"],
-        limit_page_length=5000,
+        "OKR Plan", filters=doc_filters,
+        fields=["name", "plan_name", "financial_year", "period_selection", "sprint_frequency",
+                "owner_user", "status", "progress", "modified", "creation"], limit_page_length=5000,
     )
 
 
-def get_objectives(filters: dict, sprint_names: list[str] | None, plan_names: list[str] | None) -> list[dict]:
+def get_objectives(filters: dict, plan_names: list[str] | None) -> list[dict]:
     doc_filters = {}
     add_common_filters(doc_filters, filters)
-    apply_names_filter(doc_filters, "sprint", sprint_names)
     apply_names_filter(doc_filters, "parent_plan", plan_names)
     return frappe.get_all(
-        "OKR Objective",
-        filters=doc_filters,
-        fields=["name", "objective_title", "sprint", "parent_plan", "financial_year", "department", "owner_user", "status", "priority", "progress", "confidence", "modified", "creation"],
-        order_by="progress asc, modified desc",
-        limit_page_length=10000,
+        "OKR Objective", filters=doc_filters,
+        fields=["name", "objective_title", "parent_plan", "financial_year", "department",
+                "owner_user", "status", "priority", "progress", "confidence", "end_date",
+                "modified", "creation"], order_by="progress asc, modified desc", limit_page_length=10000,
     )
 
 
-def get_key_results(filters: dict, sprint_names: list[str] | None, plan_names: list[str] | None, objective_names: list[str]) -> list[dict]:
+def get_key_results(filters: dict, plan_names: list[str] | None, objective_names: list[str]) -> list[dict]:
     doc_filters = {}
     add_common_filters(doc_filters, filters)
-    apply_names_filter(doc_filters, "parent_sprint", sprint_names)
     apply_names_filter(doc_filters, "parent_plan", plan_names)
-    if filters.get("status"):
-        doc_filters["status"] = filters["status"]
     if objective_names:
         doc_filters["objective"] = ["in", objective_names]
-    elif sprint_names is not None or plan_names is not None or filters.get("department") or filters.get("owner") or filters.get("status"):
+    elif plan_names is not None:
         doc_filters["objective"] = ["in", ["__none__"]]
     return frappe.get_all(
-        "OKR Key Result",
-        filters=doc_filters,
-        fields=["name", "objective", "parent_plan", "parent_sprint", "financial_year", "department", "owner_user", "status", "target_progress", "modified", "creation"],
-        limit_page_length=20000,
+        "OKR Key Result", filters=doc_filters,
+        fields=["name", "objective", "parent_plan", "financial_year", "department",
+                "owner_user", "status", "target_progress", "modified", "creation"], limit_page_length=20000,
     )
 
 
-def get_action_items(filters: dict, sprint_names: list[str] | None, plan_names: list[str] | None, objective_names: list[str], kr_names: list[str]) -> list[dict]:
+def get_action_items(filters: dict, plan_names: list[str] | None, objective_names: list[str], kr_names: list[str]) -> list[dict]:
     doc_filters = {"status": ["!=", "Cancelled"]}
-    if filters.get("status"):
-        doc_filters["status"] = filters["status"]
     add_common_filters(doc_filters, filters)
-    apply_names_filter(doc_filters, "parent_sprint", sprint_names)
     apply_names_filter(doc_filters, "parent_plan", plan_names)
     if objective_names:
         doc_filters["parent_objective"] = ["in", objective_names]
     if kr_names:
         doc_filters["parent_key_result"] = ["in", kr_names]
-    elif sprint_names is not None or plan_names is not None or filters.get("department") or filters.get("owner") or filters.get("status"):
+    elif plan_names is not None:
         doc_filters["parent_key_result"] = ["in", ["__none__"]]
     return frappe.get_all(
-        "OKR Action Item",
-        filters=doc_filters,
-        fields=["name", "action_item_title", "parent_key_result", "parent_objective", "parent_sprint", "parent_plan", "financial_year", "department", "owner_user", "status", "priority", "progress", "due_date", "modified", "creation"],
-        order_by="due_date asc, modified desc",
+        "OKR Action Item", filters=doc_filters,
+        fields=["name", "action_item_title", "parent_key_result", "parent_objective", "parent_plan",
+                "financial_year", "department", "owner_user", "status", "priority", "progress",
+                "due_date", "modified", "creation"], order_by="due_date asc, modified desc",
         limit_page_length=20000,
     )
 
 
-def get_checkins(filters: dict, sprint_names: list[str] | None, plan_names: list[str] | None, objective_names: list[str], kr_names: list[str]) -> list[dict]:
+def get_checkins(filters: dict, plan_names: list[str] | None, objective_names: list[str], kr_names: list[str]) -> list[dict]:
     doc_filters = {"status": "Submitted"}
     if filters.get("year"):
         doc_filters["financial_year"] = filters["year"]
@@ -240,22 +181,19 @@ def get_checkins(filters: dict, sprint_names: list[str] | None, plan_names: list
         doc_filters["department"] = filters["department"]
     if filters.get("owner"):
         doc_filters["reported_by"] = filters["owner"]
-    apply_names_filter(doc_filters, "parent_sprint", sprint_names)
     apply_names_filter(doc_filters, "parent_plan", plan_names)
     if objective_names:
         doc_filters["objective"] = ["in", objective_names]
     if kr_names:
         doc_filters["key_result"] = ["in", kr_names]
-    elif sprint_names is not None or plan_names is not None or filters.get("department") or filters.get("owner"):
+    elif plan_names is not None:
         doc_filters["key_result"] = ["in", ["__none__"]]
     return frappe.get_all(
-        "OKR Check In",
-        filters=doc_filters,
-        fields=["name", "checkin_date", "reported_by", "key_result", "objective", "parent_plan", "parent_sprint", "department", "progress", "confidence", "blockers", "modified", "creation"],
-        order_by="checkin_date desc, creation desc",
-        limit_page_length=20000,
+        "OKR Check In", filters=doc_filters,
+        fields=["name", "checkin_date", "reported_by", "key_result", "objective", "parent_plan",
+                "department", "progress", "confidence", "blockers", "modified", "creation"],
+        order_by="checkin_date desc, creation desc", limit_page_length=20000,
     )
-
 
 
 def build_plan_summaries(plans, objectives, key_results, action_items, checkins, sprints) -> list[dict]:
@@ -424,7 +362,8 @@ def build_critical_activity(objectives, action_items, sprints) -> list[dict]:
             rows.append(activity_row("Objective Blocked", "OKR Action Item", row.name, row.action_item_title, row.owner_user, row.modified))
     for row in sprints:
         if row.status in {"Completed", "Closed"}:
-            rows.append(activity_row("Sprint Closed", "OKR Sprint", row.name, row.sprint_name, row.sprint_owner, row.modified))
+            rows.append(activity_row("Plan Archived", "OKR Plan", row.name, row.plan_name, row.owner_user, row.modified))
+
     return sorted(rows, key=lambda row: row.get("when") or "", reverse=True)[:10]
 
 

@@ -8,15 +8,15 @@ class OKRAdminWorkspace {
                 this.page = frappe.ui.make_app_page({ parent: wrapper, title: __('OKR Command'), single_column: true });
                 jQuery(this.wrapper).find('.page-head').hide();
                 this.body = jQuery('<div class="okr-admin-page"></div>').appendTo(this.page.main);
-                
+
                 this.filters = { year: '', quarter: '', plan: '', sprint: '', department: '', owner: '', status: '' };
                 this.options = {};
                 this.data = null;
-                
+
                 this.current_view = 'dashboard'; // 'dashboard' | 'detail'
                 this.selected_objective = null;
                 this.filter_drawer_open = false;
-                
+
                 this.init_shell();
                 this.bind_events();
                 this.load_options();
@@ -188,7 +188,7 @@ class OKRAdminWorkspace {
         render_current_view() {
                 this.update_breadcrumb();
                 const container = this.body.find('[data-view-container]');
-                
+
                 if (this.current_view === 'detail' && this.selected_objective) {
                         container.html(this.render_detail_html(this.selected_objective));
                 } else {
@@ -334,7 +334,7 @@ class OKRAdminWorkspace {
                                         </div>
                                 </div>
                         </details>
-                        
+
                         <p class="okr-footer-hint">Health grade, blockers and overdue work stay on one line — no repeated department cards below.</p>
                 `;
         }
@@ -651,7 +651,7 @@ class OKRAdminWorkspace {
                 });
                 const sprints = (this.options.sprints || []).filter(s => {
                         if (this.filters.year && s.financial_year !== this.filters.year) return false;
-                        if (this.filters.quarter && s.financial_quarter !== this.filters.quarter) return false;
+                        if (this.filters.quarter && s.period_selection !== this.filters.quarter) return false;
                         if (this.filters.plan && s.parent_plan !== this.filters.plan) return false;
                         return true;
                 });
@@ -659,7 +659,7 @@ class OKRAdminWorkspace {
                         ${this.filter_select('year', __('Year'), this.options.years || [], 'name', 'name')}
                         ${this.filter_select('quarter', __('Quarter'), (this.options.quarters || []).map(v => ({ name: v })), 'name', 'name')}
                         ${this.filter_select('plan', __('Plan'), plans, 'name', 'plan_name')}
-                        ${this.filter_select('sprint', __('Sprint'), sprints, 'name', 'sprint_name')}
+                        ${this.filter_select('sprint', __('Plan Period'), sprints, 'name', 'plan_name')}
                         ${this.filter_select('department', __('Department'), this.options.departments || [], 'name', 'department_name')}
                         ${this.filter_select('owner', __('Owner'), this.options.owners || [], 'name', 'full_name')}
                         ${this.filter_select('status', __('Status'), (this.options.statuses || []).map(v => ({ name: v })), 'name', 'name')}
@@ -711,7 +711,8 @@ class OKRAdminWorkspace {
                 score -= Math.min(30, blocked * 3);
 
                 const overdue = cint(m.overdue_action_items || 0);
-                score -= Math.min(20, overdue * 1.5);
+                score -= Math.min(20, overdue * 1.5);
+
 
                 score = Math.max(0, Math.round(score * 10) / 10);
 
