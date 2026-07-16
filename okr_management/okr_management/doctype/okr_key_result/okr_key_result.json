@@ -15,7 +15,6 @@
   "status",
   "kr_details_col_break",
   "parent_plan",
-  "parent_sprint",
   "objective_title",
   "company",
   "financial_year",
@@ -95,15 +94,6 @@
    "in_standard_filter": 1
   },
   {
-   "fieldname": "parent_sprint",
-   "fieldtype": "Link",
-   "label": "Sprint",
-   "options": "OKR Sprint",
-   "read_only": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1
-  },
-  {
    "fieldname": "objective_title",
    "fieldtype": "Data",
    "label": "Objective Title",
@@ -143,16 +133,6 @@
    "fieldname": "plan_owner",
    "fieldtype": "Link",
    "label": "Plan Owner",
-   "options": "User",
-   "read_only": 1,
-   "in_standard_filter": 0,
-   "hidden": 1,
-   "in_list_view": 0
-  },
-  {
-   "fieldname": "sprint_owner",
-   "fieldtype": "Link",
-   "label": "Sprint Owner",
    "options": "User",
    "read_only": 1,
    "in_standard_filter": 0,

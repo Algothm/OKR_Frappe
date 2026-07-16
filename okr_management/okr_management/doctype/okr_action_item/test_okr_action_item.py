@@ -45,7 +45,7 @@ class TestOKRActionItem(FrappeTestCase):
         frappe.db.delete("OKR Action Item", {"action_item_title": ["like", "Test%"]})
         frappe.db.delete("OKR Key Result", {"key_result_title": ["like", "Phase 5 AI%"]})
         frappe.db.delete("OKR Objective", {"objective_title": ["like", "Phase 5 AI%"]})
-        frappe.db.delete("OKR Sprint", {"sprint_name": ["like", "Phase 5 AI%"]})
+        frappe.db.delete("OKR Plan", {"plan_name": ["like", "Phase 5 AI%"]})
         frappe.db.delete("OKR Plan", {"plan_name": ["like", "Phase 5 AI%"]})
 
     def ensure_current_fiscal_year(self):
@@ -80,10 +80,10 @@ class TestOKRActionItem(FrappeTestCase):
 
     def make_active_sprint(self, plan):
         sprint = frappe.get_doc({
-            "doctype": "OKR Sprint",
+            "doctype": "OKR Plan",
             "parent_plan": plan.name,
-            "sprint_name": "Phase 5 AI Sprint " + frappe.generate_hash(length=6),
-            "sprint_owner": "Administrator",
+            "plan_name": "Phase 5 AI Sprint " + frappe.generate_hash(length=6),
+            "plan_owner": "Administrator",
             "sprint_cycle": "Custom Date Range",
             "start_date": add_days(today(), -5),
             "end_date": add_days(today(), 5),
@@ -106,7 +106,7 @@ class TestOKRActionItem(FrappeTestCase):
             "company": sprint.company,
             "department": sprint.department,
             "plan_owner": sprint.plan_owner,
-            "sprint_owner": sprint.sprint_owner,
+            "plan_owner": sprint.plan_owner,
             "level": "Organization",
             "priority": "High",
             "owner_user": "Administrator",
@@ -151,7 +151,7 @@ class TestOKRActionItem(FrappeTestCase):
         
         self.assertEqual(ai.parent_key_result, kr.name)
         self.assertEqual(ai.parent_objective, kr.objective)
-        self.assertEqual(ai.parent_sprint, kr.parent_sprint)
+        self.assertEqual(ai.parent_plan, kr.parent_plan)
         self.assertEqual(ai.parent_plan, kr.parent_plan)
         self.assertEqual(ai.company, kr.company)
         self.assertEqual(ai.department, kr.department)

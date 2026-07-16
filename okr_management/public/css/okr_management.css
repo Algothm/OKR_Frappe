@@ -225,44 +225,20 @@
 	resize: vertical !important;
 }
 
-[data-doctype="OKR Sprint"] .frappe-control[data-fieldname="description"] textarea,
-.page-container[data-page-route^="Form/OKR Sprint"] .frappe-control[data-fieldname="description"] textarea {
+[data-doctype="OKR Plan"] .frappe-control[data-fieldname="description"] textarea,
+.page-container[data-page-route^="Form/OKR Plan"] .frappe-control[data-fieldname="description"] textarea {
 	height: 96px !important;
 	min-height: 80px !important;
 	max-height: 120px !important;
 	resize: vertical !important;
 }
 
-[data-doctype="OKR Sprint"] .frappe-control[data-fieldname="financial_year"],
-[data-doctype="OKR Sprint"] .frappe-control[data-fieldname="sprint_duration"],
-.page-container[data-page-route^="Form/OKR Sprint"] .frappe-control[data-fieldname="financial_year"],
-.page-container[data-page-route^="Form/OKR Sprint"] .frappe-control[data-fieldname="sprint_duration"] {
+[data-doctype="OKR Plan"] .frappe-control[data-fieldname="financial_year"],
+.page-container[data-page-route^="Form/OKR Plan"] .frappe-control[data-fieldname="financial_year"] {
+	box-sizing: border-box !important;
 	width: 100% !important;
 	margin-left: 0 !important;
 	margin-right: 0 !important;
-}
-
-[data-doctype="OKR Sprint"] .frappe-control[data-fieldname="financial_year"] .control-input-wrapper,
-[data-doctype="OKR Sprint"] .frappe-control[data-fieldname="sprint_duration"] .control-input-wrapper,
-.page-container[data-page-route^="Form/OKR Sprint"] .frappe-control[data-fieldname="financial_year"] .control-input-wrapper,
-.page-container[data-page-route^="Form/OKR Sprint"] .frappe-control[data-fieldname="sprint_duration"] .control-input-wrapper {
-	box-sizing: border-box !important;
-	width: 100% !important;
-}
-
-[data-doctype="OKR Sprint"] .frappe-control[data-fieldname="financial_year"] .control-value,
-[data-doctype="OKR Sprint"] .frappe-control[data-fieldname="financial_year"] .like-disabled-input,
-[data-doctype="OKR Sprint"] .frappe-control[data-fieldname="sprint_duration"] .control-value,
-[data-doctype="OKR Sprint"] .frappe-control[data-fieldname="sprint_duration"] .like-disabled-input,
-.page-container[data-page-route^="Form/OKR Sprint"] .frappe-control[data-fieldname="financial_year"] .control-value,
-.page-container[data-page-route^="Form/OKR Sprint"] .frappe-control[data-fieldname="financial_year"] .like-disabled-input,
-.page-container[data-page-route^="Form/OKR Sprint"] .frappe-control[data-fieldname="sprint_duration"] .control-value,
-.page-container[data-page-route^="Form/OKR Sprint"] .frappe-control[data-fieldname="sprint_duration"] .like-disabled-input {
-	box-sizing: border-box !important;
-	width: 100% !important;
-	min-height: 38px !important;
-	padding: 8px 12px !important;
-	border-radius: 8px !important;
 }
 
 [data-doctype="OKR Action Item"] .frappe-control[data-fieldname="status"] .control-value,
@@ -497,7 +473,7 @@
 
 /* Hide drop chevron icons for specific OKR leaf nodes in the sidebar */
 .sidebar-item-container[item-name="OKR Plan"] .drop-icon,
-.sidebar-item-container[item-name="OKR Sprint"] .drop-icon,
+.sidebar-item-container[item-name="OKR Plan"] .drop-icon,
 .sidebar-item-container[item-name="OKR Objective"] .drop-icon,
 .sidebar-item-container[item-name="OKR Key Result"] .drop-icon,
 .sidebar-item-container[item-name="Check-In"] .drop-icon {

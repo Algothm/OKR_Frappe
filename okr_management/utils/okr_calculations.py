@@ -121,38 +121,21 @@ def recalculate_objective_progress(objective_name: str | None) -> None:
 	set_if_has(values, 'OKR Objective', 'key_result_count', len(key_results))
 	if values:
 		frappe.db.set_value('OKR Objective', objective_name, values, update_modified=False)
-	_recalculate_sprint_for_objective(objective_name)
+	_recalculate_plan_for_objective(objective_name)
 
 
-def _recalculate_sprint_for_objective(objective_name: str) -> None:
-	sprint = frappe.db.get_value('OKR Objective', objective_name, 'sprint')
-	if sprint:
-		recalculate_sprint_progress(sprint)
-
-
-def recalculate_sprint_progress(sprint_name: str | None) -> None:
-	if not sprint_name or not frappe.db.exists('OKR Sprint', sprint_name):
-		return
-
-	objectives = frappe.get_all('OKR Objective', filters={'sprint': sprint_name}, fields=['name', 'progress'])
-	progress = average([item.get('progress') for item in objectives])
-	values: dict[str, Any] = {}
-	set_if_has(values, 'OKR Sprint', 'progress', progress)
-	set_if_has(values, 'OKR Sprint', 'objective_count', len(objectives))
-	if values:
-		frappe.db.set_value('OKR Sprint', sprint_name, values, update_modified=False)
-
-	parent_plan = frappe.db.get_value('OKR Sprint', sprint_name, 'parent_plan')
-	if parent_plan:
-		recalculate_plan_progress(parent_plan)
+def _recalculate_plan_for_objective(objective_name: str) -> None:
+	plan = frappe.db.get_value('OKR Objective', objective_name, 'parent_plan')
+	if plan:
+		recalculate_plan_progress(plan)
 
 
 def recalculate_plan_progress(plan_name: str | None) -> None:
 	if not plan_name or not frappe.db.exists('OKR Plan', plan_name):
 		return
 
-	sprints = frappe.get_all('OKR Sprint', filters={'parent_plan': plan_name}, fields=['name', 'progress'])
-	progress = average([item.get('progress') for item in sprints])
+	objectives = frappe.get_all('OKR Objective', filters={'parent_plan': plan_name}, fields=['name', 'progress'])
+	progress = average([item.get('progress') for item in objectives])
 	values: dict[str, Any] = {}
 	set_if_has(values, 'OKR Plan', 'progress', progress)
 	if values:
@@ -171,7 +154,7 @@ def recalculate_from_key_result_doc(doc: Any, method: str | None = None) -> None
 
 
 def recalculate_from_objective_doc(doc: Any, method: str | None = None) -> None:
-	recalculate_sprint_progress(safe_get(doc, 'sprint'))
+	recalculate_plan_progress(safe_get(doc, 'parent_plan'))
 
 
 def sync_checkin_progress(doc: Any, method: str | None = None) -> None:

@@ -23,7 +23,7 @@ class OKRCheckIn(Document):
 				self.key_result,
 				[
 					"objective",
-					"parent_sprint",
+					"parent_plan",
 					"parent_plan",
 					"financial_year",
 					"company",
@@ -36,7 +36,7 @@ class OKRCheckIn(Document):
 			)
 			if key_result:
 				self.objective = key_result.objective
-				self.parent_sprint = key_result.parent_sprint
+				self.parent_plan = key_result.parent_plan
 				self.parent_plan = key_result.parent_plan
 				self.financial_year = key_result.financial_year
 				self.company = key_result.company
@@ -59,7 +59,7 @@ class OKRCheckIn(Document):
 				self.key_result,
 				[
 					"objective",
-					"parent_sprint",
+					"parent_plan",
 					"parent_plan",
 					"start_date",
 					"end_date",
@@ -79,7 +79,7 @@ class OKRCheckIn(Document):
 				)
 
 			# Enforce that parent Key Result has valid Parent Objective, Parent Sprint, and Parent Plan relationships
-			if not kr_data.objective or not kr_data.parent_sprint or not kr_data.parent_plan:
+			if not kr_data.objective or not kr_data.parent_plan or not kr_data.parent_plan:
 				frappe.throw(
 					_(
 						"Check-in cannot be created or submitted because the parent Key Result does not have valid Parent Objective, Parent Sprint, and Parent Plan relationships."

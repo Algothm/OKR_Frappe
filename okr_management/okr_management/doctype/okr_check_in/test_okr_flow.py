@@ -9,7 +9,7 @@ class TestOKRFlow(FrappeTestCase):
 		frappe.db.delete("OKR Check In")
 		frappe.db.delete("OKR Key Result")
 		frappe.db.delete("OKR Objective")
-		frappe.db.delete("OKR Sprint")
+		frappe.db.delete("OKR Plan")
 		frappe.db.delete("OKR Plan")
 		
 		# Ensure all OKR roles exist in the test database
@@ -39,8 +39,8 @@ class TestOKRFlow(FrappeTestCase):
 
 		# Create test sprint
 		self.sprint = frappe.get_doc({
-			"doctype": "OKR Sprint",
-			"sprint_name": "Test Q1 Sprint",
+			"doctype": "OKR Plan",
+			"plan_name": "Test Q1 Sprint",
 			"parent_plan": self.plan.name,
 			"quarter": "Q1",
 			"start_date": nowdate(),
@@ -243,8 +243,8 @@ class TestOKRFlow(FrappeTestCase):
 
 			# Test Sprint creation blocked for normal Employee
 			new_sprint = frappe.get_doc({
-				"doctype": "OKR Sprint",
-				"sprint_name": "Unauthorized Sprint",
+				"doctype": "OKR Plan",
+				"plan_name": "Unauthorized Sprint",
 				"parent_plan": self.plan.name,
 				"quarter": "Q1",
 				"start_date": nowdate(),

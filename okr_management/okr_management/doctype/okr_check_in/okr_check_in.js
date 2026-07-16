@@ -34,7 +34,7 @@ function apply_fast_checkin_ui(frm) {
 	if (!frm.doc.checkin_date) {
 		frm.set_value('checkin_date', frappe.datetime.get_today());
 	}
-	['key_result', 'objective', 'parent_plan', 'parent_sprint', 'company', 'department', 'checkin_date', 'reported_by'].forEach(field => {
+	['key_result', 'objective', 'parent_plan', 'company', 'department', 'checkin_date', 'reported_by'].forEach(field => {
 		frm.set_df_property(field, 'read_only', 1);
 	});
 	['financial_year', 'current_value', 'confidence', 'next_steps', 'notes', 'status', 'self_rating',
@@ -78,11 +78,11 @@ function fill_from_key_result(frm) {
 	if (!frm.doc.key_result) return;
 
 	frappe.db.get_value('OKR Key Result', frm.doc.key_result, [
-		'objective', 'parent_sprint', 'parent_plan', 'financial_year', 'company', 'department'
+		'objective', 'parent_plan', 'financial_year', 'company', 'department'
 	]).then(r => {
 		const kr = r.message || {};
 		if (kr.objective) frm.set_value('objective', kr.objective);
-		if (kr.parent_sprint) frm.set_value('parent_sprint', kr.parent_sprint);
+		if (kr.parent_plan) frm.set_value('parent_plan', kr.parent_plan);
 		if (kr.parent_plan) {
 			frm.set_value('parent_plan', kr.parent_plan);
 			frappe.db.get_value('OKR Plan', kr.parent_plan, 'plan_name').then(p => {

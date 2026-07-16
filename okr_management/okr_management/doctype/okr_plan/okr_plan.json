@@ -7,41 +7,36 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "definition_section",
-  "plan_definition",
-  "definition_fields_section",
-  "financial_year",
-  "definition_col_break",
-  "plan_name",
   "plan_details_section",
+  "plan_name",
+  "financial_year",
   "company",
-  "owner_user",
-  "progress",
   "plan_details_col_break",
   "status",
-  "objective_count",
-  "description_section",
   "description",
-  "plan_team_section",
-  "members",
+  "owner_user",
+  "sprint_configuration_section",
+  "sprint_frequency",
+  "sprint_config_col_2",
+  "period_selection",
+  "custom_start_date",
+  "sprint_config_col_3",
+  "custom_end_date",
+  "sprint_timeline_preview",
+  "sprint_config_col_4",
+  "custom_timeline_preview",
   "technical_section",
-  "naming_series"
+  "progress",
+  "objective_count",
+  "naming_series",
+  "plan_team_section",
+  "members"
  ],
  "fields": [
   {
-   "fieldname": "definition_section",
+   "fieldname": "plan_details_section",
    "fieldtype": "Section Break",
-   "label": "Definition of OKR Plan"
-  },
-  {
-   "fieldname": "plan_definition",
-   "fieldtype": "HTML",
-   "label": "Plan Definition",
-   "options": "<p>An OKR Plan is the top-level strategic container for an organization for a financial year. It defines the scope, ownership, lifecycle, and roll-up context for all OKR execution periods and objectives under it.</p>"
-  },
-  {
-   "fieldname": "definition_fields_section",
-   "fieldtype": "Section Break"
+   "label": "Plan Details"
   },
   {
    "fieldname": "financial_year",
@@ -53,20 +48,11 @@
    "in_standard_filter": 1
   },
   {
-   "fieldname": "definition_col_break",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "plan_name",
    "fieldtype": "Data",
    "label": "Plan Name",
    "reqd": 1,
    "in_list_view": 1
-  },
-  {
-   "fieldname": "plan_details_section",
-   "fieldtype": "Section Break",
-   "label": "Plan Details"
   },
   {
    "fieldname": "company",
@@ -122,13 +108,10 @@
    "in_standard_filter": 0
   },
   {
-   "fieldname": "description_section",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "description",
    "fieldtype": "Small Text",
-   "label": "Description"
+   "label": "Description",
+   "max_height": "104px"
   },
   {
    "fieldname": "plan_team_section",
@@ -140,6 +123,68 @@
    "fieldtype": "Table",
    "label": "Add Member",
    "options": "OKR Plan Team Member"
+  },
+  {
+   "fieldname": "sprint_configuration_section",
+   "fieldtype": "Section Break",
+   "label": "Sprint Configuration"
+  },
+  {
+   "default": "Quarterly",
+   "fieldname": "sprint_frequency",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Sprint Frequency",
+   "options": "Monthly\nQuarterly\nCustom",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sprint_config_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Q1",
+   "depends_on": "eval:doc.sprint_frequency!='Custom'",
+   "fieldname": "period_selection",
+   "fieldtype": "Select",
+   "label": "Quarter",
+   "mandatory_depends_on": "eval:doc.sprint_frequency!='Custom'",
+   "options": "January\nFebruary\nMarch\nApril\nMay\nJune\nJuly\nAugust\nSeptember\nOctober\nNovember\nDecember\nQ1\nQ2\nQ3\nQ4"
+  },
+  {
+   "depends_on": "eval:doc.sprint_frequency=='Custom'",
+   "fieldname": "custom_start_date",
+   "fieldtype": "Date",
+   "label": "Start Date",
+   "mandatory_depends_on": "eval:doc.sprint_frequency=='Custom'"
+  },
+  {
+   "fieldname": "sprint_config_col_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.sprint_frequency=='Custom'",
+   "fieldname": "custom_end_date",
+   "fieldtype": "Date",
+   "label": "End Date",
+   "mandatory_depends_on": "eval:doc.sprint_frequency=='Custom'"
+  },
+  {
+   "depends_on": "eval:doc.sprint_frequency!='Custom'",
+   "fieldname": "sprint_timeline_preview",
+   "fieldtype": "HTML",
+   "label": "Timeline Preview"
+  },
+  {
+   "depends_on": "eval:doc.sprint_frequency=='Custom'",
+   "fieldname": "sprint_config_col_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.sprint_frequency=='Custom'",
+   "fieldname": "custom_timeline_preview",
+   "fieldtype": "HTML",
+   "label": "Timeline Preview"
   },
   {
    "fieldname": "technical_section",

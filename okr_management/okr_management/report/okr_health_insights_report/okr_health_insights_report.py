@@ -12,7 +12,7 @@ def execute(filters=None):
 	rating_by_objective = {row.get("objective"): row for row in get_review_rating_signals(include_normal=True)}
 	data = []
 	for row in get_health_rows():
-		if filters.get("sprint") and row.get("sprint") != filters.sprint:
+		if filters.get("plan") and row.get("plan") != filters.plan:
 			continue
 		if filters.get("department") and row.get("department") != filters.department:
 			continue
@@ -35,7 +35,7 @@ def execute(filters=None):
 			"record": row.get("record"),
 			"title": row.get("title"),
 			"department": row.get("department"),
-			"sprint": row.get("sprint"),
+			"plan": row.get("plan"),
 			"sprint_title": row.get("sprint_title"),
 			"owner": row.get("owner"),
 			"progress": row.get("progress"),
@@ -51,7 +51,7 @@ def execute(filters=None):
 			"rating_gap": rating.get("rating_gap") if rating else None,
 		})
 	for rating in get_review_rating_rows(include_normal=True):
-		if filters.get("sprint") and rating.get("sprint") != filters.sprint:
+		if filters.get("plan") and rating.get("plan") != filters.plan:
 			continue
 		if filters.get("department") and rating.get("department") != filters.department:
 			continue
@@ -64,7 +64,7 @@ def execute(filters=None):
 			"objective": rating.get("objective"),
 			"title": rating.get("objective_title"),
 			"department": rating.get("department"),
-			"sprint": rating.get("sprint"),
+			"plan": rating.get("plan"),
 			"sprint_title": None,
 			"owner": rating.get("owner"),
 			"progress": None,
@@ -92,8 +92,8 @@ def get_columns():
 		{"label": "Objective", "fieldname": "objective", "fieldtype": "Link", "options": "OKR Objective", "width": 170},
 		{"label": "Title", "fieldname": "title", "fieldtype": "Data", "width": 260},
 		{"label": "Department", "fieldname": "department", "fieldtype": "Link", "options": "Department", "width": 180},
-		{"label": "Sprint", "fieldname": "sprint", "fieldtype": "Link", "options": "OKR Sprint", "width": 160},
-		{"label": "Sprint Title", "fieldname": "sprint_title", "fieldtype": "Data", "width": 180},
+		{"label": "Plan", "fieldname": "plan", "fieldtype": "Link", "options": "OKR Plan", "width": 160},
+		{"label": "Plan Title", "fieldname": "sprint_title", "fieldtype": "Data", "width": 180},
 		{"label": "Owner", "fieldname": "owner", "fieldtype": "Link", "options": "User", "width": 190},
 		{"label": "Progress", "fieldname": "progress", "fieldtype": "Percent", "width": 95},
 		{"label": "Confidence", "fieldname": "confidence", "fieldtype": "Float", "width": 95},

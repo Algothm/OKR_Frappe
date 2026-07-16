@@ -36,9 +36,8 @@
   "parent_key_result",
   "open_parent_kr_html",
   "parent_objective",
-  "parent_sprint",
-  "inherited_col_break",
   "parent_plan",
+  "inherited_col_break",
   "company",
   "department",
   "financial_year"
@@ -251,10 +250,10 @@
    "read_only": 1
   },
   {
-   "fieldname": "parent_sprint",
+   "fieldname": "parent_plan",
    "fieldtype": "Link",
    "label": "Parent Sprint",
-   "options": "OKR Sprint",
+   "options": "OKR Plan",
    "hidden": 1,
    "read_only": 1
   },
@@ -262,14 +261,6 @@
    "fieldname": "inherited_col_break",
    "fieldtype": "Column Break",
    "hidden": 1
-  },
-  {
-   "fieldname": "parent_plan",
-   "fieldtype": "Link",
-   "label": "Parent Plan",
-   "options": "OKR Plan",
-   "hidden": 1,
-   "read_only": 1
   },
   {
    "fieldname": "company",

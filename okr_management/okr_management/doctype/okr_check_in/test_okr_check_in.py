@@ -9,7 +9,7 @@ class TestOKRCheckIn(FrappeTestCase):
 		frappe.attach_print = lambda *args, **kwargs: {"fname": "dummy.pdf", "fcontent": b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<Root 1 0 R>>\n%%EOF"}
 
 		# Temporarily deactivate workflows for testing
-		self._active_workflows = frappe.get_all("Workflow", filters={"document_type": ["in", ["OKR Plan", "OKR Sprint", "OKR Objective", "OKR Key Result"]], "is_active": 1}, fields=["name"])
+		self._active_workflows = frappe.get_all("Workflow", filters={"document_type": ["in", ["OKR Plan", "OKR Plan", "OKR Objective", "OKR Key Result"]], "is_active": 1}, fields=["name"])
 		for wf in self._active_workflows:
 			frappe.db.set_value("Workflow", wf.name, "is_active", 0)
 		frappe.clear_cache()
@@ -17,7 +17,7 @@ class TestOKRCheckIn(FrappeTestCase):
 		frappe.db.delete("OKR Check In")
 		frappe.db.delete("OKR Key Result")
 		frappe.db.delete("OKR Objective")
-		frappe.db.delete("OKR Sprint")
+		frappe.db.delete("OKR Plan")
 		frappe.db.delete("OKR Plan")
 
 		self.company = frappe.db.get_value("Company", {}, "name")
@@ -43,10 +43,10 @@ class TestOKRCheckIn(FrappeTestCase):
 
 		# Create test sprint
 		self.sprint = frappe.get_doc({
-			"doctype": "OKR Sprint",
-			"sprint_name": "Test sprint",
+			"doctype": "OKR Plan",
+			"plan_name": "Test sprint",
 			"parent_plan": self.plan.name,
-			"financial_quarter": "Q2",
+			"period_selection": "Q2",
 			"sprint_year": 2026,
 			"start_date": nowdate(),
 			"end_date": add_days(nowdate(), 90),
@@ -115,7 +115,7 @@ class TestOKRCheckIn(FrappeTestCase):
 		})
 		checkin.insert(ignore_permissions=True)
 		self.assertEqual(checkin.objective, kr.objective)
-		self.assertEqual(checkin.parent_sprint, kr.parent_sprint)
+		self.assertEqual(checkin.parent_plan, kr.parent_plan)
 		self.assertEqual(checkin.parent_plan, kr.parent_plan)
 		self.assertEqual(checkin.financial_year, kr.financial_year)
 		self.assertEqual(checkin.company, kr.company)
@@ -138,7 +138,7 @@ class TestOKRCheckIn(FrappeTestCase):
 		# Key Result missing objective / sprint / plan should be blocked
 		kr = self.make_key_result()
 		# Clear sprint and plan on Key Result (bypassing validations)
-		frappe.db.set_value("OKR Key Result", kr.name, {"parent_sprint": None, "parent_plan": None})
+		frappe.db.set_value("OKR Key Result", kr.name, {"parent_plan": None, "parent_plan": None})
 		checkin = frappe.get_doc({
 			"doctype": "OKR Check In",
 			"key_result": kr.name,

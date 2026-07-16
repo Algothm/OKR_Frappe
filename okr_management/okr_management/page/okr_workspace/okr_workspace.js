@@ -34,7 +34,7 @@ class OKRWorkspace {
                                                 <div class=okr-pop-content>
                                                 <div class="okr-filter-group"><label>${__('Year')}</label><div data-year-pills class="okr-pill-row"></div></div>
                                                 <div class="okr-filter-group"><label>${__('Quarter')}</label><div data-quarter-pills class="okr-pill-row"></div></div>
-                                                <div class="okr-filter-group"><label>${__('Sprint')}</label><div data-sprint-pills class="okr-pill-row okr-pill-row-wrap"></div></div>
+                                                <div class="okr-filter-group"><label>${__('Plan Period')}</label><div data-sprint-pills class="okr-pill-row okr-pill-row-wrap"></div></div>
                                                 <div class="okr-filter-group"><label>${__('Level')}</label><div data-level-pills class="okr-pill-row"></div></div>
                                                 <div class="okr-filter-group"><label>${__('Owner')}</label><div data-owner-pills class="okr-pill-row"></div></div>
                                                 </div>
@@ -173,7 +173,7 @@ class OKRWorkspace {
                 if (!this.options) return;
                 this.render_pill_group('year', (this.options.years || []).slice(0, 4).map(y => ({ label: y.name, value: y.name })));
                 this.render_pill_group('quarter', [{ label: __('All'), value: '' }].concat((this.options.quarters || []).map(q => ({ label: q, value: q }))));
-                this.render_pill_group('sprint', [{ label: __('All'), value: '' }].concat((this.options.sprints || []).slice(0, 5).map(s => ({ label: s.sprint_name || s.name, value: s.name }))));
+                this.render_pill_group('sprint', [{ label: __('All'), value: '' }].concat((this.options.sprints || []).slice(0, 5).map(s => ({ label: s.plan_name || s.name, value: s.name }))));
                 this.render_pill_group('level', (this.options.levels || []).map(l => ({ label: __(l), value: l })));
                 this.render_pill_group('owner', [{ label: __('Assigned to Me'), value: 'me' }, { label: __('All'), value: 'all' }]);
         }
@@ -192,7 +192,7 @@ class OKRWorkspace {
 
         sprint_label() {
                 const sprint = (this.options.sprints || []).find(s => s.name === this.filters.sprint);
-                return sprint ? (sprint.sprint_name || sprint.name) : __('All Sprints');
+                return sprint ? (sprint.plan_name || sprint.name) : __('All Plans');
         }
 
         render_content() {

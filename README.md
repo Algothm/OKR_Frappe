@@ -57,7 +57,7 @@ bench --site your-site.local execute okr_management.demo_data.clear_demo_data
 
 1. Open `/app/okr-management`.
 2. Review the dashboard summary cards and analytics charts.
-3. Go to Planning and create or inspect OKR Sprints and Objectives.
+3. Go to Planning and create or inspect OKR Plans and Objectives.
 4. Go to Execution and review Key Results, Action Items, and Check-ins.
 5. Go to Performance and inspect Objective Reviews.
 6. Go to Analytics for Executive Attention, Health Insights, and management reports.

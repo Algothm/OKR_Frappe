@@ -5,7 +5,6 @@ import frappe
 
 def daily() -> None:
 	publish_due_checkins()
-	publish_sprint_reminders()
 
 
 def hourly() -> None:
@@ -16,12 +15,6 @@ def publish_due_checkins() -> None:
 	checkins = frappe.get_all("OKR Check In", filters={"status": ["=", "Draft"]}, pluck="name")
 	for checkin in checkins:
 		frappe.publish_realtime("okr_checkin_due", {"checkin": checkin})
-
-
-def publish_sprint_reminders() -> None:
-	sprints = frappe.get_all("OKR Sprint", filters={"status": ["in", ["Draft", "Active"]]}, pluck="name")
-	for sprint in sprints:
-		frappe.publish_realtime("okr_sprint_reminder", {"sprint": sprint})
 
 
 def publish_at_risk_updates() -> None:

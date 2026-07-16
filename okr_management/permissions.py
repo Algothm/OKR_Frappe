@@ -105,12 +105,6 @@ def get_plan_permission_query_conditions(user: str | None = None) -> str:
 	return ""
 
 
-def get_sprint_permission_query_conditions(user: str | None = None) -> str:
-	return ""
-
-
-
-
 def get_objective_permission_query_conditions(user: str | None = None) -> str:
 	user = user or frappe.session.user
 	if _is_executive(user):

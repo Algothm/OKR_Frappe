@@ -42,7 +42,7 @@ frappe.ui.form.on('OKR Action Item', {
 				key_result: frm.doc.parent_key_result,
 				action_item: frm.doc.name,
 				parent_plan: frm.doc.parent_plan,
-				parent_sprint: frm.doc.parent_sprint,
+				parent_plan: frm.doc.parent_plan,
 				company: frm.doc.company,
 				department: frm.doc.department,
 				financial_year: frm.doc.financial_year,
@@ -85,7 +85,7 @@ function apply_route_context(frm) {
 
 function apply_action_item_ui(frm) {
 	const readonly_fields = [
-		'parent_objective', 'parent_sprint', 'parent_plan',
+		'parent_objective', 'parent_plan',
 		'company', 'department', 'financial_year', 'due_date'
 	];
 	readonly_fields.forEach(fieldname => {
@@ -95,17 +95,17 @@ function apply_action_item_ui(frm) {
 
 function fetch_parent_key_result_context(frm) {
 	if (!frm.doc.parent_key_result) {
-		const fields = ['parent_objective', 'parent_sprint', 'parent_plan', 'company', 'department', 'financial_year', 'reviewer'];
+		const fields = ['parent_objective', 'parent_plan', 'company', 'department', 'financial_year', 'reviewer'];
 		fields.forEach(f => frm.set_value(f, ''));
 		return;
 	}
 
 	frappe.db.get_value('OKR Key Result', frm.doc.parent_key_result, [
-		'objective', 'parent_sprint', 'parent_plan', 'company', 'department', 'financial_year', 'reviewer'
+		'objective', 'parent_plan', 'company', 'department', 'financial_year', 'reviewer'
 	]).then(r => {
 		const kr = r.message || {};
 		frm.set_value('parent_objective', kr.objective || '');
-		frm.set_value('parent_sprint', kr.parent_sprint || '');
+		frm.set_value('parent_plan', kr.parent_plan || '');
 		frm.set_value('parent_plan', kr.parent_plan || '');
 		frm.set_value('company', kr.company || '');
 		frm.set_value('department', kr.department || '');
