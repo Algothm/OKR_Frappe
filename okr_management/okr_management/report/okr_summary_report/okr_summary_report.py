@@ -6,7 +6,7 @@ import frappe
 def execute(filters=None):
 	filters = frappe._dict(filters or {})
 	columns = [
-		{"label": "Sprint", "fieldname": "sprint", "fieldtype": "Link", "options": "OKR Sprint", "width": 160},
+		{"label": "Plan", "fieldname": "plan", "fieldtype": "Link", "options": "OKR Plan", "width": 160},
 		{"label": "Objective", "fieldname": "objective", "fieldtype": "Link", "options": "OKR Objective", "width": 180},
 		{"label": "Objective Title", "fieldname": "objective_title", "fieldtype": "Data", "width": 220},
 		{"label": "Key Result", "fieldname": "key_result", "fieldtype": "Link", "options": "OKR Key Result", "width": 180},
@@ -19,9 +19,9 @@ def execute(filters=None):
 		{"label": "End Date", "fieldname": "end_date", "fieldtype": "Date", "width": 110},
 	]
 	conditions, values = [], {}
-	if filters.get("sprint"):
-		conditions.append("obj.sprint = %(sprint)s")
-		values["sprint"] = filters.sprint
+	if filters.get("plan"):
+		conditions.append("obj.parent_plan = %(plan)s")
+		values["plan"] = filters.plan
 	if filters.get("owner"):
 		conditions.append("coalesce(kr.owner_user, obj.owner_user) = %(owner)s")
 		values["owner"] = filters.owner
@@ -30,7 +30,7 @@ def execute(filters=None):
 		values["status"] = filters.status
 	where = " where " + " and ".join(conditions) if conditions else ""
 	data = frappe.db.sql(f"""
-		select obj.sprint, obj.name as objective, obj.objective_title, kr.name as key_result,
+		select obj.parent_plan, obj.name as objective, obj.objective_title, kr.name as key_result,
 			kr.key_result_title, coalesce(kr.owner_user, obj.owner_user) as owner,
 			coalesce(kr.status, obj.status) as status, coalesce(kr.target_progress, obj.progress) as progress,
 			obj.confidence as confidence,
@@ -38,6 +38,6 @@ def execute(filters=None):
 		from `tabOKR Objective` obj
 		left join `tabOKR Key Result` kr on kr.objective = obj.name
 		{where}
-		order by obj.sprint, obj.name, kr.name
+		order by obj.parent_plan, obj.name, kr.name
 		""", values, as_dict=True)
 	return columns, data

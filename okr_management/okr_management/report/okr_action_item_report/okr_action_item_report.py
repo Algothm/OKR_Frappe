@@ -9,9 +9,9 @@ def execute(filters=None):
     columns = get_columns()
     conditions = []
     values = {}
-    if filters.get("sprint"):
-        conditions.append("ai.parent_sprint = %(sprint)s")
-        values["sprint"] = filters.sprint
+    if filters.get("plan"):
+        conditions.append("ai.parent_plan = %(plan)s")
+        values["plan"] = filters.plan
     if filters.get("objective"):
         conditions.append("ai.parent_objective = %(objective)s")
         values["objective"] = filters.objective
@@ -31,7 +31,7 @@ def execute(filters=None):
     rows = frappe.db.sql(
         f"""
         select
-            ai.parent_sprint,
+            ai.parent_plan,
             ai.parent_objective,
             obj.objective_title,
             ai.parent_key_result,
@@ -62,7 +62,7 @@ def execute(filters=None):
 
 def get_columns():
     return [
-        {"label": "Sprint", "fieldname": "sprint", "fieldtype": "Link", "options": "OKR Sprint", "width": 160},
+        {"label": "Plan", "fieldname": "plan", "fieldtype": "Link", "options": "OKR Plan", "width": 160},
         {"label": "Objective", "fieldname": "objective", "fieldtype": "Link", "options": "OKR Objective", "width": 170},
         {"label": "Objective Title", "fieldname": "objective_title", "fieldtype": "Data", "width": 220},
         {"label": "Key Result", "fieldname": "key_result", "fieldtype": "Link", "options": "OKR Key Result", "width": 170},

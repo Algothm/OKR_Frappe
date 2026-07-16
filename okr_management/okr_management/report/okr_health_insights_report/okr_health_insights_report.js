@@ -1,6 +1,6 @@
 frappe.query_reports["OKR Health Insights Report"] = {
 	filters: [
-		{fieldname: "sprint", label: __("Sprint"), fieldtype: "Link", options: "OKR Sprint"},
+		{fieldname: "plan", label: __("Plan"), fieldtype: "Link", options: "OKR Plan"},
 		{fieldname: "department", label: __("Department"), fieldtype: "Link", options: "Department"},
 		{fieldname: "owner", label: __("Owner"), fieldtype: "Link", options: "User"},
 		{fieldname: "risk_level", label: __("Risk Level"), fieldtype: "Select", options: "\nCritical\nHigh\nMedium\nLow"},

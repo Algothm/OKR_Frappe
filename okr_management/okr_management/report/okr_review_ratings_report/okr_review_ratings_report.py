@@ -10,14 +10,14 @@ def execute(filters=None):
 	columns = get_columns()
 	data = []
 	for row in get_review_rating_rows(include_normal=True):
-		if filters.get("sprint") and row.get("sprint") != filters.sprint:
+		if filters.get("plan") and row.get("plan") != filters.plan:
 			continue
 		if filters.get("owner") and row.get("owner") != filters.owner:
 			continue
 		if filters.get("review_status") and row.get("review_status") != filters.review_status:
 			continue
 		data.append({
-			"sprint": row.get("sprint"),
+			"plan": row.get("plan"),
 			"objective": row.get("objective"),
 			"objective_title": row.get("objective_title"),
 			"owner": row.get("owner"),
@@ -36,7 +36,7 @@ def execute(filters=None):
 
 def get_columns():
 	return [
-		{"label": "Sprint", "fieldname": "sprint", "fieldtype": "Link", "options": "OKR Sprint", "width": 170},
+		{"label": "Plan", "fieldname": "plan", "fieldtype": "Link", "options": "OKR Plan", "width": 170},
 		{"label": "Objective", "fieldname": "objective", "fieldtype": "Link", "options": "OKR Objective", "width": 180},
 		{"label": "Objective Title", "fieldname": "objective_title", "fieldtype": "Data", "width": 260},
 		{"label": "Owner", "fieldname": "owner", "fieldtype": "Link", "options": "User", "width": 180},
