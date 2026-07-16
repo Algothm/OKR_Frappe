@@ -7,7 +7,8 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt, getdate, today
 
-from okr_management.utils.okr_calculations import recalculate_objective_progress, recalculate_sprint_progress
+from okr_management.utils.okr_calculations import recalculate_objective_progress, recalculate_plan_progress
+from okr_management.okr_management.doctype.okr_plan.okr_plan import get_plan_timeline
 
 
 STATUS_TRANSITIONS = {
@@ -21,7 +22,6 @@ STATUS_TRANSITIONS = {
 SETUP_LOCKED_STATUSES = {"Active", "On Hold", "Completed", "Closed"}
 ACTIVE_LOCKED_STATUSES = {"Active", "On Hold", "Completed", "Closed"}
 PLAN_ACTIVE_REQUIRED_STATUSES = {"Active", "On Hold"}
-SPRINT_ACTIVE_REQUIRED_STATUSES = {"Active", "On Hold"}
 COMPLETED_KR_STATUSES = {"Achieved", "Completed", "Closed"}
 GOVERNANCE_ROLES = {"OKR Admin", "OKR Manager"}
 MANAGER_ROLES = {"OKR Admin", "OKR Manager", "Department Head"}
@@ -33,7 +33,7 @@ SETUP_LOCKED_FIELDS = {
     "company",
     "department",
     "plan_owner",
-    "sprint_owner",
+    "plan_owner",
     "level",
     "start_date",
     "end_date",
@@ -48,8 +48,8 @@ class OKRObjective(Document):
         self.priority = self.priority or "High"
         self.level = self.level or "Department"
         self.owner_user = self.owner_user or frappe.session.user
-        self.inherit_context_from_sprint()
-        self.default_dates_from_sprint()
+        self.inherit_context_from_plan()
+        self.default_dates_from_plan()
         self.update_system_summary_fields()
 
     def validate(self) -> None:
@@ -57,8 +57,8 @@ class OKRObjective(Document):
         self.validate_parent_relationships()
         self.validate_lifecycle_transition()
         self.validate_parent_status_dependencies()
-        self.validate_dates_inside_sprint()
-        self.validate_duplicate_title_in_sprint()
+        self.validate_dates_inside_plan()
+        self.validate_duplicate_title_in_plan()
         self.validate_completion_criteria()
         self.validate_locked_fields()
         self.validate_system_fields()
@@ -67,7 +67,7 @@ class OKRObjective(Document):
         values = self.get_system_summary_values()
         if values:
             frappe.db.set_value(self.doctype, self.name, values, update_modified=False)
-        recalculate_sprint_progress(self.sprint)
+        recalculate_plan_progress(self.parent_plan)
 
     def on_trash(self) -> None:
         if self.has_key_results():
@@ -76,50 +76,34 @@ class OKRObjective(Document):
     def exists_in_database(self) -> bool:
         return bool(self.name and frappe.db.exists(self.doctype, self.name))
 
-    def inherit_context_from_sprint(self) -> None:
-        if not self.sprint or not frappe.db.exists("OKR Sprint", self.sprint):
+    def inherit_context_from_plan(self) -> None:
+        if not self.parent_plan or not frappe.db.exists("OKR Plan", self.parent_plan):
             return
 
-        sprint = frappe.db.get_value(
-            "OKR Sprint",
-            self.sprint,
-            [
-                "parent_plan",
-                "financial_year",
-                "company",
-                "department",
-                "plan_owner",
-                "sprint_owner",
-                "start_date",
-                "end_date",
-                "status",
-            ],
+        plan = frappe.db.get_value(
+            "OKR Plan", self.parent_plan,
+            ["financial_year", "company", "owner_user", "status"],
             as_dict=True,
         )
-        if not sprint:
+        if not plan:
             return
 
-        self.parent_plan = sprint.parent_plan
-        self.financial_year = sprint.financial_year
-        self.company = sprint.company
-        self.plan_owner = sprint.plan_owner
-        self.sprint_owner = sprint.sprint_owner
+        self.financial_year = plan.financial_year
+        self.company = plan.company
+        self.plan_owner = plan.owner_user
 
-    def default_dates_from_sprint(self) -> None:
-        if not self.sprint or not frappe.db.exists("OKR Sprint", self.sprint):
+    def default_dates_from_plan(self) -> None:
+        if not self.parent_plan or not frappe.db.exists("OKR Plan", self.parent_plan):
             return
-        sprint_dates = frappe.db.get_value("OKR Sprint", self.sprint, ["start_date", "end_date"], as_dict=True)
-        if not sprint_dates:
-            return
+        start_date, end_date = get_plan_timeline(self.parent_plan)
         if not self.start_date:
-            self.start_date = sprint_dates.start_date
+            self.start_date = start_date
         if not self.end_date:
-            self.end_date = sprint_dates.end_date
+            self.end_date = end_date
 
     def validate_required_fields(self) -> None:
         required = {
             "objective_title": _("Objective Title"),
-            "sprint": _("Sprint"),
             "parent_plan": _("Parent Plan"),
             "priority": _("Priority"),
             "company": _("Organization"),
@@ -136,20 +120,8 @@ class OKRObjective(Document):
             frappe.throw(_("Department is required."))
 
     def validate_parent_relationships(self) -> None:
-        if not frappe.db.exists("OKR Sprint", self.sprint):
-            frappe.throw(_("Sprint does not exist."))
-
-        sprint_plan = frappe.db.get_value("OKR Sprint", self.sprint, "parent_plan")
-        if not sprint_plan:
-            frappe.throw(_("Sprint must belong to an OKR Plan."))
-        if self.parent_plan != sprint_plan:
-            frappe.throw(_("Parent Plan must match the selected Sprint's Parent Plan."))
-
         if not frappe.db.exists("OKR Plan", self.parent_plan):
             frappe.throw(_("Parent Plan does not exist."))
-
-        if self.exists_in_database() and self.has_key_results() and self.has_value_changed("sprint"):
-            frappe.throw(_("Cannot move Objective to another Sprint after Key Results exist."))
 
         if self.exists_in_database() and self.has_value_changed("parent_plan"):
             frappe.throw(_("Objective cannot be moved between Plans."))
@@ -171,56 +143,43 @@ class OKRObjective(Document):
             return
 
         user = frappe.session.user
-        if new_status == "Completed" and user in {self.owner_user, self.sprint_owner}:
+        if new_status == "Completed" and user in {self.owner_user, self.plan_owner}:
             return
-        if new_status in {"Active", "On Hold", "Closed"} and user in {self.sprint_owner, self.plan_owner}:
+        if new_status in {"Active", "On Hold", "Closed"} and user == self.plan_owner:
             return
 
         frappe.throw(_("You are not allowed to change Objective status from {0} to {1}.").format(old_status, new_status))
 
     def validate_parent_status_dependencies(self) -> None:
-        sprint_status, plan_status = frappe.db.get_value(
-            "OKR Sprint", self.sprint, ["status", "parent_plan"], as_dict=False
-        ) or (None, None)
-        if not sprint_status:
-            frappe.throw(_("Sprint status is required."))
-
-        if sprint_status in {"Closed", "Archived"}:
-            frappe.throw(_("Objective cannot be created or updated under a Closed or Archived Sprint."))
-
-        actual_plan_status = frappe.db.get_value("OKR Plan", self.parent_plan, "status")
-        if self.status in PLAN_ACTIVE_REQUIRED_STATUSES and actual_plan_status != "Active":
+        plan_status = frappe.db.get_value("OKR Plan", self.parent_plan, "status")
+        if not plan_status:
+            frappe.throw(_("Parent Plan status is required."))
+        if plan_status == "Archived":
+            frappe.throw(_("Objective cannot be created or updated under an Archived Plan."))
+        if self.status in PLAN_ACTIVE_REQUIRED_STATUSES and plan_status != "Active":
             frappe.throw(_("Objective cannot become {0} unless Parent Plan is Active.").format(self.status))
 
-        if self.status in SPRINT_ACTIVE_REQUIRED_STATUSES and sprint_status != "Active":
-            frappe.throw(_("Objective cannot become {0} unless Sprint is Active.").format(self.status))
-
-    def validate_dates_inside_sprint(self) -> None:
+    def validate_dates_inside_plan(self) -> None:
         start = getdate(self.start_date)
         end = getdate(self.end_date)
         if start > end:
             frappe.throw(_("Objective End Date cannot be before Start Date."))
 
-        sprint_dates = frappe.db.get_value("OKR Sprint", self.sprint, ["start_date", "end_date"], as_dict=True)
-        if not sprint_dates or not sprint_dates.start_date or not sprint_dates.end_date:
-            frappe.throw(_("Sprint must have Start Date and End Date."))
+        plan_start, plan_end = get_plan_timeline(self.parent_plan)
+        if start < getdate(plan_start) or end > getdate(plan_end):
+            frappe.throw(_("Objective dates must stay within the Plan period."))
 
-        sprint_start = getdate(sprint_dates.start_date)
-        sprint_end = getdate(sprint_dates.end_date)
-        if start < sprint_start or end > sprint_end:
-            frappe.throw(_("Objective dates must stay within the Sprint date range."))
-
-    def validate_duplicate_title_in_sprint(self) -> None:
+    def validate_duplicate_title_in_plan(self) -> None:
         duplicate = frappe.db.exists(
             "OKR Objective",
             {
                 "name": ["!=", self.name],
-                "sprint": self.sprint,
+                "parent_plan": self.parent_plan,
                 "objective_title": self.objective_title,
             },
         )
         if duplicate:
-            frappe.throw(_("An Objective with this title already exists in the selected Sprint."))
+            frappe.throw(_("An Objective with this title already exists in the selected Plan."))
 
     def validate_completion_criteria(self) -> None:
         if self.status != "Completed":
@@ -235,14 +194,14 @@ class OKRObjective(Document):
             frappe.throw(_("Objective can be completed only when all Key Results are completed or a manager accepts partial completion."))
 
         if not self.is_manager_or_owner_accepting_completion():
-            frappe.throw(_("Only a manager, Plan Owner, or Sprint Owner can accept partial Objective completion."))
+            frappe.throw(_("Only a manager or Plan Owner can accept partial Objective completion."))
 
     def is_manager_or_owner_accepting_completion(self) -> bool:
         roles = set(frappe.get_roles(frappe.session.user))
         return (
             frappe.session.user == "Administrator"
             or bool(roles.intersection(MANAGER_ROLES))
-            or frappe.session.user in {self.plan_owner, self.sprint_owner}
+            or frappe.session.user == self.plan_owner
         )
 
     def validate_locked_fields(self) -> None:

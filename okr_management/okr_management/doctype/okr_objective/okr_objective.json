@@ -8,7 +8,6 @@
  "engine": "InnoDB",
  "field_order": [
   "objective_details_section",
-  "sprint",
   "objective_title",
   "description",
   "department",
@@ -33,7 +32,6 @@
   "owner_user",
   "reviewer",
   "plan_owner",
-  "sprint_owner",
   "objective_alignment_section",
   "alignment_map"
  ],
@@ -55,16 +53,6 @@
    "reqd": 1,
    "in_list_view": 1,
    "in_standard_filter": 1
-  },
-  {
-   "fieldname": "sprint",
-   "fieldtype": "Link",
-   "label": "Sprint",
-   "options": "OKR Sprint",
-   "reqd": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "description": "Select the sprint this objective belongs to. Plan, organization, and financial year are filled from the sprint."
   },
   {
    "fieldname": "level",
@@ -157,16 +145,6 @@
    "fieldname": "plan_owner",
    "fieldtype": "Link",
    "label": "Plan Owner",
-   "options": "User",
-   "read_only": 1,
-   "in_standard_filter": 0,
-   "hidden": 1,
-   "in_list_view": 0
-  },
-  {
-   "fieldname": "sprint_owner",
-   "fieldtype": "Link",
-   "label": "Sprint Owner",
    "options": "User",
    "read_only": 1,
    "in_standard_filter": 0,
@@ -354,7 +332,7 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "track_changes": 1,
- "search_fields": "objective_title,name,parent_plan,sprint,owner_user,status",
+ "search_fields": "objective_title,name,parent_plan,owner_user,status",
  "show_title_field_in_link": 1,
  "title_field": "description"
 }
