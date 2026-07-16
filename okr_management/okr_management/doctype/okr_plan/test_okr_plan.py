@@ -11,7 +11,6 @@ class TestOKRPlanPhase1(FrappeTestCase):
             self.skipTest("No Company exists on this site.")
         self.fiscal_year = self.ensure_fiscal_year()
         frappe.db.delete("OKR Objective")
-        frappe.db.delete("OKR Sprint")
         frappe.db.delete("OKR Plan")
 
     def tearDown(self):
@@ -52,25 +51,19 @@ class TestOKRPlanPhase1(FrappeTestCase):
             doc.save(ignore_permissions=True)
         return doc
 
-    def make_sprint(self, plan, status="Draft"):
-        doc = frappe.get_doc({
-            "doctype": "OKR Sprint",
-            "sprint_name": "Phase 1 Dependent Sprint",
+    def make_objective(self, plan):
+        department = frappe.db.get_value("Department", {"company": self.company}, "name")
+        if not department:
+            self.skipTest("No Department exists for the test Company.")
+        return frappe.get_doc({
+            "doctype": "OKR Objective",
+            "objective_title": "Phase 1 Dependent Objective",
             "parent_plan": plan.name,
-            "sprint_cycle": "Custom Date Range",
-            "start_date": nowdate(),
-            "end_date": add_days(nowdate(), 30),
+            "department": department,
+            "priority": "High",
+            "owner_user": "Administrator",
             "status": "Draft",
-        })
-        doc.insert(ignore_permissions=True)
-        doc.reload()
-        if status != "Draft":
-            for next_status in ("Planned", "Active", "Completed", "Closed"):
-                doc.status = next_status
-                doc.save(ignore_permissions=True)
-                if next_status == status:
-                    break
-        return doc
+        }).insert(ignore_permissions=True)
 
     def test_new_plan_can_start_active(self):
         doc = frappe.get_doc({
@@ -88,6 +81,33 @@ class TestOKRPlanPhase1(FrappeTestCase):
         plan = self.make_plan()
         plan.status = "Completed"
         self.assertRaises(frappe.ValidationError, plan.save)
+
+    def test_monthly_sprint_configuration_accepts_month(self):
+        plan = self.make_plan(sprint_frequency="Monthly", period_selection="January")
+        self.assertEqual(plan.period_selection, "January")
+
+    def test_quarterly_sprint_configuration_rejects_invalid_period(self):
+        self.assertRaises(
+            frappe.ValidationError,
+            self.make_plan,
+            sprint_frequency="Quarterly",
+            period_selection="January",
+        )
+
+    def test_custom_sprint_configuration_accepts_dates_inside_financial_year(self):
+        fiscal_year = frappe.db.get_value(
+            "Fiscal Year",
+            self.fiscal_year,
+            ["year_start_date", "year_end_date"],
+            as_dict=True,
+        )
+        plan = self.make_plan(
+            sprint_frequency="Custom",
+            period_selection="",
+            custom_start_date=fiscal_year.year_start_date,
+            custom_end_date=add_days(fiscal_year.year_start_date, 10),
+        )
+        self.assertEqual(plan.sprint_frequency, "Custom")
         plan.reload()
 
         plan.status = "Active"
@@ -121,17 +141,17 @@ class TestOKRPlanPhase1(FrappeTestCase):
         plan.reload()
         self.assertEqual(plan.progress, 0)
 
-    def test_active_plan_can_be_archived_with_existing_dependents(self):
+    def test_active_plan_can_be_archived_with_existing_objective(self):
         plan = self.make_plan(status="Active")
-        self.make_sprint(plan, status="Active")
+        self.make_objective(plan)
         plan.status = "Archived"
         plan.save(ignore_permissions=True)
         plan.reload()
         self.assertEqual(plan.status, "Archived")
 
-    def test_delete_blocked_when_dependent_sprint_exists(self):
+    def test_delete_blocked_when_dependent_objective_exists(self):
         plan = self.make_plan(status="Active")
-        self.make_sprint(plan)
+        self.make_objective(plan)
         self.assertRaises(frappe.ValidationError, plan.delete)
 
     def test_plan_team_automatic_owner_population(self):
