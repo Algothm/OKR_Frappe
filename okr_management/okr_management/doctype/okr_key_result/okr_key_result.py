@@ -13,13 +13,13 @@ VALID_MEASUREMENT_DIRECTIONS = {"Increase", "Decrease"}
 
 INHERITED_FIELDS = {
     "parent_plan",
-    "parent_sprint",
+    "parent_plan",
     "objective_title",
     "company",
     "financial_year",
     "department",
     "plan_owner",
-    "sprint_owner",
+    "plan_owner",
     "objective_owner",
     "objective_level",
     "start_date",
@@ -96,7 +96,7 @@ class OKRKeyResult(Document):
                 "financial_year",
                 "department",
                 "plan_owner",
-                "sprint_owner",
+                "plan_owner",
                 "owner_user",
                 "level",
                 "start_date",
@@ -109,13 +109,13 @@ class OKRKeyResult(Document):
             return
 
         self.parent_plan = objective.parent_plan
-        self.parent_sprint = objective.sprint
+        self.parent_plan = objective.sprint
         self.objective_title = objective.objective_title
         self.company = objective.company
         self.financial_year = objective.financial_year
         self.department = objective.department
         self.plan_owner = objective.plan_owner
-        self.sprint_owner = objective.sprint_owner
+        self.plan_owner = objective.plan_owner
         self.objective_owner = objective.owner_user
         self.objective_level = objective.level
         self.start_date = objective.start_date

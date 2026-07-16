@@ -44,7 +44,7 @@ class TestOKRKeyResultPhase4(FrappeTestCase):
         frappe.db.delete("OKR Action Item", {"action_item_title": ["like", "Phase 4 KR%"]})
         frappe.db.delete("OKR Key Result", {"key_result_title": ["like", "Phase 4 KR%"]})
         frappe.db.delete("OKR Objective", {"objective_title": ["like", "Phase 4 KR%"]})
-        frappe.db.delete("OKR Sprint", {"sprint_name": ["like", "Phase 4 KR%"]})
+        frappe.db.delete("OKR Plan", {"plan_name": ["like", "Phase 4 KR%"]})
         frappe.db.delete("OKR Plan", {"plan_name": ["like", "Phase 4 KR%"]})
 
     def ensure_current_fiscal_year(self):
@@ -79,10 +79,10 @@ class TestOKRKeyResultPhase4(FrappeTestCase):
 
     def make_active_sprint(self, plan):
         sprint = frappe.get_doc({
-            "doctype": "OKR Sprint",
+            "doctype": "OKR Plan",
             "parent_plan": plan.name,
-            "sprint_name": "Phase 4 KR Sprint " + frappe.generate_hash(length=6),
-            "sprint_owner": "Administrator",
+            "plan_name": "Phase 4 KR Sprint " + frappe.generate_hash(length=6),
+            "plan_owner": "Administrator",
             "sprint_cycle": "Custom Date Range",
             "start_date": add_days(today(), -2),
             "end_date": add_days(today(), 2),
@@ -105,7 +105,7 @@ class TestOKRKeyResultPhase4(FrappeTestCase):
             "company": sprint.company,
             "department": sprint.department,
             "plan_owner": sprint.plan_owner,
-            "sprint_owner": sprint.sprint_owner,
+            "plan_owner": sprint.plan_owner,
             "level": "Organization",
             "priority": "High",
             "owner_user": "Administrator",
@@ -139,11 +139,11 @@ class TestOKRKeyResultPhase4(FrappeTestCase):
         kr = self.make_key_result(metric_type="Currency")
         company_currency = frappe.db.get_value("Company", self.company, "default_currency")
         self.assertEqual(kr.parent_plan, self.plan.name)
-        self.assertEqual(kr.parent_sprint, self.sprint.name)
+        self.assertEqual(kr.parent_plan, self.sprint.name)
         self.assertEqual(kr.financial_year, self.plan.financial_year)
         self.assertEqual(kr.company, self.company)
         self.assertEqual(kr.plan_owner, self.plan.owner_user)
-        self.assertEqual(kr.sprint_owner, self.sprint.sprint_owner)
+        self.assertEqual(kr.plan_owner, self.sprint.plan_owner)
         self.assertEqual(kr.objective_owner, self.objective.owner_user)
         self.assertEqual(getdate(kr.start_date), getdate(self.objective.start_date))
         self.assertEqual(getdate(kr.end_date), getdate(self.objective.end_date))

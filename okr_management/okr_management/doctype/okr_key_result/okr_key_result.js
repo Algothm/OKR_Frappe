@@ -24,13 +24,13 @@ frappe.ui.form.on('OKR Key Result', {
 
 const INHERITED_FIELDS = [
 	'parent_plan',
-	'parent_sprint',
+	'parent_plan',
 	'objective_title',
 	'company',
 	'financial_year',
 	'department',
 	'plan_owner',
-	'sprint_owner',
+	'plan_owner',
 	'objective_owner',
 	'objective_level',
 	'date_range',
@@ -52,7 +52,7 @@ function populate_objective_context(frm) {
 		'financial_year',
 		'department',
 		'plan_owner',
-		'sprint_owner',
+		'plan_owner',
 		'owner_user',
 		'level',
 		'start_date',
@@ -60,13 +60,13 @@ function populate_objective_context(frm) {
 	]).then(r => {
 		const objective = r.message || {};
 		frm.set_value('parent_plan', objective.parent_plan || '');
-		frm.set_value('parent_sprint', objective.sprint || '');
+		frm.set_value('parent_plan', objective.sprint || '');
 		frm.set_value('objective_title', objective.objective_title || '');
 		frm.set_value('company', objective.company || '');
 		frm.set_value('financial_year', objective.financial_year || '');
 		frm.set_value('department', objective.department || '');
 		frm.set_value('plan_owner', objective.plan_owner || '');
-		frm.set_value('sprint_owner', objective.sprint_owner || '');
+		frm.set_value('plan_owner', objective.plan_owner || '');
 		frm.set_value('objective_owner', objective.owner_user || '');
 		frm.set_value('owner_user', objective.owner_user || frappe.session.user || '');
 		frm.set_value('objective_level', objective.level || '');
@@ -102,7 +102,7 @@ function apply_key_result_ui(frm) {
 	INHERITED_FIELDS.forEach(fieldname => {
 		frm.set_df_property(fieldname, 'read_only', 1);
 	});
-	['owner_user', 'ownership_section', 'ownership_col_break', 'ownership_status_col_break', 'plan_owner', 'sprint_owner', 'objective_owner', 'objective_level', 'start_date', 'end_date'].forEach(fieldname => {
+	['owner_user', 'ownership_section', 'ownership_col_break', 'ownership_status_col_break', 'plan_owner', 'objective_owner', 'objective_level', 'start_date', 'end_date'].forEach(fieldname => {
 		frm.set_df_property(fieldname, 'hidden', 1);
 	});
 
@@ -293,7 +293,7 @@ function render_inline_checkin_panel(frm, item) {
 					${render_context_pair('target', 'Key Result', frm.doc.name)}
 					${render_context_pair('flag', 'Objective', frm.doc.objective_title || frm.doc.objective)}
 					${render_context_pair('folder-normal', 'Parent Plan', frm.doc.parent_plan)}
-					${render_context_pair('calendar', 'Parent Sprint', frm.doc.parent_sprint)}
+					${render_context_pair('calendar', 'Parent Sprint', frm.doc.parent_plan)}
 					${render_context_pair('organization', 'Company', frm.doc.company)}
 					${render_context_pair('users', 'Department', frm.doc.department)}
 					${render_context_pair('calendar', 'Check-In Date', frappe.datetime.str_to_user(frappe.datetime.get_today()))}
@@ -357,7 +357,7 @@ function save_inline_checkin(frm, wrapper) {
 			dependency_description: panel.find('.okr-checkin-dependency').val() || '',
 			attachment: panel.find('.okr-checkin-file-url').val() || '',
 			reported_by: frappe.session.user, checkin_date: frappe.datetime.get_today(),
-			parent_plan: frm.doc.parent_plan, parent_sprint: frm.doc.parent_sprint,
+			parent_plan: frm.doc.parent_plan, parent_plan: frm.doc.parent_plan,
 			company: frm.doc.company, department: frm.doc.department, financial_year: frm.doc.financial_year,
 		} },
 		freeze: true,
@@ -385,7 +385,7 @@ function get_action_item_context(frm) {
 	return {
 		parent_key_result: frm.doc.name,
 		parent_objective: frm.doc.objective,
-		parent_sprint: frm.doc.parent_sprint,
+		parent_plan: frm.doc.parent_plan,
 		parent_plan: frm.doc.parent_plan,
 		company: frm.doc.company,
 		department: frm.doc.department,
@@ -404,7 +404,7 @@ function get_checkin_context(frm, row) {
 		key_result: frm.doc.name,
 		action_item: row.action_item_id,
 		parent_plan: frm.doc.parent_plan,
-		parent_sprint: frm.doc.parent_sprint,
+		parent_plan: frm.doc.parent_plan,
 		company: frm.doc.company,
 		department: frm.doc.department,
 		financial_year: frm.doc.financial_year,
