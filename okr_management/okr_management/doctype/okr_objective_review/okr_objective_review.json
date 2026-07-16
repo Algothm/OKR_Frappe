@@ -7,7 +7,6 @@
  "field_order": [
   "review_context_section",
   "objective",
-  "sprint",
   "reviewer",
   "context_col_break",
   "review_date",
@@ -46,15 +45,6 @@
    "options": "OKR Objective",
    "req": 1,
    "in_list_view": 1
-  },
-  {
-   "fieldname": "sprint",
-   "fieldtype": "Link",
-   "label": "OKR Sprint",
-   "options": "OKR Sprint",
-   "req": 1,
-   "read_only": 1,
-   "description": "Auto-filled from the selected Objective."
   },
   {
    "fieldname": "reviewer",
