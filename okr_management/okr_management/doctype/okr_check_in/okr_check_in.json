@@ -16,7 +16,6 @@
   "key_result",
   "objective",
   "parent_plan",
-  "parent_sprint",
   "checkin_context_col_break",
   "department",
   "employee_update_section",
@@ -68,16 +67,9 @@
    "description": "Auto-filled from the selected Key Result."
   },
   {
-   "fieldname": "parent_sprint",
-   "fieldtype": "Link",
-   "label": "Parent Sprint",
-   "options": "OKR Sprint",
-   "read_only": 1
-  },
-  {
    "fieldname": "parent_plan",
    "fieldtype": "Link",
-   "label": "Parent Plan",
+   "label": "Parent Sprint",
    "options": "OKR Plan",
    "read_only": 1
   },
