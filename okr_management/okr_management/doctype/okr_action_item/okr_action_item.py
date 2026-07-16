@@ -58,7 +58,7 @@ class OKRActionItem(Document):
         if self.parent_key_result and frappe.db.exists("OKR Key Result", self.parent_key_result):
             parent_kr = frappe.get_doc("OKR Key Result", self.parent_key_result)
             self.parent_objective = parent_kr.objective
-            self.parent_sprint = parent_kr.parent_sprint
+            self.parent_plan = parent_kr.parent_plan
             self.parent_plan = parent_kr.parent_plan
             self.company = parent_kr.company
             self.department = parent_kr.department
