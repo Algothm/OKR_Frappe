@@ -13,6 +13,7 @@ class OKRActionItem(Document):
         self.status = self.status or "Open"
         self.priority = self.priority or "Medium"
         self.progress = flt(self.progress or 0.0)
+        self.sync_assigned_to_owner()
         self.owner_user = self.owner_user or frappe.session.user
 
         # Default Action Date (due_date) to today on creation
@@ -24,8 +25,8 @@ class OKRActionItem(Document):
 
     def validate(self) -> None:
         ensure_required_link(self.action_item_title, "Action Item Title")
-        ensure_required_link(self.parent_key_result, "Parent Key Result")
-        ensure_required_link(self.owner_user, "Action Item Owner")
+        ensure_required_link(self.parent_key_result, "Key Result")
+        self.validate_assigned_to()
         ensure_required_link(self.status, "Status")
         ensure_percentage(self.progress, "Progress %")
         self.validate_parent_context()
@@ -58,13 +59,41 @@ class OKRActionItem(Document):
         if self.parent_key_result and frappe.db.exists("OKR Key Result", self.parent_key_result):
             parent_kr = frappe.get_doc("OKR Key Result", self.parent_key_result)
             self.parent_objective = parent_kr.objective
+            self.objective_title = parent_kr.objective_title
             self.parent_plan = parent_kr.parent_plan
             self.parent_plan = parent_kr.parent_plan
             self.company = parent_kr.company
             self.department = parent_kr.department
             self.financial_year = parent_kr.financial_year
+            self.context_start_date = parent_kr.start_date
+            self.context_end_date = parent_kr.end_date
+            self.key_result_title = parent_kr.key_result_title
+            if parent_kr.parent_plan and frappe.db.exists("OKR Plan", parent_kr.parent_plan):
+                plan = frappe.db.get_value(
+                    "OKR Plan", parent_kr.parent_plan,
+                    ["sprint_frequency", "period_selection", "description"], as_dict=True,
+                )
+                self.plan_title = frappe.db.get_value("OKR Plan", parent_kr.parent_plan, "plan_name")
+                self.plan_description = plan.description
+                self.sprint_frequency = plan.sprint_frequency
+                self.selected_period = plan.period_selection or "Custom"
             if not self.reviewer:
                 self.reviewer = parent_kr.reviewer
+
+    def sync_assigned_to_owner(self) -> None:
+        if not self.assigned_to:
+            return
+
+        employee_user = frappe.db.get_value("Employee", self.assigned_to, "user_id")
+        if employee_user:
+            self.owner_user = employee_user
+
+    def validate_assigned_to(self) -> None:
+        ensure_required_link(self.assigned_to, "Assigned To")
+        if not frappe.db.exists("Employee", self.assigned_to):
+            frappe.throw(_("Assigned To Employee does not exist."))
+        if frappe.db.get_value("Employee", self.assigned_to, "status") != "Active":
+            frappe.throw(_("Assigned To Employee must be active."))
 
     def validate_parent_context(self) -> None:
         if not self.parent_key_result:
