@@ -207,9 +207,18 @@ def get_plan_timeline(plan: Document | str) -> tuple:
 def get_plan_context(plan_name: str) -> dict:
 	plan = frappe.get_doc("OKR Plan", plan_name)
 	start_date, end_date = get_plan_timeline(plan)
+	members = [
+		{
+			"user": row.member_user,
+			"full_name": frappe.db.get_value("User", row.member_user, "full_name") or row.member_user,
+			"role": row.role,
+		}
+		for row in (plan.members or [])
+	]
 	return {
 		"parent_plan": plan.name,
 		"plan_name": plan.plan_name,
+		"description": plan.description,
 		"financial_year": plan.financial_year,
 		"company": plan.company,
 		"plan_owner": plan.owner_user,
@@ -218,5 +227,5 @@ def get_plan_context(plan_name: str) -> dict:
 		"sprint_frequency": plan.sprint_frequency,
 		"start_date": start_date,
 		"end_date": end_date,
+		"members": members,
 	}
-

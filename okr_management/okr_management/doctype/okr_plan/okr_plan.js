@@ -71,7 +71,8 @@ function configure_period_selection(frm, reset_value) {
 	frm.toggle_display('custom_start_date', is_custom);
 	frm.toggle_display('custom_end_date', is_custom);
 	frm.toggle_display('sprint_timeline_preview', !is_custom);
-	frm.toggle_display('sprint_config_col_4', is_custom);
+	frm.toggle_display('sprint_end_date_preview', !is_custom);
+	frm.toggle_display('sprint_config_col_4', true);
 	frm.toggle_display('custom_timeline_preview', is_custom);
 	frm.toggle_reqd('custom_start_date', is_custom);
 	frm.toggle_reqd('custom_end_date', is_custom);
@@ -103,9 +104,8 @@ function apply_sprint_configuration_layout(frm) {
 		column_for('sprint_frequency'),
 		column_for(is_custom ? 'custom_start_date' : 'period_selection'),
 		column_for(is_custom ? 'custom_end_date' : 'sprint_timeline_preview'),
-		column_for('custom_timeline_preview')
+		column_for(is_custom ? 'custom_timeline_preview' : 'sprint_end_date_preview')
 	];
-	const active_columns = is_custom ? columns : columns.slice(0, 3);
 	const unique_columns = [];
 
 	columns.forEach(($column) => {
@@ -114,7 +114,7 @@ function apply_sprint_configuration_layout(frm) {
 		}
 	});
 	unique_columns.forEach(($column) => $column.hide());
-	active_columns.forEach(($column) => {
+	columns.forEach(($column) => {
 		if (!$column.length) return;
 		const element = $column[0];
 		element.style.setProperty('display', 'block', 'important');
@@ -123,8 +123,8 @@ function apply_sprint_configuration_layout(frm) {
 		element.style.setProperty('max-width', 'none', 'important');
 		element.style.setProperty('min-width', '220px');
 	});
-	if (active_columns[0] && active_columns[0].length) {
-		active_columns[0].parent().css({ display: 'flex', 'flex-wrap': 'wrap' });
+	if (columns[0] && columns[0].length) {
+		columns[0].parent().css({ display: 'flex', 'flex-wrap': 'wrap' });
 	}
 }
 
@@ -193,6 +193,11 @@ function render_custom_timeline(frm) {
 }
 
 function render_timeline(frm, start, end) {
+	if (frm.doc.sprint_frequency !== 'Custom') {
+		render_calculated_date(frm, 'sprint_timeline_preview', __('Start Date'), start.format('DD-MMM-YYYY'));
+		render_calculated_date(frm, 'sprint_end_date_preview', __('End Date'), end.format('DD-MMM-YYYY'));
+		return;
+	}
 	const days = end.diff(start, 'days') + 1;
 	const date_range = start.format('DD-MMM-YYYY')
 		+ ' <span aria-hidden="true">&rarr;</span> '
@@ -201,13 +206,33 @@ function render_timeline(frm, start, end) {
 }
 
 function render_timeline_placeholder(frm, message, is_error = false) {
+	if (frm.doc.sprint_frequency !== 'Custom') {
+		const placeholder = frm.doc.financial_year ? message : __('Select Financial Year');
+		render_calculated_date(frm, 'sprint_timeline_preview', __('Start Date'), placeholder, is_error);
+		render_calculated_date(frm, 'sprint_end_date_preview', __('End Date'), placeholder, is_error);
+		return;
+	}
 	render_timeline_card(frm, message, '', is_error);
 }
 
-function render_timeline_card(frm, primary_text, secondary_text, is_error) {
-	const fieldname = frm.doc.sprint_frequency === 'Custom'
-		? 'custom_timeline_preview' : 'sprint_timeline_preview';
+function render_calculated_date(frm, fieldname, label, value, is_error = false) {
 	const field = frm.fields_dict[fieldname];
+	if (!field || !field.$wrapper) return;
+	const color = is_error ? 'var(--red-600)' : 'var(--text-color)';
+	field.$wrapper.html(
+		'<div class="form-group">'
+		+ '<div class="control-label">' + label + '</div>'
+		+ '<div class="like-disabled-input" style="height:var(--input-height);'
+		+ 'min-height:var(--input-height);padding:6px 12px;display:flex;'
+		+ 'align-items:center;border-radius:var(--border-radius);overflow:hidden;'
+		+ 'white-space:nowrap;text-overflow:ellipsis;'
+		+ 'font-size:13px;font-weight:500;color:' + color + ';">'
+		+ frappe.utils.escape_html(value || '') + '</div></div>'
+	);
+}
+
+function render_timeline_card(frm, primary_text, secondary_text, is_error) {
+	const field = frm.fields_dict.custom_timeline_preview;
 	if (!field || !field.$wrapper) return;
 	const secondary_color = is_error ? 'var(--red-600)' : 'var(--text-muted)';
 	const content = secondary_text

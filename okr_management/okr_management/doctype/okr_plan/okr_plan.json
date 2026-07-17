@@ -24,6 +24,7 @@
   "custom_end_date",
   "sprint_timeline_preview",
   "sprint_config_col_4",
+  "sprint_end_date_preview",
   "custom_timeline_preview",
   "technical_section",
   "progress",
@@ -173,12 +174,17 @@
    "depends_on": "eval:doc.sprint_frequency!='Custom'",
    "fieldname": "sprint_timeline_preview",
    "fieldtype": "HTML",
-   "label": "Timeline Preview"
+   "label": "Start Date"
   },
   {
-   "depends_on": "eval:doc.sprint_frequency=='Custom'",
    "fieldname": "sprint_config_col_4",
    "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.sprint_frequency!='Custom'",
+   "fieldname": "sprint_end_date_preview",
+   "fieldtype": "HTML",
+   "label": "End Date"
   },
   {
    "depends_on": "eval:doc.sprint_frequency=='Custom'",
