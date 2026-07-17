@@ -10,7 +10,8 @@ WORKSPACE_HIERARCHY = {
     "OKR Workspace": (ROOT_WORKSPACE, 3.0, "dashboard"),
     "OKR Objective Execution": ("OKR Workspace", 3.1, "milestone"),
     "OKR Key Result Execution": ("OKR Workspace", 3.2, "chart"),
-    "Check-In": ("OKR Workspace", 3.3, "solid-success"),
+    "OKR Action Item Execution": ("OKR Workspace", 3.3, "clipboard"),
+    "Check-In": ("OKR Workspace", 3.4, "solid-success"),
 }
 
 GROUPING_WORKSPACES = ("Planning", "Execution")

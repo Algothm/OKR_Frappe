@@ -3,8 +3,6 @@ from __future__ import annotations
 import frappe
 from frappe.utils import flt, getdate, nowdate, today
 
-from okr_management.okr_management.page.check_in.check_in import save_quick_checkin
-
 
 def get_active_plan_names() -> list[str]:
     return frappe.get_all("OKR Plan", filters={"status": "Active"}, pluck="name")
@@ -102,7 +100,17 @@ def get_filter_options() -> dict:
 
 @frappe.whitelist()
 def save_workspace_checkin(action_item: str, progress: float, update: str, blocker: str | None = None, dependency: str | None = None, attachment: str | None = None, status: str | None = None) -> dict:
-    result = save_quick_checkin(action_item, progress, update, blocker, dependency, attachment, status)
+    doc = frappe.new_doc("OKR Check In")
+    doc.action_item = action_item
+    doc.progress = flt(progress)
+    doc.achievements = update
+    doc.blockers = blocker or ""
+    doc.dependency = dependency or ""
+    doc.attachment = attachment or ""
+    doc.action_status = status or "In Progress"
+    doc.flags.ignore_permissions = True
+    doc.save()
+    result = {"name": doc.name, "message": "Check-in saved successfully"}
 
     action = frappe.get_doc("OKR Action Item", action_item)
     key_result = frappe.db.get_value(
