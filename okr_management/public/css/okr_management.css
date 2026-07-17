@@ -83,15 +83,16 @@
    SaaS Layout, Grid, & Cards styling for OKR forms
    ============================================================ */
 
-/* Stretch container to take up full browser width */
-.page-container[data-page-route^="Form/OKR "] {
+/* Stretch container to take up full browser width */.page-container[data-page-route^="Form/OKR "],
+.page-container[data-page-route^="Form/okr-" i] {
 	max-width: 95% !important;
 	width: 95% !important;
 	margin: 0 auto !important;
 }
 
 @media (min-width: 1600px) {
-	.page-container[data-page-route^="Form/OKR "] {
+	.page-container[data-page-route^="Form/OKR "],
+	.page-container[data-page-route^="Form/okr-" i] {
 		max-width: 98% !important;
 		width: 98% !important;
 	}
@@ -99,18 +100,25 @@
 
 /* Ensure intermediate form wrappers are stretched fully */
 .page-container[data-page-route^="Form/OKR "] .layout-main,
+.page-container[data-page-route^="Form/okr-" i] .layout-main,
 .page-container[data-page-route^="Form/OKR "] .layout-main-section,
+.page-container[data-page-route^="Form/okr-" i] .layout-main-section,
 .page-container[data-page-route^="Form/OKR "] .layout-main-section-wrapper,
+.page-container[data-page-route^="Form/okr-" i] .layout-main-section-wrapper,
 .page-container[data-page-route^="Form/OKR "] .form-container,
+.page-container[data-page-route^="Form/okr-" i] .form-container,
 .page-container[data-page-route^="Form/OKR "] .form-body,
-.page-container[data-page-route^="Form/OKR "] .form-layout {
+.page-container[data-page-route^="Form/okr-" i] .form-body,
+.page-container[data-page-route^="Form/OKR "] .form-layout,
+.page-container[data-page-route^="Form/okr-" i] .form-layout {
 	max-width: 100% !important;
 	width: 100% !important;
 }
 
 @media (min-width: 992px) {
 	/* Target the form-page inside the layout section to be grid layout */
-	.page-container[data-page-route^="Form/OKR "] .form-page {
+	.page-container[data-page-route^="Form/OKR "] .form-page,
+	.page-container[data-page-route^="Form/okr-" i] .form-page {
 		display: grid !important;
 		grid-template-columns: 1.1fr 1fr !important; /* Arrange sections side-by-side */
 		gap: 16px 20px !important;
@@ -118,22 +126,28 @@
 		width: 100% !important;
 	}
 
-	.page-container[data-page-route^="Form/OKR "] .form-section {
+	.page-container[data-page-route^="Form/OKR "] .form-section,
+	.page-container[data-page-route^="Form/okr-" i] .form-section {
 		grid-column: auto !important;
 		margin-bottom: 0 !important;
 	}
 
 	/* Span technical, notes, description sections full width across both columns if they are at the bottom */
 	.page-container[data-page-route^="Form/OKR "] .form-section[data-fieldname="technical_section"],
+	.page-container[data-page-route^="Form/okr-" i] .form-section[data-fieldname="technical_section"],
 	.page-container[data-page-route^="Form/OKR "] .form-section[data-fieldname="notes_section"],
+	.page-container[data-page-route^="Form/okr-" i] .form-section[data-fieldname="notes_section"],
 	.page-container[data-page-route^="Form/OKR "] .form-section[data-fieldname="kr_notes_section"],
-	.page-container[data-page-route^="Form/OKR "] .form-section[data-fieldname="objective_alignment_section"] {
+	.page-container[data-page-route^="Form/okr-" i] .form-section[data-fieldname="kr_notes_section"],
+	.page-container[data-page-route^="Form/OKR "] .form-section[data-fieldname="objective_alignment_section"],
+	.page-container[data-page-route^="Form/okr-" i] .form-section[data-fieldname="objective_alignment_section"] {
 		grid-column: 1 / -1 !important;
 	}
 }
 
 /* Cards layout overrides for form sections */
-.page-container[data-page-route^="Form/OKR "] .form-section {
+.page-container[data-page-route^="Form/OKR "] .form-section,
+.page-container[data-page-route^="Form/okr-" i] .form-section {
 	background: #ffffff;
 	border: 1px solid var(--border-color, #e2e8f0);
 	border-radius: 12px;
@@ -143,7 +157,8 @@
 	width: 100% !important;
 }
 
-.page-container[data-page-route^="Form/OKR "] .form-section .section-head {
+.page-container[data-page-route^="Form/OKR "] .form-section .section-head,
+.page-container[data-page-route^="Form/okr-" i] .form-section .section-head {
 	border-bottom: 1px solid var(--border-color, #f1f5f9);
 	padding-bottom: 10px;
 	margin-bottom: 14px;
@@ -342,70 +357,6 @@
 
 
 /* SS2-style OKR Key Result action/check-in UI */
-.page-container[data-page-route^="Form/OKR Key Result"] .frappe-control[data-fieldname="action_items"] {
-	display: none !important;
-}
-.page-container[data-page-route^="Form/OKR Key Result"] .frappe-control[data-fieldname="action_items_html"] {
-	display: block !important;
-}
-.okr-black-btn {
-	background: #111827 !important;
-	border-color: #111827 !important;
-	color: #fff !important;
-	font-weight: 650 !important;
-	border-radius: 8px !important;
-}
-.okr-kr-action-card,
-.okr-inline-checkin-panel {
-	background: #fff;
-	border: 1px solid #e5e7eb;
-	border-radius: 12px;
-	box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
-}
-.okr-kr-action-card { padding: 20px 24px 22px; margin-top: 8px; }
-.okr-kr-action-card-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
-.okr-kr-action-card-head h3 { margin: 0; font-size: 18px; font-weight: 700; }
-.okr-kr-action-table-wrap { overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 10px; }
-.okr-kr-action-table { width: 100%; border-collapse: collapse; min-width: 900px; }
-.okr-kr-action-table th,
-.okr-kr-action-table td { padding: 13px 14px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
-.okr-kr-action-table th { background: #f8fafc; color: #111827; font-weight: 700; }
-.okr-kr-action-table tr:last-child td { border-bottom: 0; }
-.okr-check-col,
-.okr-num-col,
-.okr-edit-col { width: 56px; text-align: center; }
-.okr-action-title { font-weight: 600; color: #111827; }
-.okr-owner-badge { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border-radius: 999px; background: #f3e8ff; color: #7c3aed; margin-right: 8px; font-weight: 700; }
-.okr-status-mini { display: inline-flex; padding: 3px 9px; border-radius: 7px; background: #dbeafe; color: #0758d8; font-weight: 700; font-size: 12px; }
-.okr-progress-cell { display: grid; gap: 7px; justify-items: end; }
-.okr-progress-cell strong { font-size: 12px; }
-.okr-progress-track { width: 120px; height: 7px; background: #e8e8f2; border-radius: 999px; overflow: hidden; }
-.okr-progress-track span { display: block; height: 100%; background: #2563eb; border-radius: inherit; }
-.okr-empty-row { text-align: center; color: #6b7280; padding: 28px !important; }
-.okr-inline-checkin-panel { margin: 18px -10px 0; padding: 18px 22px; }
-.okr-inline-checkin-head,
-.okr-inline-checkin-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.okr-inline-checkin-head h3 { margin: 0 0 14px; font-size: 18px; font-weight: 750; }
-.okr-inline-checkin-body { display: grid; grid-template-columns: minmax(300px, 0.9fr) minmax(360px, 1.1fr); gap: 28px; }
-.okr-checkin-context { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px 20px; }
-.okr-checkin-context h4 { grid-column: 1 / -1; margin: 0; font-size: 13px; font-weight: 700; }
-.okr-context-pair { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
-.okr-context-icon { color: #2563eb; flex: 0 0 auto; }
-.okr-context-pair strong { display: block; font-size: 12px; color: #374151; margin-bottom: 3px; }
-.okr-context-pair span:last-child { display: block; color: #111827; font-size: 13px; line-height: 1.35; }
-.okr-checkin-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
-.okr-field-row { display: flex; flex-direction: column; gap: 7px; }
-.okr-field-row label { margin: 0; font-weight: 600; color: #111827; }
-.okr-attachment-row { grid-column: 1 / -1; }
-.okr-inline-checkin-actions { margin-top: 18px; justify-content: flex-end; }
-.okr-file-chip { display: flex; align-items: center; justify-content: space-between; border: 1px solid #e5e7eb; border-radius: 8px; padding: 9px 10px; margin-bottom: 8px; }
-@media (max-width: 900px) {
-	.okr-inline-checkin-body,
-	.okr-checkin-fields,
-	.okr-checkin-context { grid-template-columns: 1fr; }
-}
-
-
 /* SS2-style performance summary polish */
 .page-container[data-page-route^="Form/OKR Key Result"] [data-fieldname="summary_sidebar_section"] .section-body {
 	padding-top: 8px !important;
@@ -445,12 +396,16 @@
 	display: none !important;
 }
 
-.sidebar-item-container .drop-icon {
+.sidebar-item-container .drop-icon:not(.hidden) {
 	display: inline-flex !important;
 	align-items: center;
 	justify-content: center;
 	cursor: pointer !important;
 	color: var(--text-muted, #64748b) !important;
+}
+
+.sidebar-item-container .drop-icon.hidden {
+	display: none !important;
 }
 
 .sidebar-item-container .drop-icon::after {
@@ -476,8 +431,74 @@
 .sidebar-item-container[item-name="OKR Plan"] .drop-icon,
 .sidebar-item-container[item-name="OKR Objective"] .drop-icon,
 .sidebar-item-container[item-name="OKR Key Result"] .drop-icon,
-.sidebar-item-container[item-name="Check-In"] .drop-icon {
+.sidebar-item-container[item-name="OKR Action Item"] .drop-icon,
+.sidebar-item-container[item-name="Check-In"] .drop-icon,
+.sidebar-item-container[item-name="OKR Check In"] .drop-icon {
 	display: none !important;
 }
 
 
+
+
+/* Check-In Action Item picker: emphasize the user-facing title over the ID. */
+.page-container[data-page-route^="Form/OKR Check In"] [data-fieldname="action_item"] .awesomplete > ul > li strong,
+.page-container[data-page-route^="Form/okr-check-in" i] [data-fieldname="action_item"] .awesomplete > ul > li strong {
+	font-size: 16px !important;
+	font-weight: 700 !important;
+	line-height: 1.35 !important;
+}
+
+.page-container[data-page-route^="Form/OKR Check In"] [data-fieldname="action_item"] .awesomplete > ul > li span.small,
+.page-container[data-page-route^="Form/okr-check-in" i] [data-fieldname="action_item"] .awesomplete > ul > li span.small {
+	display: inline-block;
+	margin-top: 2px;
+	font-size: 12px !important;
+	font-weight: 400 !important;
+	line-height: 1.25 !important;
+	color: var(--text-muted, #6b7280) !important;
+}
+
+/* ── Context & Preview: Frappe-style read-only fields ── */
+.okr-ctx-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px 20px;
+	width: 100%;
+}
+
+.okr-ctx-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+.okr-ctx-field.is-full {
+	grid-column: 1 / -1;
+}
+
+.okr-ctx-label {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--text-muted, #74808b);
+	letter-spacing: 0.02em;
+}
+
+.okr-ctx-box {
+	background: var(--control-bg, #f4f5f6);
+	border: 1px solid var(--border-color, #e2e8f0);
+	border-radius: 8px;
+	padding: 8px 12px;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text-color, #1f272e);
+	line-height: 1.5;
+	min-height: 36px;
+	word-break: break-word;
+}
+
+@media (max-width: 575px) {
+	.okr-ctx-grid {
+		grid-template-columns: 1fr;
+	}
+}

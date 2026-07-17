@@ -4,10 +4,12 @@ frappe.provide("okr_management");
     const OKR_GROUPS = new Set(["Planning", "Execution", "Administration"]);
     const CUSTOM_PAGE_ROUTES = [
         { name: "OKR Workspace", parent: "Execution", path: "/app/okr-workspace" },
-        { name: "Check-In", parent: "Execution", path: "/app/check-in" },
         { name: "Admin Workspace", parent: "Planning", path: "/app/admin-workspace" },
     ];
-    const CUSTOM_PAGE_SLUGS = new Set(["okr-workspace", "check-in", "admin-workspace"]);
+    const DIRECT_LIST_ROUTES = [
+        { name: "Check-In", parent: "OKR Workspace", path: "/app/okr-check-in" },
+    ];
+    const CUSTOM_PAGE_SLUGS = new Set(["okr-workspace", "admin-workspace"]);
     localStorage.removeItem("_page:admin-workspace");
 
     function selector(name, parent) {
@@ -25,7 +27,7 @@ frappe.provide("okr_management");
         const item = anchor.closest(".sidebar-item-container");
         if (!item) return null;
 
-        return CUSTOM_PAGE_ROUTES.find(
+        return [...CUSTOM_PAGE_ROUTES, ...DIRECT_LIST_ROUTES].find(
             ({ name, parent }) =>
                 item.getAttribute("item-name") === name && item.getAttribute("item-parent") === parent
         );
@@ -82,8 +84,16 @@ frappe.provide("okr_management");
         child_container.prepend(root_item);
     }
     function update_custom_page_links() {
-        CUSTOM_PAGE_ROUTES.forEach(({ name, parent, path }) => {
+        [...CUSTOM_PAGE_ROUTES, ...DIRECT_LIST_ROUTES].forEach(({ name, parent, path }) => {
             get_item(name, parent).find("> .desk-sidebar-item > .item-anchor").attr("href", path);
+        });
+    }
+
+    function remove_leaf_controls() {
+        ["OKR Action Item", "OKR Check In", "Check-In"].forEach((name) => {
+            get_item(name, "OKR Workspace")
+                .find("> .desk-sidebar-item > .sidebar-item-control")
+                .remove();
         });
     }
 
@@ -92,6 +102,7 @@ frappe.provide("okr_management");
         OKR_GROUPS.forEach(bind_group_toggle);
         normalize_workspace_position();
         update_custom_page_links();
+        remove_leaf_controls();
     }
 
     function schedule_bind() {
