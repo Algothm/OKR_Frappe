@@ -28,11 +28,11 @@ MANAGER_ROLES = {"OKR Admin", "OKR Manager", "Department Head"}
 
 SETUP_LOCKED_FIELDS = {
     "parent_plan",
-    "sprint",
     "financial_year",
     "company",
     "department",
-    "plan_owner",
+    "level_details",
+    "teams",
     "plan_owner",
     "level",
     "start_date",
@@ -47,6 +47,7 @@ class OKRObjective(Document):
         self.status = self.status or "Draft"
         self.priority = self.priority or "High"
         self.level = self.level or "Department"
+        self.sync_level_details()
         self.owner_user = self.owner_user or frappe.session.user
         self.inherit_context_from_plan()
         self.default_dates_from_plan()
@@ -73,8 +74,28 @@ class OKRObjective(Document):
         if self.has_key_results():
             frappe.throw(_("Cannot delete Objective because Key Results exist."))
 
+    def get_invalid_links(self, is_submittable=False):
+        # Dynamic Links are checked before before_validate during insert.
+        self.sync_level_details()
+        return super().get_invalid_links(is_submittable=is_submittable)
+
     def exists_in_database(self) -> bool:
         return bool(self.name and frappe.db.exists(self.doctype, self.name))
+
+    def sync_level_details(self) -> None:
+        doctypes = {"Department": "Department", "Team": "Employee Group", "Individual": "User"}
+        self.level_details_doctype = doctypes.get(self.level)
+        if self.level == "Organization":
+            self.level_details = None
+            self.department = None
+        elif self.level == "Individual":
+            self.level_details = self.level_details or frappe.session.user
+            self.department = None
+        elif self.level == "Department":
+            self.level_details = self.level_details or self.department
+            self.department = self.level_details
+        else:
+            self.department = None
 
     def inherit_context_from_plan(self) -> None:
         if not self.parent_plan or not frappe.db.exists("OKR Plan", self.parent_plan):
@@ -96,32 +117,49 @@ class OKRObjective(Document):
         if not self.parent_plan or not frappe.db.exists("OKR Plan", self.parent_plan):
             return
         start_date, end_date = get_plan_timeline(self.parent_plan)
-        if not self.start_date:
-            self.start_date = start_date
-        if not self.end_date:
-            self.end_date = end_date
+        self.start_date = start_date
+        self.end_date = end_date
 
     def validate_required_fields(self) -> None:
         required = {
             "objective_title": _("Objective Title"),
-            "parent_plan": _("Parent Plan"),
+            "parent_plan": _("Plan"),
+            "level": _("Level"),
             "priority": _("Priority"),
             "company": _("Organization"),
             "owner_user": _("Objective Owner"),
-            "start_date": _("Start Date"),
-            "end_date": _("End Date"),
             "status": _("Status"),
         }
         for fieldname, label in required.items():
             if not self.get(fieldname):
                 frappe.throw(_("{0} is required.").format(label))
 
-        if not self.department:
-            frappe.throw(_("Department is required."))
+        if self.level in {"Department", "Individual"} and not self.level_details:
+            frappe.throw(_("Level Details is required for {0} level.").format(self.level))
+        expected = {"Department": "Department", "Individual": "User"}.get(self.level)
+        if expected and not frappe.db.exists(expected, self.level_details):
+            frappe.throw(_("Level Details does not exist."))
+        self.validate_team_assignments()
+
+    def validate_team_assignments(self) -> None:
+        if self.level != "Team":
+            return
+
+        teams = [row.team for row in self.teams]
+        if not teams:
+            frappe.throw(_("At least one Team is required."))
+        if any(not team for team in teams):
+            frappe.throw(_("Team rows cannot be empty."))
+        if len(teams) != len(set(teams)):
+            frappe.throw(_("Duplicate Teams are not allowed."))
+
+        missing = [team for team in teams if not frappe.db.exists("Employee Group", team)]
+        if missing:
+            frappe.throw(_("Team {0} does not exist.").format(missing[0]))
 
     def validate_parent_relationships(self) -> None:
         if not frappe.db.exists("OKR Plan", self.parent_plan):
-            frappe.throw(_("Parent Plan does not exist."))
+            frappe.throw(_("Selected Plan does not exist."))
 
         if self.exists_in_database() and self.has_value_changed("parent_plan"):
             frappe.throw(_("Objective cannot be moved between Plans."))
@@ -250,3 +288,20 @@ class OKRObjective(Document):
     def update_system_summary_fields(self) -> None:
         for fieldname, value in self.get_system_summary_values().items():
             setattr(self, fieldname, value)
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def get_team_options(doctype, txt, searchfield, start, page_len, filters):
+    teams = frappe.get_all(
+        "Employee Group",
+        or_filters={
+            "name": ["like", f"%{txt}%"],
+            "employee_group_name": ["like", f"%{txt}%"],
+        },
+        pluck="name",
+        order_by="employee_group_name asc",
+        start=start,
+        page_length=page_len,
+    )
+    return [(team,) for team in teams]
