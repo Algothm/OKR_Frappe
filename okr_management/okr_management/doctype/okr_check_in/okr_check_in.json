@@ -7,29 +7,66 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "checkin_context_section",
-  "company",
-  "checkin_context_col_break_2",
-  "checkin_date",
-  "checkin_context_col_break_3",
-  "reported_by",
+  "employee_update_section",
+  "checkin_update_heading",
+  "action_item",
+  "progress",
+  "action_status",
+  "achievements",
+  "attachment",
+  "context_preview_col_break",
+  "context_preview_heading",
+  "context_preview_html",
+  "action_item_title_context",
+  "progress_overview_context",
+  "key_result_name_context",
+  "key_result_description_context",
+  "objective_name_context",
+  "objective_description_context",
+  "plan_name_context",
+  "plan_description_context",
+  "organization_context",
+  "financial_year_context",
+  "timeline_preview_context",
+  "assigned_to_context",
+  "naming_series",
   "key_result",
   "objective",
   "parent_plan",
-  "checkin_context_col_break",
+  "reported_by",
+  "checkin_date",
+  "financial_year",
+  "company",
   "department",
-  "employee_update_section",
-  "progress",
-  "achievements",
+  "current_value",
+  "confidence",
+  "next_steps",
   "blockers",
-  "employee_update_col_break",
-  "dependency_description",
-  "attachment",
-  "technical_section",
-  "action_item",
+  "notes",
   "status",
   "progress_percent",
-  "naming_series"
+  "self_rating",
+  "has_dependency",
+  "dependent_department",
+  "dependency_description",
+  "impact_level",
+  "escalate_to_department",
+  "reason_for_escalation",
+  "expected_resolution_date",
+  "review_status",
+  "manager_feedback",
+  "action_required",
+  "review_date",
+  "reviewed_by",
+  "checkin_context_section",
+  "checkin_context_col_break",
+  "employee_update_col_break",
+  "dependency_section",
+  "escalation_section",
+  "summary_sidebar_section",
+  "technical_section",
+  "checkin_context_col_break_2",
+  "checkin_context_col_break_3"
  ],
  "fields": [
   {
@@ -49,14 +86,24 @@
    "options": "OKR Key Result",
    "reqd": 1,
    "in_list_view": 1,
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "checkin_update_heading",
+   "fieldtype": "HTML",
+   "options": "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Check-In Update</div>"
   },
   {
    "fieldname": "action_item",
    "fieldtype": "Link",
    "label": "Action Item",
    "options": "OKR Action Item",
-   "read_only": 1
+   "read_only": 0,
+   "reqd": 1,
+   "in_list_view": 1,
+   "hidden": 0,
+   "description": ""
   },
   {
    "fieldname": "objective",
@@ -64,14 +111,16 @@
    "label": "Objective",
    "options": "OKR Objective",
    "read_only": 1,
-   "description": "Auto-filled from the selected Key Result."
+   "description": "Auto-filled from the selected Key Result.",
+   "hidden": 1
   },
   {
    "fieldname": "parent_plan",
    "fieldtype": "Link",
    "label": "Parent Sprint",
    "options": "OKR Plan",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "reported_by",
@@ -81,7 +130,8 @@
    "reqd": 1,
    "description": "Defaults to the logged-in user.",
    "read_only": 1,
-   "default": "__user"
+   "default": "__user",
+   "hidden": 1
   },
   {
    "fieldname": "checkin_date",
@@ -89,7 +139,8 @@
    "label": "Check-In Date",
    "reqd": 1,
    "default": "Today",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "financial_year",
@@ -105,14 +156,16 @@
    "fieldtype": "Link",
    "label": "Company",
    "options": "Company",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "department",
    "fieldtype": "Link",
    "label": "Department",
    "options": "Department",
-   "read_only": 1
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "fieldname": "current_value",
@@ -131,7 +184,8 @@
    "default": 0,
    "reqd": 1,
    "in_list_view": 1,
-   "description": ""
+   "description": "",
+   "hidden": 0
   },
   {
    "fieldname": "confidence",
@@ -147,15 +201,16 @@
    "fieldname": "attachment",
    "fieldtype": "Attach",
    "label": "Attachment",
-   "description": "Upload proof supporting the update or blocker.",
+   "description": "",
    "hidden": 0
   },
   {
    "fieldname": "achievements",
    "fieldtype": "Small Text",
-   "label": "Description / Update",
-   "description": "What work was completed?",
-   "reqd": 1
+   "label": "Progress Update",
+   "description": "",
+   "reqd": 1,
+   "hidden": 0
   },
   {
    "fieldname": "next_steps",
@@ -169,7 +224,8 @@
    "fieldtype": "Small Text",
    "label": "Blocker",
    "description": "What is preventing progress?",
-   "reqd": 0
+   "reqd": 0,
+   "hidden": 1
   },
   {
    "fieldname": "notes",
@@ -226,7 +282,7 @@
    "label": "Dependency",
    "description": "Any cross-team/person dependency?",
    "reqd": 0,
-   "hidden": 0
+   "hidden": 1
   },
   {
    "fieldname": "impact_level",
@@ -305,20 +361,24 @@
   {
    "fieldname": "checkin_context_section",
    "fieldtype": "Section Break",
-   "label": "Check-In Context"
+   "label": "Check-In Context",
+   "hidden": 1
   },
   {
    "fieldname": "checkin_context_col_break",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "hidden": 1
   },
   {
    "fieldname": "employee_update_section",
    "fieldtype": "Section Break",
-   "label": "Employee Update"
+   "label": "",
+   "hidden": 0
   },
   {
    "fieldname": "employee_update_col_break",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "hidden": 1
   },
   {
    "fieldname": "dependency_section",
@@ -350,11 +410,118 @@
   },
   {
    "fieldname": "checkin_context_col_break_2",
-   "fieldtype": "Column Break"
+   "fieldtype": "Column Break",
+   "hidden": 1
   },
   {
    "fieldname": "checkin_context_col_break_3",
+   "fieldtype": "Column Break",
+   "hidden": 1
+  },
+  {
+   "fieldname": "action_status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "In Progress\nBlocked\nArchived",
+   "default": "In Progress",
+   "reqd": 1
+  },
+  {
+   "fieldname": "context_preview_col_break",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "context_preview_heading",
+   "fieldtype": "HTML",
+   "options": "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Context &amp; Preview</div>"
+  },
+  {
+   "fieldname": "action_item_title_context",
+   "fieldtype": "Data",
+   "label": "Action Item",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "progress_overview_context",
+   "fieldtype": "Data",
+   "label": "Progress Overview",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "key_result_name_context",
+   "fieldtype": "Data",
+   "label": "Key Result",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "key_result_description_context",
+   "fieldtype": "Small Text",
+   "label": "Key Result Description",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "objective_name_context",
+   "fieldtype": "Data",
+   "label": "Objective",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "objective_description_context",
+   "fieldtype": "Small Text",
+   "label": "Objective Description",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "plan_name_context",
+   "fieldtype": "Data",
+   "label": "Plan",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "plan_description_context",
+   "fieldtype": "Small Text",
+   "label": "Plan Description",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "organization_context",
+   "fieldtype": "Data",
+   "label": "Organization",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "financial_year_context",
+   "fieldtype": "Data",
+   "label": "Financial Year",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "timeline_preview_context",
+   "fieldtype": "Data",
+   "label": "Timeline Preview",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "assigned_to_context",
+   "fieldtype": "Data",
+   "label": "Assigned To",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "context_preview_html",
+   "fieldtype": "HTML"
   }
  ],
  "index_web_pages_for_search": 1,
