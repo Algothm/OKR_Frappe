@@ -90,7 +90,6 @@ class OKRKeyResult(Document):
             self.objective,
             [
                 "parent_plan",
-                "sprint",
                 "objective_title",
                 "company",
                 "financial_year",
@@ -109,7 +108,7 @@ class OKRKeyResult(Document):
             return
 
         self.parent_plan = objective.parent_plan
-        self.parent_plan = objective.sprint
+        self.parent_plan = objective.parent_plan
         self.objective_title = objective.objective_title
         self.company = objective.company
         self.financial_year = objective.financial_year
