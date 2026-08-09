@@ -3,6 +3,33 @@ from __future__ import annotations
 import frappe
 from frappe.utils import flt, getdate, nowdate, today
 
+from okr_management.hierarchy_visibility import get_hierarchy_visibility_scope
+from okr_management.okr_management.doctype.okr_plan.okr_plan import get_period_label
+
+
+def get_workspace_plan_names() -> list[str]:
+    scope = get_hierarchy_visibility_scope()
+    filters = {"status": ["in", ["Draft", "Active"]]}
+    if scope["read_all"]:
+        return frappe.get_all("OKR Plan", filters=filters, pluck="name")
+
+    plan_names = set(scope["full_plan_names"])
+    if scope["visible_objectives"]:
+        plan_names.update(
+            filter(
+                None,
+                frappe.get_all(
+                    "OKR Objective",
+                    filters={"name": ["in", list(scope["visible_objectives"])]},
+                    pluck="parent_plan",
+                ),
+            )
+        )
+    if not plan_names:
+        return []
+    filters["name"] = ["in", list(plan_names)]
+    return frappe.get_all("OKR Plan", filters=filters, pluck="name")
+
 
 def get_active_plan_names() -> list[str]:
     return frappe.get_all("OKR Plan", filters={"status": "Active"}, pluck="name")
@@ -14,29 +41,19 @@ def empty_workspace_response(year, quarter, sprint, level, owner) -> dict:
 
 @frappe.whitelist()
 def get_workspace_data(year: str | None = None, quarter: str | None = None, sprint: str | None = None, level: str | None = None, owner: str | None = "me") -> dict:
-    active_plan_names = get_active_plan_names()
-    if not active_plan_names:
+    workspace_plan_names = get_workspace_plan_names()
+    if not workspace_plan_names:
         return empty_workspace_response(year, quarter, sprint, level, owner)
 
-    filters = {"parent_plan": ["in", active_plan_names]}
+    filters = {"parent_plan": ["in", workspace_plan_names]}
+    scope = get_hierarchy_visibility_scope()
+    filters["name"] = ["in", list(scope["visible_objectives"])]
     if year:
         filters["financial_year"] = year
     if sprint:
         filters["parent_plan"] = sprint
     if level:
         filters["level"] = level
-    if owner == "me":
-        filters["owner_user"] = frappe.session.user
-
-    if quarter and not sprint:
-        plan_names = frappe.get_all(
-            "OKR Plan",
-            filters={"period_selection": quarter, "name": ["in", active_plan_names]},
-            pluck="name",
-        )
-        if not plan_names:
-            return base_response([], year, quarter, sprint, level, owner)
-        filters["parent_plan"] = ["in", plan_names]
 
     objectives = frappe.get_all(
         "OKR Objective",
@@ -46,18 +63,23 @@ def get_workspace_data(year: str | None = None, quarter: str | None = None, spri
         limit_page_length=100,
     )
 
-    if owner == "me":
-        objectives = include_objectives_with_my_action_items(objectives, filters)
 
     objective_names = [row.name for row in objectives]
     key_results = get_key_results(objective_names)
+    key_results = [row for row in key_results if row.name in scope["visible_key_results"]]
     action_items = get_action_items([row.name for row in key_results])
+    action_items = [row for row in action_items if row.name in scope["visible_action_items"]]
+    add_period_labels(key_results, action_items)
     histories = get_checkin_history([row.name for row in action_items])
+    active_plan_names = set(get_active_plan_names())
 
     actions_by_kr = {}
     for action in action_items:
         action["history"] = histories.get(action.name, [])
         action["has_today_checkin"] = any(str(item.get("checkin_date")) == nowdate() for item in action["history"])
+        action["can_checkin"] = action.parent_plan in active_plan_names and (
+            scope["checkin_override"] or action.name in scope["direct_action_items"]
+        )
         actions_by_kr.setdefault(action.parent_key_result, []).append(action)
 
     krs_by_objective = {}
@@ -71,9 +93,7 @@ def get_workspace_data(year: str | None = None, quarter: str | None = None, spri
     hierarchy = []
     for objective in objectives:
         objective["key_results"] = krs_by_objective.get(objective.name, [])
-        if owner == "me":
-            objective["key_results"] = [kr for kr in objective["key_results"] if kr["action_items"] or kr.owner_user == frappe.session.user]
-        if owner != "me" or objective["key_results"] or objective.owner_user == frappe.session.user:
+        if objective["key_results"] or objective.name in scope["owned_objectives"]:
             hierarchy.append(objective)
 
     return base_response(hierarchy, year, quarter, sprint, level, owner)
@@ -81,15 +101,15 @@ def get_workspace_data(year: str | None = None, quarter: str | None = None, spri
 
 @frappe.whitelist()
 def get_filter_options() -> dict:
-    active_plan_names = get_active_plan_names()
+    workspace_plan_names = get_workspace_plan_names()
     years = frappe.get_all("Fiscal Year", fields=["name"], order_by="year_start_date desc", limit_page_length=80)
     years = sorted(years, key=lambda row: (0 if row.name == "2026-2027" else 1 if not row.name.startswith("_Test") else 2, row.name), reverse=False)
     return {
         "years": years[:30],
         "sprints": frappe.get_all(
             "OKR Plan",
-            filters={"name": ["in", active_plan_names]} if active_plan_names else {"name": ["is", "not set"]},
-            fields=["name", "plan_name", "period_selection", "financial_year", "status"],
+            filters={"name": ["in", workspace_plan_names]} if workspace_plan_names else {"name": ["is", "not set"]},
+            fields=["name", "plan_name", "financial_year", "status", "planned_activation_date"],
             order_by="modified desc",
             limit_page_length=100,
         ),
@@ -100,6 +120,9 @@ def get_filter_options() -> dict:
 
 @frappe.whitelist()
 def save_workspace_checkin(action_item: str, progress: float, update: str, blocker: str | None = None, dependency: str | None = None, attachment: str | None = None, status: str | None = None) -> dict:
+    scope = get_hierarchy_visibility_scope()
+    if not scope["read_all"] and action_item not in scope["direct_action_items"]:
+        frappe.throw("Only the employee assigned to this Action Item can submit its Check-In", frappe.PermissionError)
     doc = frappe.new_doc("OKR Check In")
     doc.action_item = action_item
     doc.progress = flt(progress)
@@ -116,7 +139,7 @@ def save_workspace_checkin(action_item: str, progress: float, update: str, block
     key_result = frappe.db.get_value(
         "OKR Key Result",
         action.parent_key_result,
-        ["name", "key_result_title", "objective", "target_progress", "target_value", "action_item_count", "checkin_count"],
+        ["name", "key_result_title", "objective", "parent_plan", "end_date", "target_progress", "target_value", "action_item_count", "checkin_count"],
         as_dict=True,
     )
     objective = None
@@ -129,6 +152,7 @@ def save_workspace_checkin(action_item: str, progress: float, update: str, block
         )
 
     history = get_checkin_history([action_item]).get(action_item, [])
+    add_period_labels([key_result] if key_result else [], [action])
     return {
         "name": result.get("name"),
         "message": result.get("message"),
@@ -137,6 +161,8 @@ def save_workspace_checkin(action_item: str, progress: float, update: str, block
             "name": action.name,
             "action_item_title": action.action_item_title,
             "parent_key_result": action.parent_key_result,
+            "parent_plan": action.parent_plan,
+            "period_label": action.get("period_label"),
             "owner_user": action.owner_user,
             "status": action.status,
             "priority": action.priority,
@@ -196,7 +222,9 @@ def get_key_results(objective_names: list[str]) -> list:
             "name",
             "key_result_title",
             "objective",
+            "parent_plan",
             "owner_user",
+            "assignee",
             "status",
             "priority",
             "target_progress",
@@ -204,9 +232,11 @@ def get_key_results(objective_names: list[str]) -> list:
             "unit_of_measure",
             "target_value",
             "current_value",
+            "baseline_value",
             "currency",
             "action_item_count",
             "checkin_count",
+            "end_date",
         ],
         order_by="priority desc, modified desc",
         limit_page_length=300,
@@ -219,10 +249,27 @@ def get_action_items(kr_names: list[str]) -> list:
     return frappe.get_all(
         "OKR Action Item",
         filters={"parent_key_result": ["in", kr_names], "status": ["!=", "Cancelled"]},
-        fields=["name", "action_item_title", "parent_key_result", "owner_user", "status", "priority", "progress", "due_date"],
+        fields=["name", "action_item_title", "parent_key_result", "parent_plan", "owner_user", "status", "priority", "progress", "due_date"],
         order_by="due_date asc, modified desc",
         limit_page_length=800,
     )
+
+
+def add_period_labels(key_results: list, action_items: list) -> None:
+    plan_names = {row.parent_plan for row in [*key_results, *action_items] if row.get("parent_plan")}
+    plans = {
+        row.name: row
+        for row in frappe.get_all(
+            "OKR Plan",
+            filters={"name": ["in", list(plan_names)]},
+            fields=["name", "financial_year", "sprint_frequency"],
+        )
+    } if plan_names else {}
+
+    dated_rows = [(row, "end_date") for row in key_results] + [(row, "due_date") for row in action_items]
+    for row, date_field in dated_rows:
+        plan = plans.get(row.get("parent_plan"))
+        row["period_label"] = get_period_label(row.get(date_field), plan) if plan else ""
 
 
 def get_checkin_history(action_item_names: list[str]) -> dict:

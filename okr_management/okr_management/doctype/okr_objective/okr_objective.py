@@ -59,6 +59,7 @@ class OKRObjective(Document):
         self.validate_lifecycle_transition()
         self.validate_parent_status_dependencies()
         self.validate_dates_inside_plan()
+        self.validate_child_dates()
         self.validate_duplicate_title_in_plan()
         self.validate_completion_criteria()
         self.validate_locked_fields()
@@ -83,7 +84,7 @@ class OKRObjective(Document):
         return bool(self.name and frappe.db.exists(self.doctype, self.name))
 
     def sync_level_details(self) -> None:
-        doctypes = {"Department": "Department", "Team": "Employee Group", "Individual": "User"}
+        doctypes = {"Department": "Department", "Team": "User", "Individual": "User"}
         self.level_details_doctype = doctypes.get(self.level)
         if self.level == "Organization":
             self.level_details = None
@@ -117,8 +118,8 @@ class OKRObjective(Document):
         if not self.parent_plan or not frappe.db.exists("OKR Plan", self.parent_plan):
             return
         start_date, end_date = get_plan_timeline(self.parent_plan)
-        self.start_date = start_date
-        self.end_date = end_date
+        self.start_date = self.start_date or start_date
+        self.end_date = self.end_date or end_date
 
     def validate_required_fields(self) -> None:
         required = {
@@ -147,15 +148,15 @@ class OKRObjective(Document):
 
         teams = [row.team for row in self.teams]
         if not teams:
-            frappe.throw(_("At least one Team is required."))
+            frappe.throw(_("At least one User is required."))
         if any(not team for team in teams):
-            frappe.throw(_("Team rows cannot be empty."))
+            frappe.throw(_("User rows cannot be empty."))
         if len(teams) != len(set(teams)):
-            frappe.throw(_("Duplicate Teams are not allowed."))
+            frappe.throw(_("Duplicate Users are not allowed."))
 
-        missing = [team for team in teams if not frappe.db.exists("Employee Group", team)]
+        missing = [team for team in teams if not frappe.db.exists("User", team)]
         if missing:
-            frappe.throw(_("Team {0} does not exist.").format(missing[0]))
+            frappe.throw(_("User {0} does not exist.").format(missing[0]))
 
     def validate_parent_relationships(self) -> None:
         if not frappe.db.exists("OKR Plan", self.parent_plan):
@@ -206,6 +207,21 @@ class OKRObjective(Document):
         plan_start, plan_end = get_plan_timeline(self.parent_plan)
         if start < getdate(plan_start) or end > getdate(plan_end):
             frappe.throw(_("Objective dates must stay within the Plan period."))
+
+    def validate_child_dates(self) -> None:
+        if not self.name:
+            return
+        key_results = frappe.get_all(
+            "OKR Key Result",
+            filters={"objective": self.name},
+            fields=["name", "end_date"],
+        )
+        outside = [
+            row.name for row in key_results
+            if row.end_date and not (getdate(self.start_date) <= getdate(row.end_date) <= getdate(self.end_date))
+        ]
+        if outside:
+            frappe.throw(_("Objective timeline cannot exclude existing Key Result Target Dates."))
 
     def validate_duplicate_title_in_plan(self) -> None:
         duplicate = frappe.db.exists(
@@ -293,15 +309,16 @@ class OKRObjective(Document):
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
 def get_team_options(doctype, txt, searchfield, start, page_len, filters):
-    teams = frappe.get_all(
-        "Employee Group",
+    users = frappe.get_all(
+        "User",
+        filters={"enabled": 1},
         or_filters={
             "name": ["like", f"%{txt}%"],
-            "employee_group_name": ["like", f"%{txt}%"],
+            "full_name": ["like", f"%{txt}%"],
         },
-        pluck="name",
-        order_by="employee_group_name asc",
+        fields=["name", "full_name"],
+        order_by="full_name asc",
         start=start,
         page_length=page_len,
     )
-    return [(team,) for team in teams]
+    return [(user.name, user.full_name or user.name) for user in users]

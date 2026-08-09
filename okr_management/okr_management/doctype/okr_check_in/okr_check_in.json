@@ -10,6 +10,7 @@
   "employee_update_section",
   "checkin_update_heading",
   "action_item",
+  "key_result",
   "progress",
   "action_status",
   "achievements",
@@ -17,6 +18,8 @@
   "context_preview_col_break",
   "context_preview_heading",
   "context_preview_html",
+  "is_latest",
+  "checkin_history_html",
   "action_item_title_context",
   "progress_overview_context",
   "key_result_name_context",
@@ -30,7 +33,6 @@
   "timeline_preview_context",
   "assigned_to_context",
   "naming_series",
-  "key_result",
   "objective",
   "parent_plan",
   "reported_by",
@@ -125,13 +127,14 @@
   {
    "fieldname": "reported_by",
    "fieldtype": "Link",
-   "label": "Reported By",
+   "label": "Submitted By",
    "options": "User",
    "reqd": 1,
    "description": "Defaults to the logged-in user.",
    "read_only": 1,
    "default": "__user",
-   "hidden": 1
+   "hidden": 1,
+   "in_list_view": 0
   },
   {
    "fieldname": "checkin_date",
@@ -140,7 +143,8 @@
    "reqd": 1,
    "default": "Today",
    "read_only": 1,
-   "hidden": 1
+   "hidden": 1,
+   "in_list_view": 0
   },
   {
    "fieldname": "financial_year",
@@ -172,7 +176,7 @@
    "fieldtype": "Float",
    "label": "Current Value",
    "reqd": 0,
-   "in_list_view": 1,
+   "in_list_view": 0,
    "default": 0,
    "hidden": 1
   },
@@ -241,7 +245,7 @@
    "options": "Draft\nSubmitted",
    "default": "Submitted",
    "reqd": 1,
-   "in_list_view": 1,
+   "in_list_view": 0,
    "read_only": 1,
    "hidden": 1
   },
@@ -433,7 +437,8 @@
   {
    "fieldname": "context_preview_heading",
    "fieldtype": "HTML",
-   "options": "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Context &amp; Preview</div>"
+   "hidden": 1,
+   "options": "<div style=\"font-size:14px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Context and Preview</div>"
   },
   {
    "fieldname": "action_item_title_context",
@@ -508,7 +513,7 @@
   {
    "fieldname": "timeline_preview_context",
    "fieldtype": "Data",
-   "label": "Timeline Preview",
+   "label": "Timeline",
    "read_only": 1,
    "hidden": 1
   },
@@ -522,6 +527,20 @@
   {
    "fieldname": "context_preview_html",
    "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "is_latest",
+   "fieldtype": "Check",
+   "label": "Is Latest",
+   "default": 1,
+   "hidden": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "checkin_history_html",
+   "fieldtype": "HTML",
+   "label": "Check-In History"
   }
  ],
  "index_web_pages_for_search": 1,

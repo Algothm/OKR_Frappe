@@ -16,10 +16,6 @@ class OKRActionItem(Document):
         self.sync_assigned_to_owner()
         self.owner_user = self.owner_user or frappe.session.user
 
-        # Default Action Date (due_date) to today on creation
-        if self.is_new() and not self.due_date:
-            self.due_date = today()
-
         self.set_parent_key_result_from_child_context()
         self.inherit_context_from_key_result()
 
@@ -30,6 +26,7 @@ class OKRActionItem(Document):
         ensure_required_link(self.status, "Status")
         ensure_percentage(self.progress, "Progress %")
         self.validate_parent_context()
+        self.validate_due_date()
         self.validate_lifecycle()
 
     def on_update(self) -> None:
@@ -61,7 +58,6 @@ class OKRActionItem(Document):
             self.parent_objective = parent_kr.objective
             self.objective_title = parent_kr.objective_title
             self.parent_plan = parent_kr.parent_plan
-            self.parent_plan = parent_kr.parent_plan
             self.company = parent_kr.company
             self.department = parent_kr.department
             self.financial_year = parent_kr.financial_year
@@ -71,12 +67,11 @@ class OKRActionItem(Document):
             if parent_kr.parent_plan and frappe.db.exists("OKR Plan", parent_kr.parent_plan):
                 plan = frappe.db.get_value(
                     "OKR Plan", parent_kr.parent_plan,
-                    ["sprint_frequency", "period_selection", "description"], as_dict=True,
+                    ["sprint_frequency", "description"], as_dict=True,
                 )
                 self.plan_title = frappe.db.get_value("OKR Plan", parent_kr.parent_plan, "plan_name")
                 self.plan_description = plan.description
                 self.sprint_frequency = plan.sprint_frequency
-                self.selected_period = plan.period_selection or "Custom"
             if not self.reviewer:
                 self.reviewer = parent_kr.reviewer
 
@@ -100,6 +95,20 @@ class OKRActionItem(Document):
             frappe.throw(_("Parent Key Result is required."))
         if not frappe.db.exists("OKR Key Result", self.parent_key_result):
             frappe.throw(_("Parent Key Result does not exist."))
+
+    def validate_due_date(self) -> None:
+        ensure_required_link(self.due_date, "Due Date")
+        if not self.parent_key_result:
+            return
+        parent_dates = frappe.db.get_value(
+            "OKR Key Result", self.parent_key_result, ["start_date", "end_date"], as_dict=True
+        )
+        if not parent_dates:
+            return
+        if parent_dates.start_date and getdate(self.due_date) < getdate(parent_dates.start_date):
+            frappe.throw(_("Due Date cannot be before the Parent Key Result's timeline."))
+        if parent_dates.end_date and getdate(self.due_date) > getdate(parent_dates.end_date):
+            frappe.throw(_("Due Date cannot be after the Parent Key Result's Target Date."))
 
     def validate_lifecycle(self) -> None:
         # Handle completion_date

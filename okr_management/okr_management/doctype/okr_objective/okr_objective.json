@@ -1,7 +1,6 @@
 {
    "show_title_field_in_link": 1,
-   "title_field": "description",
-   "name": "OKR Objective",
+"title_field":"objective_title",
    "track_changes": 1,
    "creation": "2026-06-22 00:00:00.000000",
    "sort_field": "modified",
@@ -86,7 +85,7 @@
          "fieldname": "objective_title",
          "fieldtype": "Data",
          "reqd": 1,
-         "label": "Objective Title"
+         "label": "Title"
       },
       {
          "label": "Level",
@@ -103,7 +102,7 @@
          "label": "Priority",
          "fieldname": "priority",
          "default": "High",
-         "in_standard_filter": 1,
+         "in_standard_filter": 0,
          "reqd": 1,
          "fieldtype": "Select",
          "options": "Low\nMedium\nHigh",
@@ -132,7 +131,9 @@
       {
          "label": "Description",
          "fieldname": "description",
-         "fieldtype": "Small Text"
+         "fieldtype": "Small Text",
+         "max_height": "104px",
+         "in_standard_filter": 1
       },
       {
          "label": "Plan",
@@ -143,15 +144,15 @@
          "reqd": 1,
          "fieldtype": "Link",
          "in_list_view": 1,
-         "in_standard_filter": 1
+         "in_standard_filter": 0
       },
       {
-         "in_standard_filter": 1,
+         "in_standard_filter": 0,
          "label": "Financial Year",
          "fieldname": "financial_year",
          "options": "Fiscal Year",
          "read_only": 1,
-         "in_list_view": 1,
+         "in_list_view": 0,
          "fieldtype": "Link"
       },
       {
@@ -159,20 +160,20 @@
          "fieldtype": "Link",
          "read_only": 1,
          "options": "Company",
-         "in_list_view": 1,
+         "in_list_view": 0,
          "label": "Organization",
          "fieldname": "company",
-         "in_standard_filter": 1
+         "in_standard_filter": 0
       },
       {
          "description": "Select the department for this objective.",
-         "in_standard_filter": 1,
+         "in_standard_filter": 0,
          "fieldname": "department",
          "label": "Department",
          "hidden": 1,
          "options": "Department",
          "read_only": 0,
-         "in_list_view": 1,
+         "in_list_view": 0,
          "fieldtype": "Link",
          "reqd": 0
       },
@@ -191,26 +192,26 @@
          "fieldname": "start_date",
          "label": "Start Date",
          "reqd": 0,
-         "hidden": 1,
-         "read_only": 1,
-         "in_list_view": 1
+         "hidden": 0,
+         "read_only": 0,
+         "in_list_view": 0
       },
       {
          "label": "End Date",
          "reqd": 0,
          "fieldtype": "Date",
          "fieldname": "end_date",
-         "in_list_view": 1,
-         "read_only": 1,
-         "hidden": 1
+         "in_list_view": 0,
+         "read_only": 0,
+         "hidden": 0
       },
       {
-         "in_standard_filter": 1,
+         "in_standard_filter": 0,
          "default": "Draft",
          "fieldname": "status",
          "label": "Status",
          "options": "Draft\nActive\nOn Hold\nCompleted\nClosed",
-         "in_list_view": 1,
+         "in_list_view": 0,
          "fieldtype": "Select",
          "reqd": 1
       },
@@ -229,7 +230,7 @@
       },
       {
          "read_only": 1,
-         "in_list_view": 1,
+         "in_list_view": 0,
          "hidden": 1,
          "fieldtype": "Percent",
          "default": "0",
@@ -240,7 +241,7 @@
          "default": 0,
          "label": "Key Result Count",
          "fieldname": "key_result_count",
-         "in_list_view": 1,
+         "in_list_view": 0,
          "read_only": 1,
          "hidden": 1,
          "fieldtype": "Int"
@@ -330,7 +331,8 @@
          "fieldname": "plan_description",
          "fieldtype": "Small Text",
          "label": "Plan Description",
-         "read_only": 1
+         "read_only": 1,
+         "max_height": "104px"
       },
       {
          "fieldname": "plan_team_preview",
@@ -340,22 +342,30 @@
       {
          "fieldname": "timeline_preview",
          "fieldtype": "HTML",
-         "label": "Timeline Preview"
+         "label": "Timeline",
+         "hidden": 1
       },
       {
          "fieldname": "objective_setup_heading",
          "fieldtype": "HTML",
+         "hidden": 1,
          "options": "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Objective Setup</div>"
       },
       {
          "fieldtype": "HTML",
          "fieldname": "plan_context_heading",
-         "options": "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Plan Context &amp; Preview</div>"
+         "hidden": 1,
+         "options": "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Context and Preview</div>"
+      },
+      {
+         "fieldname": "context_preview_html",
+         "fieldtype": "HTML",
+         "label": "Context Preview"
       },
       {
          "fieldname": "teams",
          "fieldtype": "Table",
-         "label": "Teams",
+         "label": "Team Users",
          "options": "OKR Objective Team",
          "depends_on": "eval:doc.level=='Team'"
       }
@@ -378,9 +388,10 @@
       "completion_notes",
       "objective_details_col_break",
       "plan_context_heading",
+      "context_preview_html",
+      "company",
       "plan_name",
       "plan_description",
-      "company",
       "financial_year",
       "timeline_preview",
       "plan_team_preview",
@@ -400,6 +411,7 @@
       "alignment_map"
    ],
    "actions": [],
+"name":"OKR Objective",
    "doctype": "DocType",
    "istable": 0,
    "naming_rule": "By \"Naming Series\" field"

@@ -6,10 +6,6 @@ ADMIN_PAGE = "admin-workspace"
 ADMIN_ROLES = [
     "System Manager",
     "OKR Admin",
-    "OKR Manager",
-    "Department Head",
-    "Executive Viewer",
-    "HR Manager",
 ]
 
 

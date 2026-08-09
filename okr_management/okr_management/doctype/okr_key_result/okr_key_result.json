@@ -47,7 +47,7 @@
    ],
    "autoname" : "naming_series:",
    "actions" : [],
-   "title_field" : "key_result_title",
+"title_field":"key_result_title",
    "doctype" : "DocType",
    "creation" : "2026-06-22 00:00:00.000000",
    "istable" : 0,
@@ -73,17 +73,35 @@
          "fieldname" : "objective",
          "label" : "Objective",
          "in_standard_filter" : 1,
-         "in_list_view" : 1
+         "in_list_view" : 0
       },
       {
-         "label" : "Context and Preview",
+         "label" : "Context Preview",
          "fieldtype" : "Column Break",
          "fieldname" : "kr_details_col_break"
+      },
+      {
+         "fieldname" : "context_preview_heading",
+         "fieldtype" : "HTML",
+         "options" : "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Context Preview</div>"
+      },
+      {
+         "fieldname" : "context_preview_html",
+         "fieldtype" : "HTML",
+         "label" : "Context Preview"
       },
       {
          "label" : "Description",
          "fieldname" : "description",
          "fieldtype" : "Small Text"
+      },
+      {
+         "label" : "Assignee",
+         "fieldname" : "assignee",
+         "fieldtype" : "Link",
+         "options" : "User",
+         "in_list_view" : 1,
+         "reqd" : 1
       },
       {
          "fieldtype" : "Section Break",
@@ -93,30 +111,31 @@
       {
          "options" : "OKR Plan",
          "fieldname" : "parent_plan",
-         "label" : "Plan",
+         "label" : "Plan Name",
          "fieldtype" : "Link",
          "read_only" : 1,
-         "in_standard_filter" : 1,
+         "in_standard_filter" : 0,
          "in_list_view" : 1
       },
       {
          "read_only" : 1,
          "fieldname" : "objective_title",
-         "label" : "Objective Title",
-         "fieldtype" : "Data"
+         "label" : "Objective Name",
+         "fieldtype" : "Data",
+         "in_list_view" : 1
       },
       {
          "read_only" : 1,
-         "in_standard_filter" : 1,
-         "in_list_view" : 1,
+         "in_standard_filter" : 0,
+         "in_list_view" : 0,
          "options" : "Company",
          "label" : "Organization",
          "fieldname" : "company",
          "fieldtype" : "Link"
       },
       {
-         "in_list_view" : 1,
-         "in_standard_filter" : 1,
+         "in_list_view" : 0,
+         "in_standard_filter" : 0,
          "read_only" : 1,
          "fieldname" : "financial_year",
          "label" : "Financial Year",
@@ -125,7 +144,7 @@
       },
       {
          "read_only" : 1,
-         "in_standard_filter" : 1,
+         "in_standard_filter" : 0,
          "options" : "Department",
          "label" : "Department",
          "fieldtype" : "Link",
@@ -177,17 +196,20 @@
       {
          "in_list_view" : 0,
          "in_standard_filter" : 0,
-         "read_only" : 1,
+         "read_only" : 0,
          "fieldname" : "end_date",
-         "hidden" : 1,
-         "label" : "End Date",
+         "hidden" : 0,
+         "reqd" : 1,
+         "in_list_view" : 1,
+         "label" : "Target Date",
          "fieldtype" : "Date"
       },
       {
          "label" : "Timeline",
          "fieldtype" : "Data",
          "fieldname" : "date_range",
-         "read_only" : 1
+         "read_only" : 1,
+         "hidden" : 1
       },
       {
          "fieldname" : "ownership_section",
@@ -198,7 +220,7 @@
          "in_standard_filter" : 0
       },
       {
-         "reqd" : 1,
+         "reqd" : 0,
          "options" : "User",
          "label" : "Key Result Owner",
          "fieldname" : "owner_user",
@@ -213,14 +235,14 @@
          "fieldname" : "reviewer",
          "label" : "Reviewer",
          "hidden" : 1,
-         "in_standard_filter" : 1
+         "in_standard_filter" : 0
       },
       {
          "fieldtype" : "Link",
          "fieldname" : "approver",
          "label" : "Approver",
          "hidden" : 1,
-         "in_standard_filter" : 1,
+         "in_standard_filter" : 0,
          "options" : "User"
       },
       {
@@ -280,15 +302,16 @@
          "fieldname" : "metric_type",
          "options" : "Percentage\nNumber\nCurrency",
          "reqd" : 1,
-         "in_list_view" : 1,
-         "in_standard_filter" : 1
+         "in_list_view" : 0,
+         "in_standard_filter" : 0
       },
       {
          "options" : "Increase\nDecrease",
          "default" : "Increase",
-         "label" : "Measurement Direction",
+         "label" : "Goal Direction",
          "fieldtype" : "Select",
-         "fieldname" : "metric_direction"
+         "fieldname" : "metric_direction",
+         "reqd" : 1
       },
       {
          "placeholder" : "e.g., Customers, Leads, Orders, Hours, Tasks, Bottles, Calls",
@@ -304,11 +327,11 @@
       {
          "fieldtype" : "Float",
          "default" : 0,
-         "label" : "Current Starting Value",
+         "label" : "Starting Value (Current)",
          "fieldname" : "baseline_value"
       },
       {
-         "in_list_view" : 1,
+         "in_list_view" : 0,
          "default" : 100,
          "fieldname" : "target_value",
          "label" : "Target to Achieve",
@@ -319,7 +342,9 @@
          "default" : 0,
          "fieldtype" : "Float",
          "fieldname" : "current_value",
-         "in_list_view" : 1
+         "in_list_view" : 0,
+         "read_only" : 1,
+         "hidden" : 1
       },
       {
          "depends_on" : "eval:doc.metric_type=='Currency'",
@@ -335,7 +360,7 @@
          "fieldtype" : "Section Break"
       },
       {
-         "in_list_view" : 1,
+         "in_list_view" : 0,
          "read_only" : 1,
          "fieldtype" : "Percent",
          "fieldname" : "target_progress",
@@ -345,7 +370,7 @@
       },
       {
          "read_only" : 1,
-         "in_list_view" : 1,
+         "in_list_view" : 0,
          "fieldname" : "score",
          "default" : 0,
          "label" : "Score",
@@ -401,13 +426,17 @@
    "field_order" : [
       "kr_details_section",
       "objective",
+      "objective_title",
       "key_result_title",
       "description",
+      "parent_plan",
+      "assignee",
+      "end_date",
       "priority",
       "status",
       "kr_details_col_break",
-      "parent_plan",
-      "objective_title",
+      "context_preview_heading",
+      "context_preview_html",
       "company",
       "financial_year",
       "department",

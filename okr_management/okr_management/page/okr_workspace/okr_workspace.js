@@ -1,5 +1,9 @@
 frappe.pages['okr-workspace'].on_page_load = function(wrapper) {
-        new OKRWorkspace(wrapper);
+        wrapper.okr_workspace = new OKRWorkspace(wrapper);
+};
+
+frappe.pages['okr-workspace'].on_page_show = function(wrapper) {
+        if (wrapper.okr_workspace) wrapper.okr_workspace.load();
 };
 
 class OKRWorkspace {
@@ -7,7 +11,8 @@ class OKRWorkspace {
                 this.wrapper = wrapper;
                 this.page = frappe.ui.make_app_page({ parent: wrapper, single_column: true });
                 this.$body = $('<div class="okr-workspace-page"></div>').appendTo(this.page.main);
-                this.filters = Object.assign({ year: '', quarter: '', sprint: '', level: 'Department', owner: 'me' }, frappe.session.okr_workspace_filters || {});
+                this.filters = Object.assign({ year: '', sprint: '', level: 'Department', owner: 'me' }, frappe.session.okr_workspace_filters || {});
+                delete this.filters.quarter;
                 this.state = { objectives: {}, key_results: {}, action_history: {}, action_checkin: null, selected_objective: null };
                 this.attachment = '';
                 this.saving_checkin = false;
@@ -32,9 +37,8 @@ class OKRWorkspace {
                                         <div class="okr-filter-popover" data-filter-popover style="display:none;">
                                                 <div class="okr-pop-head"><strong>${__('Filter Context')}</strong><button data-close-filter>${frappe.utils.icon('close', 'sm')}</button></div>
                                                 <div class=okr-pop-content>
-                                                <div class="okr-filter-group"><label>${__('Year')}</label><div data-year-pills class="okr-pill-row"></div></div>
-                                                <div class="okr-filter-group"><label>${__('Quarter')}</label><div data-quarter-pills class="okr-pill-row"></div></div>
-                                                <div class="okr-filter-group"><label>${__('Plan Period')}</label><div data-sprint-pills class="okr-pill-row okr-pill-row-wrap"></div></div>
+                                                <div class="okr-filter-group"><label>${__('Financial Year')}</label><div data-year-pills class="okr-pill-row"></div></div>
+                                                <div class="okr-filter-group"><label>${__('Plan')}</label><div data-sprint-pills class="okr-pill-row okr-pill-row-wrap"></div></div>
                                                 <div class="okr-filter-group"><label>${__('Level')}</label><div data-level-pills class="okr-pill-row"></div></div>
                                                 <div class="okr-filter-group"><label>${__('Owner')}</label><div data-owner-pills class="okr-pill-row"></div></div>
                                                 </div>
@@ -47,6 +51,9 @@ class OKRWorkspace {
         }
 
         bind_events() {
+                $(window).off('focus.okr-workspace').on('focus.okr-workspace', () => {
+                        if ((frappe.get_route() || [])[0] === 'okr-workspace') this.load();
+                });
                 this.$body.on('click', '[data-open-filter]', () => this.$body.find('[data-filter-popover]').toggle());
                 this.$body.on('click', '[data-close-filter]', () => this.$body.find('[data-filter-popover]').hide());
                 this.$body.on('click', '[data-pill]', (e) => {
@@ -102,7 +109,7 @@ class OKRWorkspace {
                         const actionName = $(e.currentTarget).data('toggle-history');
                         const $block = $(e.currentTarget).closest('.okr-action-block');
                         const $collapse = $block.find('> .okr-history-collapse');
-                        const $chevron = $(e.currentTarget).find('.okr-history-chevron');
+                        const $chevron = $(e.currentTarget).find('.okr-history-chevron, .okr-ai-chevron');
 
                         this.state.action_history[actionName] = !this.state.action_history[actionName];
                         $collapse.stop(true, true).slideToggle(180);
@@ -144,6 +151,23 @@ class OKRWorkspace {
         }
 
         load() {
+                if (frappe.route_options && frappe.route_options.objective) {
+                        const target_obj = frappe.route_options.objective;
+                        delete frappe.route_options.objective;
+
+                        frappe.db.get_value('OKR Objective', target_obj, ['parent_plan', 'financial_year', 'level']).then(r => {
+                                const val = r.message || {};
+                                this.filters.year = val.financial_year || '';
+                                this.filters.sprint = val.parent_plan || '';
+                                this.filters.level = val.level || '';
+                                this.filters.owner = 'all';
+                                this.state.selected_objective = target_obj;
+                                this.render_filter_pills();
+                                this.load();
+                        });
+                        return;
+                }
+
                 frappe.call({
                         method: 'okr_management.okr_management.page.okr_workspace.okr_workspace.get_workspace_data',
                         args: this.filters,
@@ -172,7 +196,6 @@ class OKRWorkspace {
         render_filter_pills() {
                 if (!this.options) return;
                 this.render_pill_group('year', (this.options.years || []).slice(0, 4).map(y => ({ label: y.name, value: y.name })));
-                this.render_pill_group('quarter', [{ label: __('All'), value: '' }].concat((this.options.quarters || []).map(q => ({ label: q, value: q }))));
                 this.render_pill_group('sprint', [{ label: __('All'), value: '' }].concat((this.options.sprints || []).slice(0, 5).map(s => ({ label: s.plan_name || s.name, value: s.name }))));
                 this.render_pill_group('level', (this.options.levels || []).map(l => ({ label: __(l), value: l })));
                 this.render_pill_group('owner', [{ label: __('Assigned to Me'), value: 'me' }, { label: __('All'), value: 'all' }]);
@@ -186,7 +209,7 @@ class OKRWorkspace {
         }
 
         render_active_filters() {
-                const labels = [this.filters.year, this.filters.quarter || __('All Quarters'), this.sprint_label(), this.filters.level || __('All Levels'), this.filters.owner === 'me' ? __('Me') : __('All')];
+                const labels = [this.filters.year, this.sprint_label(), this.filters.level || __('All Levels'), this.filters.owner === 'me' ? __('Me') : __('All')];
                 this.$body.find('[data-active-filters]').html(labels.filter(Boolean).map(v => `<span>${frappe.utils.escape_html(v)}</span>`).join(''));
         }
 
@@ -220,17 +243,72 @@ class OKRWorkspace {
         objective_card(obj) {
                 const open = this.state.objectives[obj.name];
                 const progress = cint(obj.progress || 0);
+
+                // Summary cards calculation
+                const key_results = obj.key_results || [];
+                const total_krs = key_results.length;
+                const today = this.data.today || frappe.datetime.now_date();
+
+                let blocked_count = 0;
+                let at_risk_count = 0;
+                let on_track_count = 0;
+
+                key_results.forEach(kr => {
+                        if (this.is_kr_blocked(kr)) {
+                                blocked_count++;
+                        } else if (this.is_kr_at_risk(kr, today)) {
+                                at_risk_count++;
+                        } else {
+                                const kr_progress = flt(kr.target_progress || 0);
+                                if (kr_progress >= 70) {
+                                        on_track_count++;
+                                }
+                        }
+                });
+
                 return `
                         <section class="okr-objective-card" id="${obj.name}">
                                 <div class="okr-objective-head" data-toggle-objective="${obj.name}">
                                         <div><span class="okr-obj-chevron ${open ? 'expanded' : 'collapsed'}"></span><span class="okr-type-dot">OBJ</span><h2>${frappe.utils.escape_html(obj.objective_title || obj.name)}</h2><span class="okr-status okr-${frappe.scrub(obj.status || '')}">${frappe.utils.escape_html(obj.status || '')}</span></div>
-                                        <div class="okr-obj-meta">
-                                                <div class="okr-gap-score"><small>${__('Progress')}</small><strong>${progress}%</strong></div>
-                                        </div>
                                 </div>
-                                <div class="okr-collapse ${open ? 'open' : ''}" style="${open ? 'display: block;' : 'display: none;'}">${(obj.key_results || []).map(kr => this.kr_card(kr)).join('')}</div>
+                                <div class="okr-collapse ${open ? 'open' : ''}" style="${open ? 'display: block;' : 'display: none;'}">
+                                        <div class="okr-summary-cards">
+                                                <div class="okr-summary-card">
+                                                        <span class="okr-summary-card-label">${__('Key Results')}</span>
+                                                        <strong class="okr-summary-card-value">${total_krs}</strong>
+                                                </div>
+                                                <div class="okr-summary-card">
+                                                        <span class="okr-summary-card-label">${__('On Track')}</span>
+                                                        <strong class="okr-summary-card-value text-success">${on_track_count}</strong>
+                                                </div>
+                                                <div class="okr-summary-card">
+                                                        <span class="okr-summary-card-label">${__('At Risk')}</span>
+                                                        <strong class="okr-summary-card-value text-warning">${at_risk_count}</strong>
+                                                </div>
+                                                <div class="okr-summary-card">
+                                                        <span class="okr-summary-card-label">${__('Blocked')}</span>
+                                                        <strong class="okr-summary-card-value text-danger">${blocked_count}</strong>
+                                                </div>
+                                                <div class="okr-summary-card okr-completion-card">
+                                                        <span class="okr-summary-card-label">${__('Completion')}</span>
+                                                        <div class="okr-donut-chart">
+                                                                <svg class="okr-donut-svg" viewBox="0 0 36 36">
+                                                                        <path class="okr-donut-ring" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e2e8f0" stroke-width="3"></path>
+                                                                        <path class="okr-donut-segment" stroke="#2563eb" stroke-width="3" stroke-dasharray="${progress}, 100" stroke-linecap="round" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none"></path>
+                                                                </svg>
+                                                                <div class="okr-donut-number">${progress}%</div>
+                                                        </div>
+                                                        <span class="okr-summary-card-target">${__('Target: 100%')}</span>
+                                                </div>
+                                        </div>
+                                        ${(obj.key_results || []).map(kr => this.kr_card(kr)).join('')}
+                                </div>
                         </section>
                 `;
+        }
+
+        period_badge(label) {
+                return label ? `<span class="okr-period-badge">${frappe.utils.escape_html(label)}</span>` : '';
         }
 
         kr_card(kr) {
@@ -238,15 +316,22 @@ class OKRWorkspace {
                 const progress = flt(kr.target_progress || 0, 2);
                 const statusClass = progress >= 80 ? 'good' : progress >= 45 ? 'warn' : 'risk';
                 const progressDisplay = this.kr_progress_display(kr);
+                const assigneeEmail = kr.assignee || '';
                 return `
                         <div class="okr-kr-card">
                                 <div class="okr-kr-head" data-toggle-kr="${kr.name}">
-                                        <div><span class="okr-kr-chevron ${open ? 'expanded' : 'collapsed'}"></span><span class="okr-kr-icon">KR</span><strong>${frappe.utils.escape_html(kr.key_result_title || kr.name)}</strong></div>
+                                        <div>
+                                                <span class="okr-kr-chevron ${open ? 'expanded' : 'collapsed'}"></span>
+                                                <span class="okr-kr-icon">KR</span>
+                                                <div style="display: flex; flex-direction: column;">
+                                                        <div class="okr-title-with-period"><strong>${frappe.utils.escape_html(kr.key_result_title || kr.name)}</strong>${this.period_badge(kr.period_label)}</div>
+                                                        ${assigneeEmail ? `<span style="font-size: 11px; color: #64748b; font-weight: 500; margin-top: 2px;">Assignee: ${frappe.utils.escape_html(assigneeEmail)}</span>` : ''}
+                                                </div>
+                                        </div>
                                         <div class="okr-kr-meta">
                                                 <span class="okr-signal ${statusClass}">${frappe.utils.escape_html(progressDisplay)}</span>
                                         </div>
                                 </div>
-                                <div class="okr-bar"><i style="width:${Math.min(100, progress)}%"></i></div>
                                 <div class="okr-collapse ${open ? 'open' : ''}" style="${open ? 'display: block;' : 'display: none;'}">${(kr.action_items || []).length ? kr.action_items.map(ai => this.action_row(ai, kr)).join('') : this.no_actions()}</div>
                         </div>
                 `;
@@ -257,14 +342,28 @@ class OKRWorkspace {
                 const historyOpen = this.state.action_history[ai.name];
                 const checkinOpen = this.state.action_checkin === ai.name;
                 const historyCount = (ai.history || []).length;
+                const ownerEmail = ai.owner_user || '';
                 return `
                         <div class="okr-action-block">
                                 <div class="okr-action-row" data-toggle-history="${ai.name}">
-                                        <div class="okr-action-title"><span class="okr-ai-icon">AI</span><div><strong>${frappe.utils.escape_html(ai.action_item_title || ai.name)}</strong><small>${ai.due_date ? frappe.datetime.str_to_user(ai.due_date) : '-'} · <button type="button" class="okr-history-toggle" aria-expanded="${historyOpen ? 'true' : 'false'}"><span class="okr-history-chevron ${historyOpen ? 'expanded' : 'collapsed'}"></span>${historyCount} ${__('Check-ins')}</button></small></div></div>
-                                        <div class="okr-owner"><span>${this.initials(ai.owner_user)}</span>${frappe.utils.escape_html(ai.owner_user || '')}</div>
+                                        <div class="okr-action-title">
+                                                <span class="okr-ai-chevron ${historyOpen ? 'expanded' : 'collapsed'}"></span>
+                                                <span class="okr-ai-icon">AI</span>
+                                                <div style="display: flex; flex-direction: column;">
+                                                        <div class="okr-title-with-period"><strong>${frappe.utils.escape_html(ai.action_item_title || ai.name)}</strong>${this.period_badge(ai.period_label)}</div>
+                                                        ${ownerEmail ? `<span style="font-size: 11px; color: #64748b; font-weight: 500; margin-top: 2px;">Assignee: ${frappe.utils.escape_html(ownerEmail)}</span>` : ''}
+                                                </div>
+                                        </div>
+                                        <div class="okr-action-meta-col">
+                                                <div class="okr-action-due-date">${ai.due_date ? frappe.datetime.str_to_user(ai.due_date) : '-'}</div>
+                                                <button type="button" class="okr-history-toggle" aria-expanded="${historyOpen ? 'true' : 'false'}">
+                                                        <span class="okr-history-chevron ${historyOpen ? 'expanded' : 'collapsed'}"></span>
+                                                        ${historyCount} ${__('Check-ins')}
+                                                </button>
+                                        </div>
                                         <span class="okr-status ${frappe.scrub(ai.status || '')}">${frappe.utils.escape_html(ai.status || '')}</span>
                                         <div class="okr-action-progress"><div class="okr-bar"><i style="width:${Math.min(100, progress)}%"></i></div><strong>${progress}%</strong></div>
-                                        <button class="btn btn-sm btn-primary-light" data-open-checkin="${ai.name}">${__('+ Check-In')}</button>
+                                        ${ai.can_checkin ? `<button class="btn btn-sm btn-primary-light" data-open-checkin="${ai.name}">${__('+ Check-In')}</button>` : ''}
                                         <a class="okr-open-link" href="/app/okr-action-item/${encodeURIComponent(ai.name)}">${frappe.utils.icon('external-link', 'sm')}</a>
                                 </div>
                                 ${checkinOpen ? this.checkin_panel(ai, kr) : ''}
@@ -352,7 +451,46 @@ class OKRWorkspace {
         context(label, value) { return `<div><span>${label}</span><strong>${frappe.utils.escape_html(value || '-')}</strong></div>`; }
         no_actions() { return `<div class="okr-no-actions">${__('No action items under this Key Result.')}</div>`; }
         empty_state() { return `<div class="okr-empty-workspace"><div class="okr-empty-icon">◎</div><h3>${__('No OKRs found')}</h3><p>${__('No objectives match the current filter. Try a different quarter, level, or owner.')}</p><button class="btn btn-primary" data-adjust-filter>${__('Adjust Filter')}</button></div>`; }
-        initials(value) { return (value || '?').trim().charAt(0).toUpperCase(); }
+
+        is_kr_blocked(kr) {
+                if (kr.status === 'Blocked') return true;
+                if ((kr.action_items || []).some(ai => ai.status === 'Blocked')) return true;
+                return false;
+        }
+
+        is_kr_at_risk(kr, todayStr) {
+                if (kr.status === 'At Risk') return true;
+                const today = moment(todayStr);
+                if (kr.end_date) {
+                        const diffDays = moment(kr.end_date).diff(today, 'days');
+                        const progress = flt(kr.target_progress || 0);
+                        if (diffDays >= 0 && diffDays <= 14 && progress < 100) return true;
+                }
+                if ((kr.action_items || []).some(ai => {
+                        if (ai.status === 'At Risk') return true;
+                        if (ai.due_date) {
+                                const due = moment(ai.due_date);
+                                const isOverdue = due.isBefore(today, 'day');
+                                const isCompleted = ai.status === 'Completed' || ai.status === 'Cancelled' || flt(ai.progress || 0) >= 100;
+                                if (isOverdue && !isCompleted) return true;
+
+                                const diffDays = due.diff(today, 'days');
+                                const progress = flt(ai.progress || 0);
+                                if (diffDays >= 0 && diffDays <= 14 && progress < 100) return true;
+                        }
+                        return false;
+                })) {
+                        return true;
+                }
+                return false;
+        }
+
+        initials(value) {
+                if (!value) return '?';
+                const namePart = value.includes('@') ? value.split('@')[0] : value;
+                const parts = namePart.trim().split(/[\s.]+/);
+                return parts.map(p => p[0]).join('').toUpperCase().slice(0, 2);
+        }
 
         toggle(group, key) { this.state[group][key] = !this.state[group][key]; this.render_content(); }
         open_checkin(action) { this.state.action_checkin = this.state.action_checkin === action ? null : action; this.attachment = ''; this.render_content(); }
@@ -414,4 +552,26 @@ class OKRWorkspace {
                         }
                 });
         }
+
+        get_assignee_name(email) {
+                if (!email) return '';
+                let name = '';
+                if (window.frappe && frappe.user_info) {
+                        const info = frappe.user_info(email);
+                        if (info && info.fullname) name = info.fullname;
+                }
+                if (!name && window.frappe && frappe.boot && frappe.boot.user_info && frappe.boot.user_info[email]) {
+                        name = frappe.boot.user_info[email].fullname;
+                }
+                if (!name) {
+                        if (email.includes('@')) {
+                                const username = email.split('@')[0];
+                                name = username.split(/[\._-]/).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+                        } else {
+                                name = email;
+                        }
+                }
+                return name;
+        }
 }
+

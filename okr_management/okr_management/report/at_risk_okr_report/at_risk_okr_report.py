@@ -24,14 +24,14 @@ def execute(filters=None):
 		obj_filters["plan"] = filters.plan; kr_filters["parent_plan"] = filters.plan
 	if filters.get("owner"):
 		obj_filters["owner_user"] = filters.owner; kr_filters["owner_user"] = filters.owner
-	for row in frappe.get_all("OKR Objective", filters=obj_filters, fields=["name", "objective_title", "plan", "owner_user", "status", "progress", "confidence", "end_date"]):
+	for row in frappe.get_all("OKR Objective", filters=obj_filters, fields=["name", "objective_title", "parent_plan", "owner_user", "status", "progress", "confidence", "end_date"]):
 		reasons = []
 		if row.status == "At Risk": reasons.append("Marked At Risk")
 		if flt(row.progress) < 60 and row.status not in {"Completed", "Cancelled", "Archived"}: reasons.append("Progress below 60%")
 		if flt(row.confidence) < 3: reasons.append("Confidence below 3")
 		if row.end_date and getdate(row.end_date) <= near_end and flt(row.progress) < 90: reasons.append("End date near")
 		if reasons:
-			data.append({"type":"OKR Objective","record":row.name,"title":row.objective_title,"plan":row.plan,"owner":row.owner_user,"status":row.status,"progress":row.progress,"confidence":row.confidence,"end_date":row.end_date,"reason":"; ".join(reasons)})
+			data.append({"type":"OKR Objective","record":row.name,"title":row.objective_title,"plan":row.parent_plan,"owner":row.owner_user,"status":row.status,"progress":row.progress,"confidence":row.confidence,"end_date":row.end_date,"reason":"; ".join(reasons)})
 	for row in frappe.get_all("OKR Key Result", filters=kr_filters, fields=["name", "key_result_title", "parent_plan", "owner_user", "status", "target_progress", "end_date"]):
 		reasons = []
 		if row.status == "At Risk": reasons.append("Marked At Risk")

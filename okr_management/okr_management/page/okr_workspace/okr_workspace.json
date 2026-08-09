@@ -10,7 +10,11 @@
  "name": "okr-workspace",
  "owner": "Administrator",
  "page_name": "okr-workspace",
- "roles": [],
+ "roles": [
+  {
+   "role": "Desk User"
+  }
+ ],
  "script": null,
  "standard": "Yes",
  "style": null,

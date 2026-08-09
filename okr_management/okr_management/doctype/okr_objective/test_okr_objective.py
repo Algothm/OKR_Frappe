@@ -40,9 +40,8 @@ class TestOKRObjectivePlanContext(FrappeTestCase):
             "financial_year": self.fiscal_year,
             "company": self.company,
             "owner_user": "Administrator",
-            "sprint_frequency": "Custom",
-            "custom_start_date": fiscal_year.year_start_date,
-            "custom_end_date": add_days(fiscal_year.year_start_date, 30),
+            "sprint_frequency": "Monthly",
+            "planned_activation_date": fiscal_year.year_start_date,
             "status": "Draft",
         }).insert(ignore_permissions=True)
         if status == "Active":
@@ -66,13 +65,14 @@ class TestOKRObjectivePlanContext(FrappeTestCase):
 
     def test_inherits_context_and_timeline_from_plan(self):
         plan = self.make_plan()
+        fiscal_year = frappe.db.get_value("Fiscal Year", plan.financial_year, ["year_start_date", "year_end_date"], as_dict=True)
         objective = self.make_objective(plan)
         self.assertEqual(objective.parent_plan, plan.name)
         self.assertEqual(objective.financial_year, plan.financial_year)
         self.assertEqual(objective.company, plan.company)
         self.assertEqual(objective.plan_owner, plan.owner_user)
-        self.assertEqual(getdate(objective.start_date), getdate(plan.custom_start_date))
-        self.assertEqual(getdate(objective.end_date), getdate(plan.custom_end_date))
+        self.assertEqual(getdate(objective.start_date), getdate(fiscal_year.year_start_date))
+        self.assertEqual(getdate(objective.end_date), getdate(fiscal_year.year_end_date))
 
     def test_dates_must_stay_inside_plan_period(self):
         plan = self.make_plan()
@@ -80,8 +80,8 @@ class TestOKRObjectivePlanContext(FrappeTestCase):
             frappe.ValidationError,
             self.make_objective,
             plan,
-            start_date=add_days(plan.custom_start_date, -1),
-            end_date=plan.custom_end_date,
+            start_date=add_days(frappe.db.get_value("Fiscal Year", plan.financial_year, "year_start_date"), -1),
+            end_date=frappe.db.get_value("Fiscal Year", plan.financial_year, "year_end_date"),
         )
 
     def test_duplicate_title_is_scoped_to_plan(self):

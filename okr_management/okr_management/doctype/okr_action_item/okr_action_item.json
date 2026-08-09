@@ -7,7 +7,7 @@
    "label": ""
   },
   {
-   "label": "Action Item Title",
+   "label": "Title",
    "reqd": 1,
    "fieldtype": "Data",
    "fieldname": "action_item_title",
@@ -31,7 +31,7 @@
   },
   {
    "fieldtype": "Link",
-   "in_list_view": 1,
+   "in_list_view": 0,
    "options": "User",
    "label": "Action Item Owner",
    "fieldname": "owner_user",
@@ -106,11 +106,13 @@
   },
   {
    "in_list_view": 1,
-   "read_only": 1,
+   "in_standard_filter": 1,
+   "read_only": 0,
+   "reqd": 1,
    "fieldname": "due_date",
    "fieldtype": "Date",
-   "hidden": 1,
-   "label": "Action Date"
+   "hidden": 0,
+   "label": "Due Date"
   },
   {
    "hidden": 1,
@@ -273,7 +275,13 @@
   {
    "fieldtype": "HTML",
    "fieldname": "context_preview_heading",
-   "options": "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Context &amp; Preview</div>"
+   "options": "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Context and Preview</div>"
+  },
+  {
+   "fieldtype": "HTML",
+   "fieldname": "context_preview_html",
+   "label": "Context Preview",
+   "hidden": 0
   },
   {
    "fieldname": "sprint_frequency",
@@ -281,13 +289,6 @@
    "read_only": 1,
    "label": "Sprint Frequency",
    "hidden": 1
-  },
-  {
-   "hidden": 1,
-   "label": "Selected Period",
-   "read_only": 1,
-   "fieldtype": "Data",
-   "fieldname": "selected_period"
   },
   {
    "hidden": 1,
@@ -313,7 +314,8 @@
   {
    "fieldname": "timeline_preview",
    "fieldtype": "HTML",
-   "label": "Timeline Preview"
+   "label": "Timeline",
+   "hidden": 1
   },
   {
    "fieldname": "objective_title",
@@ -350,16 +352,17 @@
   "parent_key_result",
   "action_item_title",
   "description",
-  "progress",
   "assigned_to",
+  "due_date",
+  "progress",
   "details_col_break",
   "context_preview_heading",
+  "context_preview_html",
   "plan_title",
   "plan_description",
   "company",
   "financial_year",
   "sprint_frequency",
-  "selected_period",
   "timeline_preview",
   "objective_title",
   "key_result_title",
@@ -369,7 +372,6 @@
   "parent_objective",
   "priority",
   "status",
-  "due_date",
   "owner_user",
   "reviewer",
   "department",
@@ -397,7 +399,7 @@
  ],
  "name": "OKR Action Item",
  "actions": [],
- "title_field": "action_item_title",
+"title_field":"action_item_title",
  "permissions": [
   {
    "export": 1,

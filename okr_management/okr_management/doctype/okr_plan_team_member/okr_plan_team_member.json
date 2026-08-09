@@ -15,7 +15,8 @@
    "label": "User",
    "options": "User",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "columns": 6
   },
   {
    "fieldname": "role",
@@ -23,7 +24,8 @@
    "label": "Role",
    "options": "Admin",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "columns": 4
   }
  ],
  "istable": 1,

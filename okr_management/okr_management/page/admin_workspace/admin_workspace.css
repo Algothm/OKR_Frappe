@@ -13,7 +13,7 @@
   --surface:    #FFFFFF;   /* card background */
   --line:       #E4E7EC;   /* borders / dividers */
   --navy:       #2B3A55;   /* brand mark, dark accents */
-  
+
   --critical:   #C4472B;
   --critical-bg:#FBEBE6;
   --warning:    #C98A2C;
@@ -33,7 +33,7 @@
   --radius-sub:   12px;
   --radius-pill:  6px;
   --radius-full:  999px;
-  
+
   --transition:   180ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -194,7 +194,7 @@
 
 .okr-filter-grid {
   display: none;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin-top: 16px;
   padding-top: 16px;
@@ -281,10 +281,11 @@
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
-  padding: 24px 28px;
+  padding: 0;
   display: grid;
-  grid-template-columns: minmax(180px, 1.2fr) repeat(3, 1fr);
-  align-items: center;
+  grid-template-columns: repeat(6, 1fr);
+  align-items: stretch;
+  overflow: hidden;
 }
 
 .okr-health-strip__grade-col {
@@ -331,18 +332,39 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 0 24px;
+  padding: 20px 20px;
   border-right: 1px solid var(--line);
+  border: none;
+  background: transparent;
+  cursor: pointer;
   text-align: left;
   line-height: 1.4;
   white-space: normal;
   overflow-wrap: normal;
   word-break: normal;
+  transition: background var(--transition);
 }
 
-.okr-health-strip__metric-col:last-child {
-  border-right: none;
-  padding-right: 0;
+.okr-health-strip__metric-col:not(:last-child) {
+  border-right: 1px solid var(--line);
+}
+
+.okr-health-strip__metric-col:hover {
+  background: var(--paper);
+}
+
+.okr-health-strip__metric-col:active {
+  background: var(--info-bg);
+}
+
+.okr-health-strip__metric-col:focus {
+  outline: none;
+}
+
+.okr-health-strip__metric-col.okr-card-active {
+  background: var(--info-bg);
+  border-bottom: 2px solid var(--info);
+  position: relative;
 }
 
 .okr-metric-num {
@@ -465,9 +487,41 @@
   max-width: 100%;
 }
 .okr-plan-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: none; /* Hidden — replaced by okr-plan-card__meta-inline */
+}
+
+/* Compact meta-inline row under Plan ID */
+.okr-plan-card__meta-inline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
+  margin-top: 4px;
+}
+
+.okr-plan-freq-pill {
+  display: inline-block;
+  background: var(--info-bg);
+  color: var(--info);
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.okr-plan-meta-stats {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.okr-plan-critical-text {
+  color: var(--critical);
+  font-weight: 700;
 }
 
 .okr-plan-stats div {
@@ -1231,8 +1285,8 @@
 
 @media (max-width: 1100px) {
   .okr-health-strip {
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
   }
   .okr-health-strip__grade-col {
     grid-column: span 2;
@@ -1289,9 +1343,9 @@
     font-size: 18px;
   }
   .okr-health-strip {
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    padding: 16px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    padding: 0;
   }
   .okr-health-strip__grade-col {
     grid-column: span 2;
@@ -1446,8 +1500,8 @@
 
 @media (max-width: 480px) {
   .okr-health-strip {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
   }
   .okr-health-strip__grade-col {
     grid-column: span 1;
@@ -1482,4 +1536,200 @@
     margin-top: 2px;
     color: var(--ink);
   }
+}
+
+/* Admin Workspace visual system */
+.okr-admin-page {
+  --admin-font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --admin-code-font: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --admin-radius: 14px;
+  --admin-shadow: 0 8px 24px rgba(17, 24, 39, .055);
+  --admin-blue: #315bea;
+  --admin-border: #e3e8f2;
+  --admin-text: #172033;
+  --admin-muted: #6c7890;
+  font-family: var(--admin-font);
+  color: var(--admin-text);
+}
+.okr-admin-page * { font-family: inherit; }
+.okr-cmd-shell { gap: 32px; padding-top: 24px; }
+.okr-exec-band,.okr-filter-card,.okr-health-strip,.okr-plan-card,.okr-attention-card,.okr-detail-head-card,.okr-kr-card {
+  border-color: var(--admin-border); border-radius: var(--admin-radius); box-shadow: var(--admin-shadow);
+}
+.okr-filter-card { padding: 20px 24px; background: #fff; }
+.okr-filter-card__summary { font-size: 14px; color: var(--admin-text); }
+.okr-filter-grid { gap: 14px; margin-top: 18px; padding-top: 18px; border-top-color: var(--admin-border); }
+.okr-filter-field { gap: 8px; }
+.okr-filter-field label,.okr-plan-card__head span:not(.okr-status-pill),.okr-plan-progress span,.okr-plan-stats span,.okr-plan-card__foot span,.okr-section-hint {
+  font-family: var(--admin-font); font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--admin-muted);
+}
+.okr-filter-field select { height: 42px; padding: 0 36px 0 12px; background-color: #f8faff; border-color: var(--admin-border); border-radius: 10px; font-size: 13px; }
+.okr-btn-clear { padding: 7px 12px; border-radius: 9px; font-weight: 600; }
+.okr-exec-band { padding: 24px 28px; background: linear-gradient(135deg,#eef3ff,#f8faff); }
+.okr-exec-band__eyebrow,.okr-exec-band__updated strong { font-family: var(--admin-font); }
+.okr-section-head { margin: 4px 0 14px; min-height: 28px; }
+.okr-section-title { font-family: var(--admin-font); font-size: 22px; color: var(--admin-text); }
+.okr-health-strip { display:grid; grid-template-columns:repeat(6,1fr); padding:0; overflow:hidden; background:#fff; }
+.okr-health-strip__metric-col { min-height:116px; padding:24px; align-items:flex-start; justify-content:center; gap:8px; }
+.okr-metric-num { font-family:var(--admin-font); font-size:32px; line-height:1; }
+.okr-metric-label { font-size:13px; font-weight:600; color:var(--admin-muted); }
+.okr-progress-legend { display:inline-flex; align-items:center; flex-wrap:wrap; gap:14px; padding:7px 10px; border:1px solid var(--admin-border); border-radius:999px; background:#fff; color:var(--admin-muted); font-size:11px; font-weight:600; }
+.okr-progress-legend span { display:inline-flex; align-items:center; gap:5px; }
+.okr-progress-legend i { width:8px; height:8px; border-radius:50%; }
+.okr-progress-legend .is-blocked { background: var(--critical); }
+.okr-progress-legend .is-low { background: var(--warning); }
+.okr-progress-legend .is-track { background: var(--good); }
+.okr-plan-grid { gap:20px; }
+.okr-plan-card { padding:24px; gap:22px; background:#fff; text-align:left; transition:border-color 160ms ease,box-shadow 160ms ease,transform 160ms ease; }
+.okr-plan-card:hover { transform:translateY(-2px); border-color:#c8d4f6; box-shadow:0 12px 30px rgba(17,24,39,.08); }
+.okr-plan-card__head strong { font-family:var(--admin-font); font-size:19px; }
+.okr-plan-card__head span:not(.okr-status-pill),.okr-plan-card__foot strong { font-family:var(--admin-code-font); }
+.okr-plan-stats { gap:12px; }
+.okr-plan-stats div { padding:14px; border-color:var(--admin-border); border-radius:10px; background:#f8faff; }
+.okr-status-pill,.okr-kr-target-pill,.okr-dept-tag { min-height:26px; padding:5px 10px; border:1px solid transparent; border-radius:999px; font-family:var(--admin-font); font-size:11px; font-weight:700; letter-spacing:.02em; line-height:1.2; text-transform:capitalize; }
+.okr-status-pill--critical,.okr-status-pill--blocked { color:#b53020; background:#fff0ed; border-color:#f5c8bf; }
+.okr-status-pill--warning,.okr-status-pill--overdue { color:#9a6208; background:#fff8e8; border-color:#eed9a6; }
+.okr-status-pill--good,.okr-status-pill--ontrack { color:#1f704f; background:#eaf7f1; border-color:#bfe3d1; }
+.okr-status-pill--info,.okr-status-pill--draft,.okr-status-pill--inprogress { color:#3157b7; background:#edf2ff; border-color:#cad6fa; }
+.okr-status-pill--muted { color:#667085; background:#f2f4f7; border-color:#e4e7ec; }
+.okr-progress-bar { height:8px; overflow:hidden; border-radius:999px; background:#edf0f6; } .okr-progress-bar__fill { border-radius:inherit; }
+.okr-attention-card { overflow:hidden; border-color:#efd7a3; border-left:4px solid #d39024; background:#fffcf5; box-shadow:0 8px 24px rgba(176,112,12,.07); }
+.okr-attention-card::before { display:block; padding:14px 24px 0; color:#9a6208; content:"⚠  Admin review required"; font-size:12px; font-weight:700; }
+.okr-attention-row { min-height:86px; margin:0 20px; padding:18px 4px; border-color:#f0e4c8; background:transparent; }
+.okr-attention-row:hover { background:rgba(255,247,225,.75); }
+.okr-attention-row__title strong { font-size:15px; } .okr-attention-row__title span { font-size:12px; color:var(--admin-muted); }
+.okr-detail-head-card { position:relative; overflow:hidden; padding:28px 30px; border-left:6px solid var(--admin-blue); background:#fff; }
+.okr-detail-head__title { font-family:var(--admin-font); font-size:27px; }
+.okr-detail-head__bottom { color:var(--admin-muted); }
+.okr-dept-owner-pill,.okr-detail-head__bottom strong { font-family:var(--admin-font); }
+.okr-kr-list { margin-left:24px; }
+.okr-kr-card { margin-bottom:20px; border-left:4px solid #8fa8f8; background:#fff; }
+.okr-kr-header { min-height:76px; padding:20px 24px; }
+.okr-kr-title { font-family:var(--admin-font); font-size:16px; font-weight:700; }
+.okr-kr-badge,.okr-ai-badge { border-radius:8px; font-family:var(--admin-font); font-size:11px; font-weight:800; }
+.okr-kr-body { background:#fbfcff; }
+.okr-init-row { margin-left:26px; padding:22px 24px 22px 18px; border-left:2px solid #d9e2fa; }
+.okr-init-row:last-child { border-left:2px solid #d9e2fa; }
+.okr-init-info strong { font-family:var(--admin-font); font-size:14px; }
+.okr-init-meta,.okr-trail-toggle { font-family:var(--admin-font); color:var(--admin-muted); }
+.okr-trail-toggle { margin:8px 0 10px 52px; font-size:12px; font-weight:600; }
+.okr-trail-notes { position:relative; margin:0 0 0 52px; padding:4px 0 4px 24px; border:0; background:transparent; }
+.okr-trail-notes::before { position:absolute; top:9px; bottom:12px; left:7px; width:2px; background:#d9e2f1; content:""; }
+.okr-trail-note-item { position:relative; grid-template-columns:100px 52px minmax(0,1fr); min-height:54px; padding:9px 12px; border:0; border-radius:10px; background:#fff; }
+.okr-trail-note-item::before { position:absolute; top:20px; left:-22px; width:10px; height:10px; border:3px solid #fff; border-radius:50%; background:var(--admin-blue); box-shadow:0 0 0 1px #b9c8e8; content:""; }
+.okr-trail-note-item + .okr-trail-note-item { margin-top:8px; }
+.okr-trail-note-item__date,.okr-trail-note-item__pct { font-family:var(--admin-font); font-size:12px; }
+.okr-trail-note-item__pct { color:var(--admin-blue); font-weight:800; }
+.okr-trail-note-item__text { display:flex; align-items:center; flex-wrap:wrap; gap:7px; font-family:var(--admin-font); color:var(--admin-text); }
+.okr-trail-note-item__text.is-blocker { color:var(--admin-text); font-weight:500; }
+.okr-blocker-tag { display:inline-flex; align-items:center; min-height:22px; padding:3px 8px; border:1px solid #f2c4bc; border-radius:999px; background:#fff0ed; color:#b53020; font-size:10px; font-weight:800; text-transform:uppercase; }
+@media (max-width:1100px) { .okr-health-strip{grid-template-columns:repeat(3,1fr)} }
+@media (max-width:900px) { .okr-cmd-shell{gap:24px;padding:16px}.okr-health-strip{grid-template-columns:repeat(3,1fr)}.okr-kr-list{margin-left:10px}.okr-init-row{margin-left:12px}.okr-progress-legend{border-radius:12px} }
+@media (max-width:600px) { .okr-filter-card{padding:16px}.okr-health-strip{grid-template-columns:repeat(2,1fr)}.okr-health-strip__metric-col{min-height:80px;padding:12px 14px}.okr-kr-list,.okr-init-row{margin-left:0}.okr-trail-toggle,.okr-trail-notes{margin-left:12px}.okr-trail-note-item{grid-template-columns:1fr;gap:4px} }
+
+.okr-title-with-period { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.okr-period-badge {
+    display: inline-flex; align-items: center; padding: 2px 8px;
+    border: 1px solid #bfdbfe; border-radius: 999px;
+    background: #eff6ff; color: #1d4ed8;
+    font-size: 10px; font-weight: 800; line-height: 1.4; white-space: nowrap;
+}
+
+
+/* Frappe dark-theme adaptation */
+[data-theme="dark"] .okr-admin-page {
+  --ink: var(--text-color);
+  --ink-soft: var(--text-muted);
+  --muted: var(--text-muted);
+  --paper: var(--bg-color);
+  --surface: var(--card-bg);
+  --line: var(--border-color);
+  --info-bg: var(--subtle-fg);
+  --admin-border: var(--border-color);
+  --admin-text: var(--text-color);
+  --admin-muted: var(--text-muted);
+  --admin-shadow: 0 8px 24px rgba(0, 0, 0, .22);
+  background: var(--bg-color);
+  color: var(--text-color);
+  color-scheme: dark;
+}
+
+[data-theme="dark"] .okr-admin-page :is(
+  .okr-filter-card,
+  .okr-health-strip,
+  .okr-plan-card,
+  .okr-progress-legend,
+  .okr-detail-head-card,
+  .okr-kr-card,
+  .okr-details-card
+) {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+[data-theme="dark"] .okr-admin-page .okr-exec-band {
+  background: linear-gradient(135deg, var(--subtle-fg), var(--card-bg));
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .okr-admin-page :is(
+  .okr-section-title,
+  .okr-filter-card__summary,
+  .okr-plan-card__head strong,
+  .okr-detail-head__title,
+  .okr-kr-title,
+  .okr-metric-num--ink
+) {
+  color: var(--text-color);
+}
+
+[data-theme="dark"] .okr-admin-page :is(
+  .okr-filter-field select,
+  .okr-plan-stats div,
+  .okr-kr-body,
+  .okr-init-row,
+  .okr-btn-clear,
+  .okr-btn-white
+) {
+  background-color: var(--control-bg);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+[data-theme="dark"] .okr-admin-page .okr-filter-field select option {
+  background: var(--control-bg);
+  color: var(--text-color);
+}
+
+[data-theme="dark"] .okr-admin-page :is(
+  .okr-filter-field label,
+  .okr-metric-label,
+  .okr-section-hint,
+  .okr-plan-card__head span:not(.okr-status-pill),
+  .okr-plan-progress span,
+  .okr-plan-stats span,
+  .okr-plan-card__foot span,
+  .okr-detail-head__bottom,
+  .okr-init-meta
+) {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] .okr-admin-page .okr-progress-bar,
+[data-theme="dark"] .okr-admin-page .okr-plan-progress__track {
+  background: var(--subtle-fg);
+}
+
+[data-theme="dark"] .okr-admin-page .okr-attention-card {
+  background: color-mix(in srgb, var(--card-bg) 88%, #c98a2c 12%);
+  border-color: color-mix(in srgb, var(--border-color) 65%, #c98a2c 35%);
+}
+
+[data-theme="dark"] .okr-admin-page .okr-attention-row {
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .okr-admin-page .okr-attention-row:hover {
+  background: var(--subtle-fg);
 }

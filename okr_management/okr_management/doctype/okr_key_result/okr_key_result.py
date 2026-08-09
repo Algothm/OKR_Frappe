@@ -3,6 +3,7 @@ from __future__ import annotations
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import getdate, today
 
 
 VALID_PRIORITIES = {"Low", "Medium", "High"}
@@ -13,17 +14,14 @@ VALID_MEASUREMENT_DIRECTIONS = {"Increase", "Decrease"}
 
 INHERITED_FIELDS = {
     "parent_plan",
-    "parent_plan",
     "objective_title",
     "company",
     "financial_year",
     "department",
     "plan_owner",
-    "plan_owner",
     "objective_owner",
     "objective_level",
     "start_date",
-    "end_date",
 }
 
 # Placeholder values mapping removed
@@ -31,6 +29,10 @@ INHERITED_FIELDS = {
 
 class OKRKeyResult(Document):
     def before_validate(self) -> None:
+        if self.assignee:
+            self.owner_user = self.assignee
+        elif self.owner_user:
+            self.assignee = self.owner_user
         self.priority = self.priority or "Medium"
         self.status = self.status or "Draft"
         self.calculation_mode = self.calculation_mode or "Manual"
@@ -52,6 +54,12 @@ class OKRKeyResult(Document):
             self.unit_of_measure = "%"
         elif self.metric_type in ["Boolean", "Currency"]:
             self.unit_of_measure = None
+
+        if self.metric_type == "Currency" and not self.currency:
+            if self.company:
+                self.currency = frappe.db.get_value("Company", self.company, "default_currency")
+            if not self.currency:
+                self.currency = frappe.db.get_default("currency")
 
         self.inherit_context_from_objective()
         
@@ -75,7 +83,59 @@ class OKRKeyResult(Document):
         self.validate_required_fields()
         self.validate_options()
         self.validate_measurement()
+        self.validate_duplicate_title_in_objective()
+        self.validate_dates_inside_objective()
+        self.validate_child_due_dates()
+        self.validate_lifecycle()
         self.validate_inherited_fields_locked()
+
+    def validate_duplicate_title_in_objective(self) -> None:
+        duplicate = frappe.db.exists(
+            "OKR Key Result",
+            {
+                "name": ["!=", self.name],
+                "objective": self.objective,
+                "key_result_title": self.key_result_title,
+            },
+        )
+        if duplicate:
+            frappe.throw(_("A Key Result with this title already exists in the selected Objective."))
+
+    def validate_dates_inside_objective(self) -> None:
+        if not self.objective:
+            return
+        objective_dates = frappe.db.get_value("OKR Objective", self.objective, ["start_date", "end_date"], as_dict=True)
+        if not objective_dates or not objective_dates.start_date or not objective_dates.end_date:
+            return
+        
+        if self.end_date and getdate(self.end_date) < getdate(objective_dates.start_date):
+            frappe.throw(_("Target Date cannot be before the Parent Objective's Start Date."))
+        if self.end_date and getdate(self.end_date) > getdate(objective_dates.end_date):
+            frappe.throw(_("Target Date cannot be after the Parent Objective's End Date."))
+
+    def validate_child_due_dates(self) -> None:
+        if not self.name or not self.end_date:
+            return
+        action_items = frappe.get_all(
+            "OKR Action Item",
+            filters={"parent_key_result": self.name},
+            fields=["name", "due_date"],
+        )
+        outside = [
+            row.name for row in action_items
+            if row.due_date and not (getdate(self.start_date) <= getdate(row.due_date) <= getdate(self.end_date))
+        ]
+        if outside:
+            frappe.throw(_("Target Date cannot exclude existing Action Item Due Dates."))
+
+    def validate_lifecycle(self) -> None:
+        if self.status == "Active":
+            start = self.start_date
+            end = self.end_date
+            if start and getdate(today()) < getdate(start):
+                frappe.throw(_("Key Result cannot be activated before its Start Date ({0}).").format(start))
+            if end and getdate(today()) > getdate(end):
+                frappe.throw(_("Key Result cannot be activated after its End Date ({0}).").format(end))
 
     def inherit_context_from_objective(self) -> None:
         if not self.objective:
@@ -95,7 +155,6 @@ class OKRKeyResult(Document):
                 "financial_year",
                 "department",
                 "plan_owner",
-                "plan_owner",
                 "owner_user",
                 "level",
                 "start_date",
@@ -108,17 +167,14 @@ class OKRKeyResult(Document):
             return
 
         self.parent_plan = objective.parent_plan
-        self.parent_plan = objective.parent_plan
         self.objective_title = objective.objective_title
         self.company = objective.company
         self.financial_year = objective.financial_year
         self.department = objective.department
         self.plan_owner = objective.plan_owner
-        self.plan_owner = objective.plan_owner
         self.objective_owner = objective.owner_user
         self.objective_level = objective.level
         self.start_date = objective.start_date
-        self.end_date = objective.end_date
 
     def clear_inherited_context(self) -> None:
         for fieldname in INHERITED_FIELDS:
@@ -135,7 +191,8 @@ class OKRKeyResult(Document):
             "status": _("Status"),
             "calculation_mode": _("Calculation Mode"),
             "metric_type": _("Measurement Type"),
-            "metric_direction": _("Measurement Direction"),
+            "metric_direction": _("Goal Direction"),
+            "end_date": _("Target Date"),
         }
         for fieldname, label in required.items():
             if not self.get(fieldname):
@@ -154,7 +211,7 @@ class OKRKeyResult(Document):
         if self.metric_type not in VALID_MEASUREMENT_TYPES:
             frappe.throw(_("Measurement Type must be Percentage, Number, Currency, or Boolean."))
         if self.metric_direction not in VALID_MEASUREMENT_DIRECTIONS:
-            frappe.throw(_("Measurement Direction must be Increase or Decrease."))
+            frappe.throw(_("Goal Direction must be Increase or Decrease."))
 
     def validate_measurement(self) -> None:
         if self.metric_type != "Currency":
@@ -184,5 +241,17 @@ class OKRKeyResult(Document):
         for fieldname in INHERITED_FIELDS:
             if self.has_value_changed(fieldname):
                 frappe.throw(_("{0} is inherited from Parent Objective and cannot be changed manually.").format(self.meta.get_label(fieldname)))
+
+    def on_update(self) -> None:
+        from okr_management.utils.okr_calculations import recalculate_objective_progress
+        recalculate_objective_progress(self.objective)
+
+    def on_trash(self) -> None:
+        if frappe.db.count("OKR Action Item", {"parent_key_result": self.name}) > 0:
+            frappe.throw(_("Cannot delete Key Result because dependent Action Items exist."))
+
+    def after_delete(self) -> None:
+        from okr_management.utils.okr_calculations import recalculate_objective_progress
+        recalculate_objective_progress(self.objective)
 
     # Placeholder validation removed

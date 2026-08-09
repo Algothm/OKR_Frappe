@@ -2,6 +2,8 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, nowdate
 
+from okr_management.okr_management.doctype.okr_plan.okr_plan import get_derived_periods, get_period_label
+
 
 class TestOKRPlanPhase1(FrappeTestCase):
     def setUp(self):
@@ -43,6 +45,7 @@ class TestOKRPlanPhase1(FrappeTestCase):
             "company": overrides.pop("company", self.company),
             "owner_user": overrides.pop("owner_user", "Administrator"),
             "status": "Draft",
+            "planned_activation_date": overrides.pop("planned_activation_date", nowdate()),
             **overrides,
         })
         doc.insert(ignore_permissions=True)
@@ -65,6 +68,78 @@ class TestOKRPlanPhase1(FrappeTestCase):
             "status": "Draft",
         }).insert(ignore_permissions=True)
 
+    def test_draft_plan_requires_planned_activation_date(self):
+        self.assertRaises(
+            frappe.ValidationError,
+            self.make_plan,
+            planned_activation_date=None,
+        )
+
+    def test_activation_date_must_be_inside_financial_year(self):
+        fiscal = frappe.db.get_value(
+            "Fiscal Year", self.fiscal_year, ["year_start_date", "year_end_date"], as_dict=True
+        )
+        self.assertRaises(
+            frappe.ValidationError,
+            self.make_plan,
+            planned_activation_date=add_days(fiscal.year_start_date, -1),
+        )
+        self.assertRaises(
+            frappe.ValidationError,
+            self.make_plan,
+            planned_activation_date=add_days(fiscal.year_end_date, 1),
+        )
+
+    def test_due_draft_plan_and_objective_activate_idempotently(self):
+        from okr_management.tasks import activate_due_plans
+
+        plan = self.make_plan(planned_activation_date=nowdate())
+        objective = self.make_objective(plan)
+        key_result = frappe.get_doc({
+            "doctype": "OKR Key Result",
+            "key_result_title": "Scheduled Draft KR",
+            "objective": objective.name,
+            "assignee": "Administrator",
+            "owner_user": "Administrator",
+            "priority": "High",
+            "status": "Draft",
+            "calculation_mode": "Manual",
+            "metric_type": "Percentage",
+            "metric_direction": "Increase",
+            "target_value": 100,
+            "end_date": objective.end_date,
+        }).insert(ignore_permissions=True)
+        self.assertIn(plan.name, activate_due_plans(nowdate()))
+        plan.reload()
+        objective.reload()
+        key_result.reload()
+        self.assertEqual(plan.status, "Active")
+        self.assertEqual(objective.status, "Active")
+        self.assertEqual(key_result.status, "Active")
+        self.assertNotIn(plan.name, activate_due_plans(nowdate()))
+
+    def test_draft_plan_disables_checkins_server_side(self):
+        from okr_management.okr_management.doctype.okr_check_in.okr_check_in import OKRCheckIn
+
+        plan = self.make_plan(planned_activation_date=add_days(nowdate(), 1))
+        action = frappe._dict(parent_plan=plan.name, parent_key_result=None)
+        checkin = frappe.new_doc("OKR Check In")
+        self.assertRaises(frappe.ValidationError, checkin.validate_parent_plan_active, action)
+
+    def test_workspace_plan_source_includes_assigned_drafts(self):
+        from okr_management.okr_management.page.okr_workspace.okr_workspace import get_workspace_plan_names
+
+        plan = self.make_plan(planned_activation_date=add_days(nowdate(), 1))
+        self.assertIn(plan.name, get_workspace_plan_names())
+
+    def test_future_draft_plan_is_not_activated(self):
+        from okr_management.tasks import activate_due_plans
+
+        plan = self.make_plan(planned_activation_date=add_days(nowdate(), 1))
+        self.assertNotIn(plan.name, activate_due_plans(nowdate()))
+        plan.reload()
+        self.assertEqual(plan.status, "Draft")
+
     def test_new_plan_can_start_active(self):
         doc = frappe.get_doc({
             "doctype": "OKR Plan",
@@ -82,45 +157,22 @@ class TestOKRPlanPhase1(FrappeTestCase):
         plan.status = "Completed"
         self.assertRaises(frappe.ValidationError, plan.save)
 
-    def test_monthly_sprint_configuration_accepts_month(self):
-        plan = self.make_plan(sprint_frequency="Monthly", period_selection="January")
-        self.assertEqual(plan.period_selection, "January")
+    def test_monthly_derives_fiscal_months(self):
+        from okr_management.okr_management.doctype.okr_plan.okr_plan import get_derived_periods, get_plan_timeline
+        plan = self.make_plan(sprint_frequency="Monthly")
+        fiscal = frappe.db.get_value("Fiscal Year", self.fiscal_year, ["year_start_date", "year_end_date"], as_dict=True)
+        self.assertEqual(get_plan_timeline(plan), (frappe.utils.getdate(fiscal.year_start_date), frappe.utils.getdate(fiscal.year_end_date)))
+        self.assertEqual(len(get_derived_periods(plan)), 12)
 
-    def test_quarterly_sprint_configuration_rejects_invalid_period(self):
-        self.assertRaises(
-            frappe.ValidationError,
-            self.make_plan,
-            sprint_frequency="Quarterly",
-            period_selection="January",
-        )
+    def test_quarterly_derives_four_fiscal_quarters(self):
+        from okr_management.okr_management.doctype.okr_plan.okr_plan import get_derived_periods
+        plan = self.make_plan(sprint_frequency="Quarterly")
+        periods = get_derived_periods(plan)
+        self.assertEqual([row["label"] for row in periods], ["Q1", "Q2", "Q3", "Q4"])
+        self.assertEqual(len(periods), 4)
 
-    def test_custom_sprint_configuration_accepts_dates_inside_financial_year(self):
-        fiscal_year = frappe.db.get_value(
-            "Fiscal Year",
-            self.fiscal_year,
-            ["year_start_date", "year_end_date"],
-            as_dict=True,
-        )
-        plan = self.make_plan(
-            sprint_frequency="Custom",
-            period_selection="",
-            custom_start_date=fiscal_year.year_start_date,
-            custom_end_date=add_days(fiscal_year.year_start_date, 10),
-        )
-        self.assertEqual(plan.sprint_frequency, "Custom")
-        plan.reload()
-
-        plan.status = "Active"
-        plan.save(ignore_permissions=True)
-        plan.status = "Draft"
-        plan.save(ignore_permissions=True)
-        plan.status = "Archived"
-        plan.save(ignore_permissions=True)
-        plan.status = "Active"
-        plan.save(ignore_permissions=True)
-
-        plan.status = "Closed"
-        self.assertRaises(frappe.ValidationError, plan.save)
+    def test_custom_frequency_is_rejected(self):
+        self.assertRaises(frappe.ValidationError, self.make_plan, sprint_frequency="Custom")
 
     def test_active_plan_locks_approved_fields_only(self):
         plan = self.make_plan(status="Active")
@@ -190,6 +242,36 @@ class TestOKRPlanPhase1(FrappeTestCase):
         plan.reload()
         self.assertEqual(plan.members[0].role, "Admin")
 
+
+    def test_period_label_is_derived_from_full_fiscal_year(self):
+        plan = self.make_plan(sprint_frequency="Monthly")
+        monthly = get_derived_periods(plan)
+        self.assertEqual(get_period_label(monthly[0]["start_date"], plan), monthly[0]["label"])
+        self.assertEqual(get_period_label(monthly[-1]["end_date"], plan), monthly[-1]["label"])
+        self.assertEqual(get_period_label(None, plan), "")
+        self.assertEqual(get_period_label(add_days(monthly[0]["start_date"], -1), plan), "")
+
+    def test_period_label_recalculates_when_frequency_changes(self):
+        plan = self.make_plan(sprint_frequency="Monthly")
+        item_date = get_derived_periods(plan)[1]["start_date"]
+        monthly_label = get_period_label(item_date, plan)
+        plan.sprint_frequency = "Quarterly"
+        self.assertNotEqual(get_period_label(item_date, plan), monthly_label)
+        self.assertEqual(get_period_label(item_date, plan), "Q1")
+
+    def test_workspace_payload_labels_key_results_and_actions(self):
+        from okr_management.okr_management.page.okr_workspace.okr_workspace import add_period_labels
+
+        plan = self.make_plan(sprint_frequency="Quarterly")
+        period = get_derived_periods(plan)[1]
+        key_result = frappe._dict(parent_plan=plan.name, end_date=period["start_date"])
+        action_item = frappe._dict(parent_plan=plan.name, due_date=period["end_date"])
+        unscheduled = frappe._dict(parent_plan=plan.name, due_date=None)
+
+        add_period_labels([key_result], [action_item, unscheduled])
+        self.assertEqual(key_result.period_label, "Q2")
+        self.assertEqual(action_item.period_label, "Q2")
+        self.assertEqual(unscheduled.period_label, "")
 
     def test_plan_team_duplicate_member_blocked(self):
         plan = self.make_plan()

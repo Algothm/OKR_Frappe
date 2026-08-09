@@ -132,9 +132,10 @@
 		margin-bottom: 0 !important;
 	}
 
-	/* Span technical, notes, description sections full width across both columns if they are at the bottom */
 	.page-container[data-page-route^="Form/OKR "] .form-section[data-fieldname="technical_section"],
 	.page-container[data-page-route^="Form/okr-" i] .form-section[data-fieldname="technical_section"],
+	.page-container[data-page-route^="Form/OKR "] .form-section[data-fieldname="plan_team_section"],
+	.page-container[data-page-route^="Form/okr-" i] .form-section[data-fieldname="plan_team_section"],
 	.page-container[data-page-route^="Form/OKR "] .form-section[data-fieldname="notes_section"],
 	.page-container[data-page-route^="Form/okr-" i] .form-section[data-fieldname="notes_section"],
 	.page-container[data-page-route^="Form/OKR "] .form-section[data-fieldname="kr_notes_section"],
@@ -236,14 +237,14 @@
 /* OKR Action Item UI Polish overrides */
 [data-doctype="OKR Action Item"] .frappe-control[data-fieldname="description"] textarea {
 	height: 100px !important;
-	min-height: 80px !important;
+	min-height: 100px !important;
 	resize: vertical !important;
 }
 
 [data-doctype="OKR Plan"] .frappe-control[data-fieldname="description"] textarea,
 .page-container[data-page-route^="Form/OKR Plan"] .frappe-control[data-fieldname="description"] textarea {
 	height: 96px !important;
-	min-height: 80px !important;
+	min-height: 100px !important;
 	max-height: 120px !important;
 	resize: vertical !important;
 }
@@ -501,4 +502,27 @@
 	.okr-ctx-grid {
 		grid-template-columns: 1fr;
 	}
+}
+
+
+.page-container[data-page-route*="OKR Key Result"] .frappe-control[data-fieldname="description"] textarea,
+.page-container[data-page-route*="okr-key-result" i] .frappe-control[data-fieldname="description"] textarea {
+	height: 74px !important;
+	min-height: 74px !important;
+	max-height: 74px !important;
+	resize: vertical !important;
+}
+
+.page-container[data-page-route*="OKR Objective"] .frappe-control[data-fieldname="description"] textarea,
+.page-container[data-page-route*="okr-objective" i] .frappe-control[data-fieldname="description"] textarea {
+	height: 100px !important;
+	min-height: 100px !important;
+	max-height: 100px !important;
+	resize: vertical !important;
+}
+
+[data-fieldname="kr_details_section"] .section-head,
+[data-fieldname="inherited_context_section"] .section-head,
+[data-fieldname="context_preview_heading"] {
+	display: none !important;
 }

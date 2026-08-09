@@ -16,12 +16,6 @@ def get_workspace_data(year: str | None = None, quarter: str | None = None, spri
     if owner == "me":
         filters["owner_user"] = frappe.session.user
 
-    if quarter and not sprint:
-        plan_names = frappe.get_all("OKR Plan", filters={"period_selection": quarter}, pluck="name")
-        if not plan_names:
-            return base_response([], year, quarter, sprint, level, owner)
-        filters["sprint"] = ["in", plan_names]
-
     objectives = frappe.get_all(
         "OKR Objective",
         filters=filters,
@@ -68,7 +62,7 @@ def get_filter_options() -> dict:
     years = sorted(years, key=lambda row: (0 if row.name == "2026-2027" else 1 if not row.name.startswith("_Test") else 2, row.name), reverse=False)
     return {
         "years": years[:30],
-        "sprints": frappe.get_all("OKR Plan", fields=["name", "plan_name", "period_selection", "financial_year", "status"], order_by="start_date desc", limit_page_length=100),
+        "sprints": frappe.get_all("OKR Plan", fields=["name", "plan_name", "financial_year", "status"], order_by="start_date desc", limit_page_length=100),
         "quarters": ["Q1", "Q2", "Q3", "Q4"],
         "levels": ["Organization", "Department", "Team", "Individual"],
     }

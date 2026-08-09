@@ -9,13 +9,14 @@ class OKRAdminWorkspace {
                 jQuery(this.wrapper).find('.page-head').hide();
                 this.body = jQuery('<div class="okr-admin-page"></div>').appendTo(this.page.main);
 
-                this.filters = { year: '', quarter: '', plan: '', sprint: '', department: '', owner: '', status: '' };
+                this.filters = { year: '', plan: '', department: '', status: '' };
                 this.options = {};
                 this.data = null;
 
                 this.current_view = 'dashboard'; // 'dashboard' | 'detail'
                 this.selected_objective = null;
-                this.filter_drawer_open = false;
+                this.filter_drawer_open = true;
+                this._active_card_filter = null;
 
                 this.init_shell();
                 this.bind_events();
@@ -40,23 +41,25 @@ class OKRAdminWorkspace {
                 });
                 this.body.on('click', '[data-clear-filters]', (e) => {
                         e.stopPropagation();
-                        this.filters = { year: '', quarter: '', plan: '', sprint: '', department: '', owner: '', status: '' };
+                        this.filters = { year: '', plan: '', department: '', status: '' };
                         this.render_filters();
                         this.render_filter_summary();
+                        this._reset_card_filter();
                         this.load();
                 });
                 this.body.on('change', '[data-filter]', (e) => {
                         const field = e.currentTarget.getAttribute('data-filter');
                         this.filters[field] = e.currentTarget.value || '';
-                        if (field === 'plan') this.filters.sprint = '';
-                        if (field === 'year' || field === 'quarter' || field === 'plan') this.render_filters();
+                        if (field === 'year') this.render_filters();
                         this.render_filter_summary();
+                        this._reset_card_filter();
                         this.load();
                 });
 
                 // Refresh trigger
                 this.body.on('click', '[data-refresh]', () => this.load());
                 this.body.on('click', '[data-select-plan]', (e) => this.select_plan($(e.currentTarget).data('select-plan')));
+                this.body.on('click', '[data-summary-card]', (e) => this._handle_summary_card_click($(e.currentTarget).data('summary-card')));
                 this.body.on('click', '[data-clear-plan]', (e) => { e.preventDefault(); this.clear_plan(); });
 
                 // Navigation between Dashboard and Detail views
@@ -77,6 +80,11 @@ class OKRAdminWorkspace {
                         }
                 });
 
+                this.body.on('click', '.okr-clear-card-filter', (e) => {
+                        e.preventDefault();
+                        this._reset_card_filter();
+                });
+
                 // Key Result card expansion toggle
                 this.body.on('click', '[data-kr-toggle]', (e) => {
                         const card = $(e.currentTarget).closest('.okr-kr-card');
@@ -94,6 +102,107 @@ class OKRAdminWorkspace {
                 });
         }
 
+        _handle_summary_card_click(card_type) {
+                const scroll_to = (selector) => {
+                        const el = this.body.find(selector)[0];
+                        if (el) {
+                                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                };
+
+                // If clicking the already active card, reset the card filters
+                if (this._active_card_filter === card_type) {
+                        this._reset_card_filter();
+                        return;
+                }
+
+                this._active_card_filter = card_type;
+
+                // Mark active card for visual feedback
+                this.body.find('[data-summary-card]').removeClass('okr-card-active');
+                this.body.find(`[data-summary-card="${card_type}"]`).addClass('okr-card-active');
+                this.body.find('.okr-clear-card-filter').show();
+
+                if (card_type === 'needs_attention') {
+                        // Hide OKR Plans section completely
+                        this.body.find('#okr-plans-section').hide();
+                        this.body.find('.okr-plan-grid').hide();
+                        // Show Needs Attention list and show all attention rows
+                        this.body.find('#okr-needs-attention-section').show();
+                        this.body.find('.okr-attention-card').show();
+                        this.body.find('.okr-attention-row').show();
+                        scroll_to('#okr-needs-attention-section');
+
+                } else if (card_type === 'plans' || card_type === 'objectives' || card_type === 'overall_progress') {
+                        // Show everything, scroll to plans section
+                        this.body.find('#okr-plans-section').show();
+                        this.body.find('.okr-plan-grid').show();
+                        this.body.find('#okr-needs-attention-section').show();
+                        this.body.find('.okr-attention-card').show();
+                        this.body.find('.okr-attention-row').show();
+                        this.body.find('.okr-plan-card').show();
+                        scroll_to('#okr-plans-section');
+
+                } else if (card_type === 'blocked') {
+                        // Show plans section
+                        this.body.find('#okr-plans-section').show();
+                        this.body.find('.okr-plan-grid').show();
+                        // Show Needs Attention section
+                        this.body.find('#okr-needs-attention-section').show();
+                        this.body.find('.okr-attention-card').show();
+
+                        // Filter attention rows: show only rows where reason contains 'Blocked'
+                        const attn_rows = this.body.find('.okr-attention-row');
+                        attn_rows.each((i, el) => {
+                                const pill = $(el).find('.okr-status-pill').text().trim().toLowerCase();
+                                const title = $(el).find('.okr-attention-row__title strong').text().trim().toLowerCase();
+                                $(el).toggle(pill.includes('block') || title.includes('block'));
+                        });
+                        // Filter plan cards: show only plans with blocked > 0
+                        const all_plans = this.data.plan_summaries || [];
+                        this.body.find('.okr-plan-card').each((i, el) => {
+                                const plan_name = $(el).data('select-plan');
+                                const plan = all_plans.find(p => p.name === plan_name);
+                                const blocked = plan ? cint(plan.blocked_objectives || plan.blocked || 0) : 0;
+                                $(el).toggle(blocked > 0);
+                        });
+                        scroll_to('#okr-plans-section');
+                        frappe.show_alert({ message: __('Showing only Blocked items'), indicator: 'orange' });
+
+                } else if (card_type === 'achieved') {
+                        // Show plans section
+                        this.body.find('#okr-plans-section').show();
+                        this.body.find('.okr-plan-grid').show();
+                        // Filter attention rows: hide — achieved items won't be in attention list
+                        this.body.find('#okr-needs-attention-section').hide();
+                        this.body.find('.okr-attention-card').hide();
+                        this.body.find('.okr-attention-row').hide();
+                        // Filter plan cards: show only plans with progress >= 100 or status Completed
+                        const all_plans = this.data.plan_summaries || [];
+                        this.body.find('.okr-plan-card').each((i, el) => {
+                                const plan_name = $(el).data('select-plan');
+                                const plan = all_plans.find(p => p.name === plan_name);
+                                const progress = plan ? flt(plan.progress || 0) : 0;
+                                const status = plan ? (plan.status || '') : '';
+                                $(el).toggle(progress >= 100 || status === 'Completed');
+                        });
+                        scroll_to('#okr-plans-section');
+                        frappe.show_alert({ message: __('Showing only Achieved plans'), indicator: 'green' });
+                }
+        }
+
+        _reset_card_filter() {
+                this._active_card_filter = null;
+                this.body.find('[data-summary-card]').removeClass('okr-card-active');
+                this.body.find('.okr-clear-card-filter').hide();
+                this.body.find('#okr-plans-section').show();
+                this.body.find('.okr-plan-grid').show();
+                this.body.find('#okr-needs-attention-section').show();
+                this.body.find('.okr-attention-card').show();
+                this.body.find('.okr-attention-row').show();
+                this.body.find('.okr-plan-card').show();
+        }
+
         load_options() {
                 frappe.call({
                         method: 'okr_management.okr_management.page.admin_workspace.admin_workspace.get_filter_options',
@@ -108,12 +217,11 @@ class OKRAdminWorkspace {
                 this.body.addClass('loading');
                 frappe.call({
                         method: 'okr_management.okr_management.page.admin_workspace.admin_workspace.get_dashboard_data',
-                        args: this.filters,
+                        args: { ...this.filters, quarter: '', sprint: '', owner: '' },
                         freeze: true,
                         freeze_message: __('Syncing Operational Control Room...'),
                         callback: (r) => {
                                 this.data = r.message || {};
-                                this.ensure_sample_data();
                                 this.render_current_view();
                         },
                         error: () => frappe.show_alert({ message: __('Unable to load OKR command data.'), indicator: 'red' }),
@@ -121,69 +229,6 @@ class OKRAdminWorkspace {
                 });
         }
 
-        ensure_sample_data() {
-                if (this.filters.plan) return;
-                // Ensure we always have high-fidelity attention required rows for proving multi-dept drilldowns
-                if (!this.data.attention_required || !this.data.attention_required.length) {
-                        this.data.attention_required = [
-                                {
-                                        name: 'OBJ-001',
-                                        objective: 'Expand Customer Base',
-                                        department: 'SALES',
-                                        owner: 'utsav@algothm.com',
-                                        progress: 33.3,
-                                        priority: 'Blocked',
-                                        reason: 'DRAFT',
-                                        days_blocked: 14,
-                                        doctype: 'OKR Objective'
-                                },
-                                {
-                                        name: 'OBJ-002',
-                                        objective: 'Increase Monthly Sales Revenue by 15%',
-                                        department: 'SALES',
-                                        owner: 'utsav@algothm.com',
-                                        progress: 40.3,
-                                        priority: 'Blocked',
-                                        reason: 'BLOCKED',
-                                        days_blocked: 8,
-                                        doctype: 'OKR Objective'
-                                },
-                                {
-                                        name: 'OBJ-003',
-                                        objective: 'Improve Customer Satisfaction',
-                                        department: 'SALES',
-                                        owner: 'utsav@algothm.com',
-                                        progress: 44.3,
-                                        priority: 'Blocked',
-                                        reason: 'BLOCKED',
-                                        days_blocked: 5,
-                                        doctype: 'OKR Objective'
-                                },
-                                {
-                                        name: 'OBJ-004',
-                                        objective: 'Strengthen Sales Team Productivity',
-                                        department: 'SALES',
-                                        owner: 'utsav@algothm.com',
-                                        progress: 49.6,
-                                        priority: 'Blocked',
-                                        reason: 'BLOCKED',
-                                        days_blocked: 3,
-                                        doctype: 'OKR Objective'
-                                },
-                                {
-                                        name: 'OBJ-005',
-                                        objective: 'Improve hiring velocity and onboarding quality',
-                                        department: 'HR',
-                                        owner: 'hr@ajantabottle.com',
-                                        progress: 66.3,
-                                        priority: 'Overdue',
-                                        reason: 'OVERDUE',
-                                        days_blocked: 11,
-                                        doctype: 'OKR Objective'
-                                }
-                        ];
-                }
-        }
 
         render_current_view() {
                 this.update_breadcrumb();
@@ -195,6 +240,62 @@ class OKRAdminWorkspace {
                         container.html(this.render_dashboard_html());
                         this.render_filters();
                         this.render_filter_summary();
+
+                        if (this._active_card_filter) {
+                                const card_type = this._active_card_filter;
+                                this.body.find('[data-summary-card]').removeClass('okr-card-active');
+                                this.body.find(`[data-summary-card="${card_type}"]`).addClass('okr-card-active');
+                                this.body.find('.okr-clear-card-filter').show();
+
+                                if (card_type === 'needs_attention') {
+                                        this.body.find('#okr-plans-section').hide();
+                                        this.body.find('.okr-plan-grid').hide();
+                                        this.body.find('#okr-needs-attention-section').show();
+                                        this.body.find('.okr-attention-card').show();
+                                        this.body.find('.okr-attention-row').show();
+                                } else if (card_type === 'blocked') {
+                                        this.body.find('#okr-plans-section').show();
+                                        this.body.find('.okr-plan-grid').show();
+                                        this.body.find('#okr-needs-attention-section').show();
+                                        this.body.find('.okr-attention-card').show();
+
+                                        const attn_rows = this.body.find('.okr-attention-row');
+                                        attn_rows.each((i, el) => {
+                                                const pill = $(el).find('.okr-status-pill').text().trim().toLowerCase();
+                                                const title = $(el).find('.okr-attention-row__title strong').text().trim().toLowerCase();
+                                                $(el).toggle(pill.includes('block') || title.includes('block'));
+                                        });
+                                        const all_plans = this.data.plan_summaries || [];
+                                        this.body.find('.okr-plan-card').each((i, el) => {
+                                                const plan_name = $(el).data('select-plan');
+                                                const plan = all_plans.find(p => p.name === plan_name);
+                                                const blocked = plan ? cint(plan.blocked_objectives || plan.blocked || 0) : 0;
+                                                $(el).toggle(blocked > 0);
+                                        });
+                                } else if (card_type === 'achieved') {
+                                        this.body.find('#okr-plans-section').show();
+                                        this.body.find('.okr-plan-grid').show();
+                                        this.body.find('#okr-needs-attention-section').hide();
+                                        this.body.find('.okr-attention-card').hide();
+                                        this.body.find('.okr-attention-row').hide();
+
+                                        const all_plans = this.data.plan_summaries || [];
+                                        this.body.find('.okr-plan-card').each((i, el) => {
+                                                const plan_name = $(el).data('select-plan');
+                                                const plan = all_plans.find(p => p.name === plan_name);
+                                                const progress = plan ? flt(plan.progress || 0) : 0;
+                                                const status = plan ? (plan.status || '') : '';
+                                                $(el).toggle(progress >= 100 || status === 'Completed');
+                                        });
+                                } else {
+                                        this.body.find('#okr-plans-section').show();
+                                        this.body.find('.okr-plan-grid').show();
+                                        this.body.find('#okr-needs-attention-section').show();
+                                        this.body.find('.okr-attention-card').show();
+                                        this.body.find('.okr-attention-row').show();
+                                        this.body.find('.okr-plan-card').show();
+                                }
+                        }
                 }
         }
 
@@ -212,130 +313,57 @@ class OKRAdminWorkspace {
            ========================================================================== */
         render_dashboard_html() {
                 const m = this.data.metrics || {};
-                const health = this.compute_health_grade(m);
                 const updated = this.format_admin_datetime(this.data.updated_at || new Date());
-                const attentionRows = this.data.attention_required || [];
-                const activityRows = this.data.critical_activity || [];
-                const managerRows = this.data.manager_performance || [];
-                const planRows = this.data.plan_summaries || [];
-
+                const rows = this.data.attention_required || [];
+                const plans = this.data.plan_summaries || [];
+                const objectives = plans.reduce((n, row) => n + cint(row.objectives || 0), 0);
                 return `
-                        <!-- Executive Header Band -->
-                        <section class="okr-exec-band">
-                                <div class="okr-exec-band__left">
-                                        <span class="okr-exec-band__eyebrow">EXECUTIVE COMMAND CENTER</span>
-                                        <h1 class="okr-exec-band__title">Company OKR Health</h1>
-                                </div>
-                                <div class="okr-exec-band__right">
-                                        <span class="okr-exec-band__updated">Updated <strong>${this.e(updated)}</strong></span>
-                                        <button class="okr-btn-white" data-refresh>Refresh</button>
-                                </div>
+                        <section class="okr-filter-card open">
+                          <div class="okr-filter-card__header" data-toggle-filters>
+                            <div class="okr-filter-card__summary"><span data-filter-summary-text>${this.get_filter_summary_text()}</span><span class="okr-chevron"></span></div>
+                            <button class="okr-btn-clear" data-clear-filters>Clear</button>
+                          </div>
+                          <div class="okr-filter-grid" data-filter-bar></div>
                         </section>
-
-                        <!-- Collapsible Filter Bar -->
-                        <section class="okr-filter-card ${this.filter_drawer_open ? 'open' : ''}">
-                                <div class="okr-filter-card__header" data-toggle-filters>
-                                        <div class="okr-filter-card__summary">
-                                                <span data-filter-summary-text>${this.get_filter_summary_text()}</span>
-                                                <span class="okr-chevron"></span>
-                                        </div>
-                                        <button class="okr-btn-clear" data-clear-filters>Clear</button>
-                                </div>
-                                <div class="okr-filter-grid" data-filter-bar></div>
-                        </section>
-
-                        ${this.render_selected_plan_chip(planRows)}
-
-                        <!-- Health Strip -->
+                        ${this.render_selected_plan_chip(plans)}
                         <div class="okr-section-head">
-                                <div>
-                                        <h2 class="okr-section-title">Where things stand today</h2>
-                                        <p class="okr-section-subtitle">Tap any objective to see exactly who entered what, and how it's really progressing.</p>
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                        <h2 class="okr-section-title" style="margin: 0;">Summary</h2>
+                                        <button class="btn btn-xs btn-default okr-clear-card-filter" style="display: none; padding: 2px 8px; font-size: 11px; font-weight: 500;">Clear Card Filter</button>
                                 </div>
+                                ${this.render_progress_legend()}
                         </div>
                         <section class="okr-health-strip">
-                                <div class="okr-health-strip__grade-col">
-                                        <span class="okr-grade-letter okr-grade-letter--${this.severity_slug(health.tone)}">${this.e(health.grade)}</span>
-                                        <div class="okr-grade-caption">
-                                                <span class="okr-grade-caption__word">${this.e(health.label)}</span>
-                                                <span class="okr-grade-caption__score">${health.score}/100</span>
-                                        </div>
-                                </div>
-                                <div class="okr-health-strip__metric-col">
-                                        <span class="okr-metric-num okr-metric-num--${this.progress_severity(m.company_progress)}">${this.percent(m.company_progress)}</span>
-                                        <span class="okr-metric-label">Company progress</span>
-                                </div>
-                                <div class="okr-health-strip__metric-col">
-                                        <span class="okr-metric-num okr-metric-num--${(m.blocked_objectives || 0) > 0 ? 'critical' : 'good'}">${cint(m.blocked_objectives || 0)}</span>
-                                        <span class="okr-metric-label">Blocked objectives</span>
-                                </div>
-                                <div class="okr-health-strip__metric-col">
-                                        <span class="okr-metric-num okr-metric-num--${(m.overdue_action_items || 0) > 0 ? 'critical' : 'good'}">${cint(m.overdue_action_items || 0)}</span>
-                                        <span class="okr-metric-label">Overdue actions</span>
-                                </div>
+                          <button class="okr-health-strip__metric-col" data-summary-card="needs_attention" title="Click to scroll to Needs Attention">
+                                <span class="okr-metric-num okr-metric-num--${(this.data.attention_count||0)>0?'critical':'good'}">${cint(this.data.attention_count||0)}</span>
+                                <span class="okr-metric-label">Needs Attention</span>
+                          </button>
+                          <button class="okr-health-strip__metric-col" data-summary-card="plans" title="Click to scroll to OKR Plans">
+                                <span class="okr-metric-num">${plans.length}</span>
+                                <span class="okr-metric-label">Plans</span>
+                          </button>
+                          <button class="okr-health-strip__metric-col" data-summary-card="objectives" title="Click to scroll to OKR Plans">
+                                <span class="okr-metric-num">${objectives}</span>
+                                <span class="okr-metric-label">Objectives</span>
+                          </button>
+                          <button class="okr-health-strip__metric-col" data-summary-card="overall_progress" title="Overall progress">
+                                <span class="okr-metric-num okr-metric-num--${this.progress_severity(m.company_progress)}">${this.percent(m.company_progress)}</span>
+                                <span class="okr-metric-label">Overall Progress</span>
+                          </button>
+                          <button class="okr-health-strip__metric-col" data-summary-card="blocked" title="Click to filter blocked objectives">
+                                <span class="okr-metric-num okr-metric-num--${(m.blocked_objectives||0)>0?'critical':'good'}">${cint(m.blocked_objectives||0)}</span>
+                                <span class="okr-metric-label">Blocked Objectives</span>
+                          </button>
+                          <button class="okr-health-strip__metric-col" data-summary-card="achieved" title="Click to filter achieved objectives">
+                                <span class="okr-metric-num okr-metric-num--good">${cint(m.achieved_objectives||0)}</span>
+                                <span class="okr-metric-label">Achieved Objectives</span>
+                          </button>
                         </section>
-
-                        ${this.render_plan_section(planRows)}
-                        <!-- Objectives Needing Attention -->
-                        <div class="okr-section-head">
-                                <h2 class="okr-section-title">Objectives needing attention</h2>
-                                <span class="okr-section-hint">click a row to open it</span>
-                        </div>
+                        ${this.render_plan_section(plans)}
+                        <div class="okr-section-head" id="okr-needs-attention-section"><h2 class="okr-section-title">Needs Attention</h2><span class="okr-section-hint">Blocked, on hold, missing check-in, or low progress</span></div>
                         <section class="okr-attention-card">
-                                ${attentionRows.length ? attentionRows.map((row, idx) => `
-                                        <button class="okr-attention-row" data-objective-row data-objective-index="${idx}">
-                                                <span class="okr-dept-tag">${this.e(row.department || 'GENERAL')}</span>
-                                                <div class="okr-attention-row__title">
-                                                        <strong>${this.e(row.objective)}</strong>
-                                                        <span>${this.e(row.owner || 'unassigned')}</span>
-                                                </div>
-                                                <div class="okr-progress-bar">
-                                                        <div class="okr-progress-bar__fill okr-progress-bar__fill--${this.progress_severity(row.progress)}" style="width: ${this.progress_width(row.progress)}%;"></div>
-                                                </div>
-                                                <span class="okr-attention-row__pct">${this.percent(row.progress)}</span>
-                                                <span class="okr-status-pill okr-status-pill--${this.status_slug(row.priority || row.reason)}">${this.e(row.reason || row.priority || 'BLOCKED')}</span>
-                                                <span class="okr-row-arrow">&gt;</span>
-                                        </button>
-                                `).join('') : `<div style="padding: 32px; text-align: center; color: var(--muted);">✓ No objectives need urgent intervention right now.</div>`}
+                          ${rows.length ? rows.map((row,idx)=>`<button class="okr-attention-row" data-objective-row data-objective-index="${idx}"><span class="okr-dept-tag">${this.e(row.department||'GENERAL')}</span><div class="okr-attention-row__title"><strong>${this.e(row.objective)}</strong><span>${this.e(row.owner||'unassigned')}</span></div><div class="okr-progress-bar"><div class="okr-progress-bar__fill okr-progress-bar__fill--${this.progress_severity(row.progress)}" style="width:${this.progress_width(row.progress)}%"></div></div><span class="okr-attention-row__pct">${this.percent(row.progress)}</span><span class="okr-status-pill okr-status-pill--${this.status_slug(row.reason)}">${this.e(row.reason||'Needs attention')}</span><span class="okr-row-arrow">&gt;</span></button>`).join('') : `<div style="padding:32px;text-align:center;color:var(--muted)">No items need attention right now.</div>`}
                         </section>
-
-                        <!-- Secondary Context (Collapsed Details Panels) -->
-                        <details class="okr-details-card">
-                                <summary>Recent activity <span>last 24h</span></summary>
-                                <div class="okr-details-body">
-                                        <div class="okr-feed-list">
-                                                ${activityRows.length ? activityRows.map(row => `
-                                                        <div class="okr-feed-item-raw">
-                                                                <strong>${this.e(row.title || row.type)}</strong>
-                                                                <small>${this.e([row.owner, row.when ? this.format_admin_datetime(row.when) : ''].filter(Boolean).join(' · '))}</small>
-                                                        </div>
-                                                `).join('') : `<div class="okr-feed-item-raw"><small>No critical events logged across the organization today.</small></div>`}
-                                        </div>
-                                </div>
-                        </details>
-
-                        <details class="okr-details-card">
-                                <summary>Manager leaderboard <span>${managerRows.length || 0} managers</span></summary>
-                                <div class="okr-details-body">
-                                        <div class="okr-leaderboard-list">
-                                                ${managerRows.length ? managerRows.map(row => `
-                                                        <div class="okr-leaderboard-row">
-                                                                <span class="okr-leaderboard-rank">#${this.e(row.ranking || 1)}</span>
-                                                                <div class="okr-leaderboard-mgr">
-                                                                        <strong>${this.e(row.manager_name || row.manager)}</strong>
-                                                                        <small>${this.e(row.manager)}</small>
-                                                                </div>
-                                                                <span style="font-family: var(--font-mono); font-weight: 600; font-size: 13px; color: var(--ink); text-align: right;">${this.percent(row.average_progress)}</span>
-                                                                <div style="text-align: right;">
-                                                                        <span class="okr-blk-pill ${cint(row.blocked_items) > 0 ? 'okr-blk-pill--alert' : 'okr-blk-pill--zero'}">${cint(row.blocked_items)} ${cint(row.blocked_items) === 1 ? 'block' : 'blocks'}</span>
-                                                                </div>
-                                                        </div>
-                                                `).join('') : `<div style="padding: 12px 0; color: var(--muted); font-size: 12px;">No manager ranking data available.</div>`}
-                                        </div>
-                                </div>
-                        </details>
-
-                        <p class="okr-footer-hint">Health grade, blockers and overdue work stay on one line — no repeated department cards below.</p>
                 `;
         }
 
@@ -355,9 +383,9 @@ class OKRAdminWorkspace {
         render_plan_section(rows) {
                 return `
                         <!-- OKR Plans -->
-                        <div class="okr-section-head">
+                        <div class="okr-section-head" id="okr-plans-section">
                                 <h2 class="okr-section-title">OKR Plans</h2>
-                                <span class="okr-section-hint">active plans</span>
+                                <span class="okr-section-hint">plan overview</span>
                         </div>
                         <section class="okr-plan-grid">
                                 ${rows.length ? rows.map(row => this.render_plan_card(row)).join('') : `<div class="okr-plan-empty">No active OKR plans found for the current filters.</div>`}
@@ -368,37 +396,44 @@ class OKRAdminWorkspace {
         render_plan_card(row) {
                 const active = this.filters.plan === row.name;
                 const blocked = cint(row.blocked_objectives || row.blocked || 0);
-                const period = this.plan_period(row);
+
+                // New simplified color logic: Red if blocked, Yellow if 0-50%, Green if >50%
+                let progress_class = 'good';
+                if (blocked > 0) {
+                        progress_class = 'critical';
+                } else if (flt(row.progress) <= 50) {
+                        progress_class = 'warning';
+                }
+
+                const freq = this.e(row.sprint_frequency || '');
+                const obj_count = cint(row.objectives || 0);
+
                 return `
                         <button type="button" class="okr-plan-card ${active ? 'active' : ''}" data-select-plan="${this.e(row.name)}">
                                 <div class="okr-plan-card__head">
                                         <div>
                                                 <strong>${this.e(row.plan_name || row.name)}</strong>
                                                 <span>${this.e(row.name || '')}</span>
+                                                <div class="okr-plan-card__meta-inline">
+                                                        ${freq ? `<span class="okr-plan-freq-pill">${freq}</span>` : ''}
+                                                        <span class="okr-plan-meta-stats">${obj_count} Objective${obj_count !== 1 ? 's' : ''} · <span class="${blocked > 0 ? 'okr-plan-critical-text' : ''}">${blocked} Blocked</span></span>
+                                                </div>
                                         </div>
-                                        <span class="okr-status-pill okr-status-pill--${this.status_slug(row.health)}">${this.e(row.health || 'Watch')}</span>
+                                        <span class="okr-status-pill okr-status-pill--${this.status_slug(row.status)}">${this.e(row.status || 'Draft')}</span>
                                 </div>
                                 <div class="okr-plan-progress">
                                         <div>
                                                 <span>Progress</span>
-                                                <strong class="okr-metric-num okr-metric-num--${this.progress_severity(row.progress)}">${this.percent(row.progress)}</strong>
+                                                <strong class="okr-metric-num okr-metric-num--${progress_class}">${this.percent(row.progress)}</strong>
                                         </div>
                                         <div class="okr-progress-bar">
-                                                <div class="okr-progress-bar__fill okr-progress-bar__fill--${this.progress_severity(row.progress)}" style="width: ${this.progress_width(row.progress)}%;"></div>
+                                                <div class="okr-progress-bar__fill okr-progress-bar__fill--${progress_class}" style="width: ${this.progress_width(row.progress)}%;"></div>
                                         </div>
-                                </div>
-                                <div class="okr-plan-stats">
-                                        <div><span>Objectives</span><strong>${cint(row.objectives || 0)}</strong></div>
-                                        <div><span>Departments</span><strong>${cint(row.departments || 0)}</strong></div>
-                                        <div><span>Blocked Objectives</span><strong class="${blocked > 0 ? 'okr-plan-critical' : ''}">${blocked}</strong></div>
-                                </div>
-                                <div class="okr-plan-card__foot">
-                                        <div><span>${this.e(period.label)}</span><strong>${this.e(period.value)}</strong></div>
-                                        <div><span>Last Updated</span><strong>${this.e(this.format_plan_datetime(row.last_updated))}</strong></div>
                                 </div>
                         </button>
                 `;
         }
+
 
         plan_period(row) {
                 return { label: 'Financial Year', value: this.format_financial_year(row.financial_year) || '-' };
@@ -459,10 +494,14 @@ class OKRAdminWorkspace {
            OBJECTIVE DETAIL VIEW RENDER
            ========================================================================== */
         open_objective_detail(row) {
-                this.selected_objective = row;
-                this.current_view = 'detail';
-                this.render_current_view();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                if (row && row.name) {
+                        frappe.route_options = { objective: row.name };
+                        frappe.set_route('okr-workspace');
+                }
+        }
+
+        period_badge(label) {
+                return label ? `<span class="okr-period-badge">${this.e(label)}</span>` : '';
         }
 
         render_detail_html(obj) {
@@ -494,10 +533,12 @@ class OKRAdminWorkspace {
                                         </div>
                                         <div class="okr-dept-owner-pill">
                                                 <span class="okr-dept-owner-pill__dot"></span>
-                                                <span>${this.e(obj.department || 'Sales')} — ${this.e(obj.owner || 'utsav@algothm.com')}</span>
+                                                <span>${this.e(obj.department || 'Unassigned')} — ${this.e(obj.owner || 'Unassigned')}</span>
                                         </div>
                                 </div>
                         </section>
+
+                        ${this.render_progress_legend()}
 
                         <!-- Key Results Heading -->
                         <h2 style="font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--ink); margin: 24px 0 12px 2px;">Key results</h2>
@@ -509,11 +550,11 @@ class OKRAdminWorkspace {
                                                 <div class="okr-kr-header" data-kr-toggle>
                                                         <div class="okr-kr-header__left">
                                                                 <span class="okr-kr-badge">KR</span>
-                                                                <span class="okr-kr-title">${this.e(kr.title)}</span>
+                                                                <span class="okr-kr-title">${this.e(kr.title)}</span>${this.period_badge(kr.period_label)}
                                                         </div>
                                                         <div class="okr-kr-header__right">
                                                                 <div class="okr-kr-bar"><div class="okr-kr-bar__fill" style="width: ${this.progress_width(kr.progress)}%;"></div></div>
-                                                                <span class="okr-kr-target-pill">${this.e(kr.target || '47 / 100 demos')}</span>
+                                                                <span class="okr-kr-target-pill">${this.e(kr.target || '-')}</span>
                                                                 <span class="okr-chevron"></span>
                                                         </div>
                                                 </div>
@@ -524,19 +565,19 @@ class OKRAdminWorkspace {
                                                                                 <div class="okr-init-top__left">
                                                                                         <span class="okr-ai-badge">AI</span>
                                                                                         <div class="okr-init-info">
-                                                                                                <strong>${this.e(init.name)}</strong>
+                                                                                                <div class="okr-title-with-period"><strong>${this.e(init.name)}</strong>${this.period_badge(init.period_label)}</div>
                                                                                                 <div class="okr-init-meta">
-                                                                                                        <span class="okr-dept-tag">${this.e(init.department || obj.department || 'SALES')}</span>
+                                                                                                        <span class="okr-dept-tag">${this.e(init.department || obj.department || 'Unassigned')}</span>
                                                                                                         <span>${this.e(init.owner || obj.owner)}</span>
                                                                                                         <span>·</span>
-                                                                                                        <span>${this.e(init.date || '15-07-2026')}</span>
+                                                                                                        <span>${this.e(init.date || '-')}</span>
                                                                                                 </div>
                                                                                         </div>
                                                                                 </div>
                                                                                 <div class="okr-progress-bar">
                                                                                         <div class="okr-progress-bar__fill okr-progress-bar__fill--${this.progress_severity(init.progress)}" style="width: ${this.progress_width(init.progress)}%;"></div>
                                                                                 </div>
-                                                                                <span style="font-family: var(--font-mono); font-weight: 600; font-size: 13px; color: var(--ink); text-align: right;">${this.percent(init.progress)}</span>
+                                                                                <span style="font-family: var(--admin-font); font-weight: 700; font-size: 13px; color: var(--ink); text-align: right;">${this.percent(init.progress)}</span>
                                                                                 <div style="text-align: right;">
                                                                                         <span class="okr-status-pill okr-status-pill--${this.status_slug(init.status)}">${this.e(init.status)}</span>
                                                                                 </div>
@@ -546,11 +587,11 @@ class OKRAdminWorkspace {
                                                                                         ${iIdx === 0 ? '▾' : '▸'} ${(init.checkins || []).length} check-ins — ${iIdx === 0 ? 'hide trail' : 'view trail'}
                                                                                 </button>
                                                                                 <div class="okr-trail-notes">
-                                                                                        ${(init.checkins || []).map(ck => `
+                                                                                        ${(init.checkins || []).map((ck, ckIndex) => `
                                                                                                 <div class="okr-trail-note-item">
                                                                                                         <span class="okr-trail-note-item__date">${this.e(ck.date)}</span>
-                                                                                                        <span class="okr-trail-note-item__pct">${this.percent(ck.pct)}</span>
-                                                                                                        <span class="okr-trail-note-item__text ${ck.is_blocker ? 'is-blocker' : ''}">${ck.note}</span>
+                                                                                                        <span class="okr-trail-note-item__pct">${this.checkin_delta(init.checkins || [], ckIndex)}</span>
+                                                                                                        <span class="okr-trail-note-item__text ${ck.is_blocker ? 'is-blocker' : ''}">${this.render_checkin_note(ck.note, ck.is_blocker)}</span>
                                                                                                 </div>
                                                                                         `).join('')}
                                                                                 </div>
@@ -569,58 +610,7 @@ class OKRAdminWorkspace {
                 if (obj.key_results && obj.key_results.length) {
                         return obj.key_results;
                 }
-                return [
-                        {
-                                title: 'Increase qualified demos completed',
-                                target: '47 / 100 demos',
-                                progress: 47,
-                                initiatives: [
-                                        {
-                                                name: 'Review territory pipeline quality',
-                                                department: obj.department || 'SALES',
-                                                owner: obj.owner || 'utsav@algothm.com',
-                                                date: '15-07-2026',
-                                                progress: 80,
-                                                status: 'Blocked',
-                                                checkins: [
-                                                        { date: '09-07-2026', pct: 80, note: 'ffb — Blocker: bsxgt', is_blocker: true },
-                                                        { date: '09-07-2026', pct: 70, note: 'Increase demos process 70.' },
-                                                        { date: '08-07-2026', pct: 50, note: '50 increase.' }
-                                                ]
-                                        },
-                                        {
-                                                name: 'Run focused customer outreach campaigns',
-                                                department: 'SALES',
-                                                owner: 'sales.rep@algothm.com',
-                                                date: '14-07-2026',
-                                                progress: 47,
-                                                status: 'In progress',
-                                                checkins: [
-                                                        { date: '14-07-2026', pct: 47, note: '47 qualified demos booked so far across Q3.' },
-                                                        { date: '07-07-2026', pct: 25, note: 'Launched email sequences to enterprise accounts.' }
-                                                ]
-                                        }
-                                ]
-                        },
-                        {
-                                title: 'Reduce customer churn rate below 4%',
-                                target: '3.8 / 4.0 %',
-                                progress: 65,
-                                initiatives: [
-                                        {
-                                                name: 'Implement automated health check alerts for accounts',
-                                                department: 'CS',
-                                                owner: 'success@algothm.com',
-                                                date: '12-07-2026',
-                                                progress: 65,
-                                                status: 'In progress',
-                                                checkins: [
-                                                        { date: '12-07-2026', pct: 65, note: 'Automated email flags running for 60% of accounts.' }
-                                                ]
-                                        }
-                                ]
-                        }
-                ];
+                return [];
         }
 
         /* ==========================================================================
@@ -629,13 +619,11 @@ class OKRAdminWorkspace {
         select_plan(plan) {
                 if (!plan) return;
                 this.filters.plan = plan;
-                this.filters.sprint = '';
                 this.load();
         }
 
         clear_plan() {
                 this.filters.plan = '';
-                this.filters.sprint = '';
                 this.load();
         }
         toggle_filter_drawer() {
@@ -649,19 +637,10 @@ class OKRAdminWorkspace {
                         if (this.filters.year && plan.financial_year !== this.filters.year) return false;
                         return true;
                 });
-                const sprints = (this.options.sprints || []).filter(s => {
-                        if (this.filters.year && s.financial_year !== this.filters.year) return false;
-                        if (this.filters.quarter && s.period_selection !== this.filters.quarter) return false;
-                        if (this.filters.plan && s.parent_plan !== this.filters.plan) return false;
-                        return true;
-                });
                 this.body.find('[data-filter-bar]').html(`
-                        ${this.filter_select('year', __('Year'), this.options.years || [], 'name', 'name')}
-                        ${this.filter_select('quarter', __('Quarter'), (this.options.quarters || []).map(v => ({ name: v })), 'name', 'name')}
+                        ${this.filter_select('year', __('Financial Year'), this.options.years || [], 'name', 'name')}
                         ${this.filter_select('plan', __('Plan'), plans, 'name', 'plan_name')}
-                        ${this.filter_select('sprint', __('Plan Period'), sprints, 'name', 'plan_name')}
                         ${this.filter_select('department', __('Department'), this.options.departments || [], 'name', 'department_name')}
-                        ${this.filter_select('owner', __('Owner'), this.options.owners || [], 'name', 'full_name')}
                         ${this.filter_select('status', __('Status'), (this.options.statuses || []).map(v => ({ name: v })), 'name', 'name')}
                 `);
         }
@@ -686,11 +665,7 @@ class OKRAdminWorkspace {
 
                 if (this.filters.year) parts.push(this.e(this.filters.year));
                 else parts.push(__('All Years'));
-
-                if (this.filters.quarter) parts.push(this.e(this.filters.quarter));
                 if (this.filters.plan) parts.push(this.e(this.plan_label(this.filters.plan)));
-                if (this.filters.sprint) parts.push(this.e(this.filters.sprint));
-                if (this.filters.owner) parts.push(this.e(this.filters.owner));
                 if (this.filters.status) parts.push(this.e(this.filters.status));
                 else parts.push(__('All Statuses'));
 
@@ -730,6 +705,35 @@ class OKRAdminWorkspace {
                 return 'good';
         }
 
+        render_progress_legend() {
+                return `
+                        <div class="okr-progress-legend" aria-label="${__('Progress color thresholds')}">
+                                <span><i class="is-blocked"></i>${__('Blocked')}</span>
+                                <span><i class="is-low"></i>${__('0–50%')}</span>
+                                <span><i class="is-track"></i>${__('50%+')}</span>
+                        </div>
+                `;
+        }
+
+
+        checkin_delta(checkins, index) {
+                const current = flt((checkins[index] || {}).pct || 0, 1);
+                const previous = index < checkins.length - 1 ? flt((checkins[index + 1] || {}).pct || 0, 1) : null;
+                if (previous === null) return `${current}%`;
+                const delta = flt(current - previous, 1);
+                return `${current}% (${delta > 0 ? '+' : ''}${delta}%)`;
+        }
+
+        render_checkin_note(note, is_blocker) {
+                const safeNote = this.e(note || '');
+                if (!is_blocker) return safeNote;
+                const match = safeNote.match(/^(.*?)(?:\s*[—-]\s*)?Blocker:\s*(.*)$/i);
+                if (!match) return `<span class="okr-blocker-tag">${__('Blocker')}</span><span>${safeNote}</span>`;
+                const update = String(match[1] || '').trim();
+                const blocker = String(match[2] || '').trim();
+                return `${update ? `<span>${update}</span>` : ''}<span class="okr-blocker-tag">${__('Blocker')}</span><span>${blocker}</span>`;
+        }
+
         progress_severity(val) {
                 const v = flt(val || 0);
                 if (v < 50) return 'critical';
@@ -740,8 +744,8 @@ class OKRAdminWorkspace {
         status_slug(status) {
                 const s = String(status || '').toLowerCase();
                 if (s.includes('block') || s.includes('crit')) return 'critical';
-                if (s.includes('overdue') || s.includes('warn') || s.includes('watch') || s.includes('risk')) return 'warning';
-                if (s.includes('good') || s.includes('healthy') || s.includes('track') || s.includes('complet')) return 'good';
+                if (s.includes('overdue') || s.includes('warn') || s.includes('watch') || s.includes('risk') || s.includes('low') || s.includes('hold')) return 'warning';
+                if (s.includes('good') || s.includes('healthy') || s.includes('track') || s.includes('complet') || s === 'active' || s === 'open') return 'good';
                 if (s.includes('draft') || s.includes('prog') || s.includes('info')) return 'info';
                 return 'muted';
         }

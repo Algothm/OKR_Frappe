@@ -5,7 +5,6 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import date_diff, flt, formatdate, nowdate
 
-from okr_management.utils.okr_calculations import sync_checkin_progress
 from okr_management.utils.okr_validations import ensure_percentage, ensure_required_link
 
 
@@ -42,6 +41,7 @@ class OKRCheckIn(Document):
             frappe.throw(_("Please select a valid Status."))
 
         self.validate_action_item_assignment()
+        self.validate_parent_plan_active()
 
         if self.name and frappe.db.exists("OKR Check In", self.name):
             previous_status = frappe.db.get_value("OKR Check In", self.name, "status")
@@ -53,6 +53,7 @@ class OKRCheckIn(Document):
             frappe.throw(_("Selected Action Item does not exist."))
 
         action = frappe.get_doc("OKR Action Item", self.action_item)
+        self.validate_parent_plan_active(action)
         self.validate_action_item_assignment(action)
 
         key_result = frappe.get_doc("OKR Key Result", action.parent_key_result)
@@ -94,6 +95,12 @@ class OKRCheckIn(Document):
             or action.assigned_to
         )
 
+    def validate_parent_plan_active(self, action=None) -> None:
+        action = action or frappe.get_doc("OKR Action Item", self.action_item)
+        plan_name = action.parent_plan or frappe.db.get_value("OKR Key Result", action.parent_key_result, "parent_plan")
+        if not plan_name or frappe.db.get_value("OKR Plan", plan_name, "status") != "Active":
+            frappe.throw(_("Check-Ins are disabled until the parent OKR Plan is Active."))
+
     def validate_action_item_assignment(self, action=None) -> None:
         action = action or frappe.get_doc("OKR Action Item", self.action_item)
         if self.is_new() and action.status not in ACTIVE_ACTION_STATUSES:
@@ -119,20 +126,59 @@ class OKRCheckIn(Document):
             action.flags.ignore_permissions = True
             action.save()
 
-        sync_checkin_progress(self)
 
         if self.key_result:
             from okr_management.utils.okr_calculations import recalculate_key_result_progress
             recalculate_key_result_progress(self.key_result)
+
+    def after_insert(self) -> None:
+        sync_checkin_latest_flags(self.action_item)
 
     def after_delete(self) -> None:
         if self.key_result:
             from okr_management.utils.okr_calculations import recalculate_key_result_progress
             recalculate_key_result_progress(self.key_result)
+        sync_checkin_latest_flags(self.action_item)
+
+
+def sync_checkin_latest_flags(action_item: str | None) -> None:
+	if not action_item:
+		return
+
+	# Acquire exclusive row lock on the parent Action Item record to serialize concurrent operations
+	frappe.db.get_value("OKR Action Item", action_item, "name", for_update=True)
+
+	checkins = frappe.get_all(
+		"OKR Check In",
+		filters={"action_item": action_item},
+		fields=["name", "is_latest"],
+		order_by="checkin_date desc, creation desc",
+	)
+	if not checkins:
+		return
+
+	latest_name = checkins[0].name
+	frappe.db.set_value("OKR Check In", latest_name, "is_latest", 1, update_modified=False)
+
+	other_names = [c.name for c in checkins[1:]]
+	if other_names:
+		frappe.db.set_value(
+			"OKR Check In",
+			{"name": ["in", other_names]},
+			"is_latest",
+			0,
+			update_modified=False
+		)
+
+
+def rebuild_all_checkin_latest_flags() -> None:
+	action_items = frappe.get_all("OKR Check In", pluck="action_item", distinct=True)
+	for action_item in action_items:
+		sync_checkin_latest_flags(action_item)
 
 
 def has_checkin_admin_access() -> bool:
-    return bool({"System Manager", "OKR Admin", "OKR Manager"} & set(frappe.get_roles()))
+    return bool({"System Manager", "OKR Admin"} & set(frappe.get_roles()))
 
 
 def get_logged_in_employee(required: bool = True) -> str | None:
@@ -154,15 +200,17 @@ def get_assigned_action_items(doctype, txt, searchfield, start, page_len, filter
     if not employee and not is_admin:
         return []
 
-    assignment_condition = "" if is_admin else "and assigned_to = %(employee)s"
+    assignment_condition = "" if is_admin else "and ai.assigned_to = %(employee)s"
     return frappe.db.sql(
         f"""
-        select name, action_item_title
-        from `tabOKR Action Item`
-        where status in ('Open', 'In Progress', 'Blocked')
+        select ai.name, ai.action_item_title
+        from `tabOKR Action Item` ai
+        inner join `tabOKR Plan` plan on plan.name = ai.parent_plan
+        where ai.status in ('Open', 'In Progress', 'Blocked')
+          and plan.status = 'Active'
           {assignment_condition}
-          and (name like %(txt)s or action_item_title like %(txt)s)
-        order by modified desc
+          and (ai.name like %(txt)s or ai.action_item_title like %(txt)s)
+        order by ai.modified desc
         limit %(start)s, %(page_len)s
         """,
         {
@@ -178,9 +226,11 @@ def get_action_item_context(action_item: str) -> dict:
     doc = frappe.new_doc("OKR Check In")
     doc.action_item = action_item
     doc.populate_from_action_item()
+    doc.progress = frappe.db.get_value("OKR Action Item", action_item, "progress") or 0
     return {
         fieldname: doc.get(fieldname)
         for fieldname in (
+            "progress",
             "key_result",
             "objective",
             "parent_plan",

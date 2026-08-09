@@ -26,7 +26,10 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 app_include_css = "/assets/okr_management/css/okr_management.css"
-app_include_js = "/assets/okr_management/js/okr_management.js"
+app_include_js = [
+	"/assets/okr_management/js/okr_management.js",
+	"/assets/okr_management/js/okr_navigation_v3.js",
+]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/okr_management/css/okr_management.css"
@@ -40,7 +43,14 @@ app_include_js = "/assets/okr_management/js/okr_management.js"
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# page_js = {"page" : "public/js/file.js"}
+page_js = {
+	"okr-admin-workspace": "public/js/okr_alias_redirect.js",
+	"plan": "public/js/okr_alias_redirect.js",
+	"objective": "public/js/okr_alias_redirect.js",
+	"key-result": "public/js/okr_alias_redirect.js",
+	"action-item": "public/js/okr_alias_redirect.js",
+	"check-in": "public/js/okr_alias_redirect.js",
+}
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
@@ -119,10 +129,10 @@ notification_config = "okr_management.notifications.get_notification_config"
 
 permission_query_conditions = {
 	"OKR Plan": "okr_management.permissions.get_plan_permission_query_conditions",
-	"OKR Objective": "okr_management.permissions.get_objective_permission_query_conditions",
-	"OKR Key Result": "okr_management.permissions.get_key_result_permission_query_conditions",
-	"OKR Check In": "okr_management.permissions.get_checkin_permission_query_conditions",
-	"OKR Action Item": "okr_management.permissions.get_action_item_permission_query_conditions",
+	"OKR Objective": "okr_management.hierarchy_visibility.objective_query",
+	"OKR Key Result": "okr_management.hierarchy_visibility.key_result_query",
+	"OKR Check In": "okr_management.hierarchy_visibility.checkin_query",
+	"OKR Action Item": "okr_management.hierarchy_visibility.action_item_query",
 }
 
 # DocType Class
@@ -156,6 +166,10 @@ scheduler_events = {
 # Overriding Methods
 # ------------------------------
 #
+override_whitelisted_methods = {
+	"frappe.desk.desktop.get_workspace_sidebar_items": "okr_management.navigation.get_workspace_sidebar_items",
+}
+
 # override_whitelisted_methods = {
 # 	"frappe.desk.doctype.event.event.get_events": "okr_management.event.get_events"
 # }
@@ -229,3 +243,15 @@ scheduler_events = {
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+
+has_permission = {
+	"OKR Plan": "okr_management.permissions.has_plan_permission",
+	"OKR Objective": "okr_management.hierarchy_visibility.objective_permission",
+	"OKR Key Result": "okr_management.hierarchy_visibility.key_result_permission",
+	"OKR Action Item": "okr_management.hierarchy_visibility.action_item_permission",
+	"OKR Check In": "okr_management.hierarchy_visibility.checkin_permission",
+}
+
+
+# Keep OKR Plan/Objectives/KRs/Actions/Check-Ins as direct Desk routes.
+boot_session = "okr_management.boot.boot_session"

@@ -15,32 +15,27 @@ frappe.ui.form.on('OKR Plan', {
 			frm.refresh_field('members');
 		}
 		apply_plan_locks(frm);
+		fix_okr_plan_layout(frm);
 		style_add_member_button(frm);
-		configure_period_selection(frm, false);
-		update_sprint_timeline(frm);
+		render_plan_context_preview(frm);
 	},
 	status(frm) {
 		apply_plan_locks(frm);
+		render_plan_context_preview(frm);
 	},
 	financial_year(frm) {
-		update_sprint_timeline(frm);
+		render_plan_context_preview(frm);
+	},
+	planned_activation_date(frm) {
+		render_plan_context_preview(frm);
 	},
 	sprint_frequency(frm) {
-		configure_period_selection(frm, true);
-		update_sprint_timeline(frm);
-	},
-	period_selection(frm) {
-		update_sprint_timeline(frm);
-	},
-	custom_start_date(frm) {
-		update_sprint_timeline(frm);
-	},
-	custom_end_date(frm) {
-		update_sprint_timeline(frm);
+		render_plan_context_preview(frm);
 	},
 	onload_post_render(frm) {
+		fix_okr_plan_layout(frm);
 		style_add_member_button(frm);
-		update_sprint_timeline(frm);
+		render_plan_context_preview(frm);
 	},
 	members_add(frm) {
 		style_add_member_button(frm);
@@ -53,207 +48,39 @@ frappe.ui.form.on('OKR Plan', {
 	}
 });
 
-var okr_plan_sprint_months = [
-	'January', 'February', 'March', 'April', 'May', 'June',
-	'July', 'August', 'September', 'October', 'November', 'December'
-];
-var okr_plan_sprint_quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
-
-function configure_period_selection(frm, reset_value) {
-	const is_custom = frm.doc.sprint_frequency === 'Custom';
-	const is_monthly = frm.doc.sprint_frequency === 'Monthly';
-	const options = is_monthly ? okr_plan_sprint_months : okr_plan_sprint_quarters;
-
-	frm.set_df_property('period_selection', 'options', options.join('\n'));
-	frm.set_df_property('period_selection', 'label', is_monthly ? __('Month') : __('Quarter'));
-	frm.toggle_display('period_selection', !is_custom);
-	frm.toggle_reqd('period_selection', !is_custom);
-	frm.toggle_display('custom_start_date', is_custom);
-	frm.toggle_display('custom_end_date', is_custom);
-	frm.toggle_display('sprint_timeline_preview', !is_custom);
-	frm.toggle_display('sprint_end_date_preview', !is_custom);
-	frm.toggle_display('sprint_config_col_4', true);
-	frm.toggle_display('custom_timeline_preview', is_custom);
-	frm.toggle_reqd('custom_start_date', is_custom);
-	frm.toggle_reqd('custom_end_date', is_custom);
-	apply_sprint_configuration_layout(frm);
-	setTimeout(() => apply_sprint_configuration_layout(frm), 50);
-
-	if (!reset_value) {
-		if (!is_custom && !options.includes(frm.doc.period_selection)) {
-			frm.set_value('period_selection', options[0]);
-		}
-		return;
-	}
-	if (is_custom) {
-		frm.set_value('period_selection', '');
-	} else {
-		frm.set_value('period_selection', options[0]);
-		frm.set_value('custom_start_date', '');
-		frm.set_value('custom_end_date', '');
-	}
-}
 
 function apply_sprint_configuration_layout(frm) {
-	const is_custom = frm.doc.sprint_frequency === 'Custom';
-	const column_for = (fieldname) => {
-		const field = frm.fields_dict[fieldname];
-		return field && field.$wrapper ? field.$wrapper.closest('.form-column') : $();
+	// Standard columns layout is used
+}
+
+
+function render_plan_context_preview(frm) {
+	const field = frm.fields_dict.context_preview_html;
+	if (!field || !field.$wrapper) return;
+
+	const timeline_value = frm.doc.financial_year || __('Select a Financial Year.');
+
+
+	const icons = {
+		tag:      '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+		calendar: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+		building: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M3 9h6"/><path d="M3 15h6"/><path d="M15 3v18"/><path d="M15 9h6"/><path d="M15 15h6"/></svg>',
+		timer:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+		clock:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+		notes:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
 	};
-	const columns = [
-		column_for('sprint_frequency'),
-		column_for(is_custom ? 'custom_start_date' : 'period_selection'),
-		column_for(is_custom ? 'custom_end_date' : 'sprint_timeline_preview'),
-		column_for(is_custom ? 'custom_timeline_preview' : 'sprint_end_date_preview')
-	];
-	const unique_columns = [];
 
-	columns.forEach(($column) => {
-		if ($column.length && !unique_columns.some(($item) => $item[0] === $column[0])) {
-			unique_columns.push($column);
-		}
-	});
-	unique_columns.forEach(($column) => $column.hide());
-	columns.forEach(($column) => {
-		if (!$column.length) return;
-		const element = $column[0];
-		element.style.setProperty('display', 'block', 'important');
-		element.style.setProperty('flex', '1 1 220px', 'important');
-		element.style.setProperty('width', 'auto', 'important');
-		element.style.setProperty('max-width', 'none', 'important');
-		element.style.setProperty('min-width', '220px');
-	});
-	if (columns[0] && columns[0].length) {
-		columns[0].parent().css({ display: 'flex', 'flex-wrap': 'wrap' });
-	}
+	okr_management.ui.render_preview_cards(field, [
+		{ icon: icons.tag,      label: __('Status'),           value: frm.doc.status || __('Draft') },
+		{ icon: icons.calendar, label: __('Financial Year'),   value: frm.doc.financial_year },
+		{ icon: icons.clock,    label: __('Activation Date'),  value: frm.doc.planned_activation_date },
+		{ icon: icons.building, label: __('Organization'),     value: frm.doc.company },
+		{ icon: icons.timer,    label: __('Sprint Frequency'), value: frm.doc.sprint_frequency },
+		{ icon: icons.clock,    label: __('Timeline'),         value: timeline_value, wide: true },
+		{ icon: icons.notes,    label: __('Description'),      value: frm.doc.description, wide: true },
+	], __('No plan context available.'));
 }
 
-function update_sprint_timeline(frm) {
-	if (!frm.doc.financial_year) {
-		render_timeline_placeholder(frm, __('Select Financial Year to calculate the Sprint Timeline.'));
-		return;
-	}
-	if (frm.doc.sprint_frequency === 'Custom') {
-		render_custom_timeline(frm);
-		return;
-	}
-	if (!frm.doc.period_selection) {
-		const options = frm.doc.sprint_frequency === 'Monthly'
-			? okr_plan_sprint_months : okr_plan_sprint_quarters;
-		frm.set_value('period_selection', options[0]);
-		return;
-	}
-
-	const requested_year = frm.doc.financial_year;
-	const requested_frequency = frm.doc.sprint_frequency;
-	const requested_period = frm.doc.period_selection;
-	frappe.db.get_value('Fiscal Year', requested_year, ['year_start_date', 'year_end_date'])
-		.then((response) => {
-			if (
-				frm.doc.financial_year !== requested_year
-				|| frm.doc.sprint_frequency !== requested_frequency
-				|| frm.doc.period_selection !== requested_period
-			) return;
-			const fiscal_year = response.message || {};
-			if (!fiscal_year.year_start_date || !fiscal_year.year_end_date) {
-				render_timeline_placeholder(frm, __('The selected Financial Year has no date range.'));
-				return;
-			}
-			if (requested_frequency === 'Quarterly') {
-				const quarter_index = okr_plan_sprint_quarters.indexOf(requested_period);
-				if (quarter_index < 0) return;
-				const start = moment(fiscal_year.year_start_date).add(quarter_index * 3, 'months');
-				const end = moment.min(start.clone().add(3, 'months').subtract(1, 'day'), moment(fiscal_year.year_end_date));
-				render_timeline(frm, start, end);
-				return;
-			}
-			const month_index = okr_plan_sprint_months.indexOf(requested_period);
-			if (month_index < 0) return;
-			const fiscal_start = moment(fiscal_year.year_start_date);
-			const calendar_year = month_index >= fiscal_start.month()
-				? fiscal_start.year() : fiscal_start.year() + 1;
-			const start = moment([calendar_year, month_index, 1]);
-			const end = moment.min(start.clone().endOf('month'), moment(fiscal_year.year_end_date));
-			render_timeline(frm, start, end);
-		});
-}
-
-function render_custom_timeline(frm) {
-	if (!frm.doc.custom_start_date || !frm.doc.custom_end_date) {
-		render_timeline_placeholder(frm, __('Select Start Date and End Date to preview the timeline.'));
-		return;
-	}
-	const start = moment(frm.doc.custom_start_date);
-	const end = moment(frm.doc.custom_end_date);
-	if (!start.isValid() || !end.isValid() || end.isBefore(start, 'day')) {
-		render_timeline_placeholder(frm, __('End Date must be on or after Start Date.'), true);
-		return;
-	}
-	render_timeline(frm, start, end);
-}
-
-function render_timeline(frm, start, end) {
-	if (frm.doc.sprint_frequency !== 'Custom') {
-		render_calculated_date(frm, 'sprint_timeline_preview', __('Start Date'), start.format('DD-MMM-YYYY'));
-		render_calculated_date(frm, 'sprint_end_date_preview', __('End Date'), end.format('DD-MMM-YYYY'));
-		return;
-	}
-	const days = end.diff(start, 'days') + 1;
-	const date_range = start.format('DD-MMM-YYYY')
-		+ ' <span aria-hidden="true">&rarr;</span> '
-		+ end.format('DD-MMM-YYYY');
-	render_timeline_card(frm, date_range, __('{0} Days', [days]), false);
-}
-
-function render_timeline_placeholder(frm, message, is_error = false) {
-	if (frm.doc.sprint_frequency !== 'Custom') {
-		const placeholder = frm.doc.financial_year ? message : __('Select Financial Year');
-		render_calculated_date(frm, 'sprint_timeline_preview', __('Start Date'), placeholder, is_error);
-		render_calculated_date(frm, 'sprint_end_date_preview', __('End Date'), placeholder, is_error);
-		return;
-	}
-	render_timeline_card(frm, message, '', is_error);
-}
-
-function render_calculated_date(frm, fieldname, label, value, is_error = false) {
-	const field = frm.fields_dict[fieldname];
-	if (!field || !field.$wrapper) return;
-	const color = is_error ? 'var(--red-600)' : 'var(--text-color)';
-	field.$wrapper.html(
-		'<div class="form-group">'
-		+ '<div class="control-label">' + label + '</div>'
-		+ '<div class="like-disabled-input" style="height:var(--input-height);'
-		+ 'min-height:var(--input-height);padding:6px 12px;display:flex;'
-		+ 'align-items:center;border-radius:var(--border-radius);overflow:hidden;'
-		+ 'white-space:nowrap;text-overflow:ellipsis;'
-		+ 'font-size:13px;font-weight:500;color:' + color + ';">'
-		+ frappe.utils.escape_html(value || '') + '</div></div>'
-	);
-}
-
-function render_timeline_card(frm, primary_text, secondary_text, is_error) {
-	const field = frm.fields_dict.custom_timeline_preview;
-	if (!field || !field.$wrapper) return;
-	const secondary_color = is_error ? 'var(--red-600)' : 'var(--text-muted)';
-	const content = secondary_text
-		? '<div style="font-size:13px;font-weight:600;color:var(--text-color);'
-			+ 'line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
-			+ primary_text + ' <span style="color:var(--text-muted);">&bull;</span> '
-			+ '<span style="font-weight:500;color:' + secondary_color + ';">'
-			+ secondary_text + '</span></div>'
-		: '<div style="font-size:13px;font-weight:500;color:'
-			+ secondary_color + ';line-height:1.2;white-space:nowrap;overflow:hidden;'
-			+ 'text-overflow:ellipsis;">' + primary_text + '</div>';
-	field.$wrapper.html(
-		'<div class="form-group">'
-		+ '<div class="control-label">' + __('Timeline Preview') + '</div>'
-		+ '<div class="like-disabled-input" style="height:var(--input-height);'
-		+ 'min-height:var(--input-height);padding:6px 12px;display:flex;'
-		+ 'align-items:center;border-radius:var(--border-radius);overflow:hidden;">'
-		+ content
-		+ '</div></div>'
-	);
-}
 
 function style_add_member_button(frm) {
 	let grid = frm.fields_dict['members'] && frm.fields_dict['members'].grid;
@@ -368,11 +195,15 @@ function apply_plan_locks(frm) {
 		&& (frappe.user.has_role('System Manager') || frappe.user.has_role('OKR Admin') || frappe.session.user === 'Administrator');
 
 	[
-		'financial_year', 'company', 'owner_user', 'sprint_frequency',
-		'period_selection', 'custom_start_date', 'custom_end_date'
+		'company', 'owner_user',
 	].forEach((fieldname) => {
 		frm.set_df_property(fieldname, 'read_only', !is_draft);
 	});
+	['financial_year', 'sprint_frequency'].forEach((fieldname) => {
+		frm.set_df_property(fieldname, 'read_only', is_closed);
+	});
+	frm.set_df_property('planned_activation_date', 'read_only', !is_draft);
+	frm.set_df_property('planned_activation_date', 'reqd', is_draft);
 	frm.set_df_property('description', 'read_only', is_closed);
 	frm.set_df_property('progress', 'hidden', 1);
 
@@ -382,3 +213,54 @@ function apply_plan_locks(frm) {
 	frm.set_df_property('status', 'hidden', 0);
 	frm.set_df_property('status', 'read_only', !can_manage_status);
 }
+
+function fix_okr_plan_layout(frm) {
+	// 1. Force the parent page-container to be full width and NOT display grid
+	let container = frm.wrapper.closest('.page-container');
+	if (container.length) {
+		container[0].style.setProperty('display', 'block', 'important');
+		container[0].style.setProperty('max-width', '98%', 'important');
+		container[0].style.setProperty('width', '98%', 'important');
+	}
+
+	// 2. Force layout-main and layout-main-section elements to take 100% width
+	let layout_main = frm.wrapper.closest('.layout-main');
+	if (layout_main.length) {
+		layout_main[0].style.setProperty('max-width', '100%', 'important');
+		layout_main[0].style.setProperty('width', '100%', 'important');
+	}
+	let layout_section = frm.wrapper.closest('.layout-main-section');
+	if (layout_section.length) {
+		layout_section[0].style.setProperty('max-width', '100%', 'important');
+		layout_section[0].style.setProperty('width', '100%', 'important');
+	}
+
+	// 3. Force the form-page inside the layout section to be grid layout if viewport >= 992px
+	let form_page = frm.wrapper.find('.form-page');
+	if (form_page.length) {
+		if (window.innerWidth >= 992) {
+			form_page[0].style.setProperty('display', 'grid', 'important');
+			form_page[0].style.setProperty('grid-template-columns', '1.1fr 1fr', 'important');
+			form_page[0].style.setProperty('gap', '16px 20px', 'important');
+			form_page[0].style.setProperty('align-items', 'flex-start', 'important');
+			form_page[0].style.setProperty('width', '100%', 'important');
+			
+			// 4. Force specific sections (like plan_team_section and technical_section) to span full width
+			let plan_team_section = frm.wrapper.find('.form-section[data-fieldname="plan_team_section"]');
+			if (plan_team_section.length) {
+				plan_team_section[0].style.setProperty('grid-column', '1 / -1', 'important');
+			}
+			let technical_section = frm.wrapper.find('.form-section[data-fieldname="technical_section"]');
+			if (technical_section.length) {
+				technical_section[0].style.setProperty('grid-column', '1 / -1', 'important');
+			}
+		} else {
+			form_page[0].style.removeProperty('display');
+			form_page[0].style.removeProperty('grid-template-columns');
+			form_page[0].style.removeProperty('gap');
+			form_page[0].style.removeProperty('align-items');
+			form_page[0].style.removeProperty('width');
+		}
+	}
+}
+

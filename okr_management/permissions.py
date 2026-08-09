@@ -102,7 +102,51 @@ def _owner_or_department_clause(doctype: str, owner_field: str = "owner_user", d
 
 
 def get_plan_permission_query_conditions(user: str | None = None) -> str:
-	return ""
+	user = user or frappe.session.user
+	if _is_executive(user) or _is_manager(user):
+		return ""
+	escaped_user = _escape(user)
+	return f"""(
+		`tabOKR Plan`.status != 'Draft'
+		or `tabOKR Plan`.owner_user = {escaped_user}
+		or exists (
+			select 1 from `tabOKR Plan Team Member` member
+			where member.parent = `tabOKR Plan`.name and member.member_user = {escaped_user}
+		)
+		or exists (
+			select 1 from `tabOKR Objective` objective
+			where objective.parent_plan = `tabOKR Plan`.name and objective.owner_user = {escaped_user}
+		)
+		or exists (
+			select 1 from `tabOKR Key Result` kr
+			where kr.parent_plan = `tabOKR Plan`.name and kr.assignee = {escaped_user}
+		)
+		or exists (
+			select 1 from `tabOKR Action Item` action
+			inner join `tabEmployee` employee on employee.name = action.assigned_to
+			where action.parent_plan = `tabOKR Plan`.name and employee.user_id = {escaped_user}
+		)
+	)"""
+
+
+def has_plan_permission(doc, user: str | None = None, permission_type: str | None = None):
+	user = user or frappe.session.user
+	if doc.status != "Draft" or _is_executive(user) or _is_manager(user):
+		return None
+	if doc.owner_user == user:
+		return True
+	if frappe.db.exists("OKR Plan Team Member", {"parent": doc.name, "member_user": user}):
+		return True
+	if frappe.db.exists("OKR Objective", {"parent_plan": doc.name, "owner_user": user}):
+		return True
+	if frappe.db.exists("OKR Key Result", {"parent_plan": doc.name, "assignee": user}):
+		return True
+	employees = _employee_names_for_user(user)
+	if employees and frappe.db.exists(
+		"OKR Action Item", {"parent_plan": doc.name, "assigned_to": ["in", employees]}
+	):
+		return True
+	return False
 
 
 def get_objective_permission_query_conditions(user: str | None = None) -> str:

@@ -16,11 +16,15 @@ frappe.ui.form.on('OKR Action Item', {
     onload(frm) {
         apply_route_context(frm);
     },
+    onload_post_render(frm) {
+        if (frm.doc.parent_key_result) fetch_parent_key_result_context(frm);
+        else render_context_preview(frm, {});
+    },
     refresh(frm) {
         apply_action_item_ui(frm);
         apply_route_context(frm);
         if (frm.doc.parent_key_result) fetch_parent_key_result_context(frm);
-        else render_timeline_preview(frm);
+        else render_context_preview(frm, {});
         if (frm.doc.action_item_title && !frm.is_new()) frm.page.set_title(frm.doc.action_item_title);
     },
     parent_key_result(frm) {
@@ -80,26 +84,56 @@ function apply_route_context(frm) {
 function apply_action_item_ui(frm) {
     [
         'parent_plan', 'plan_title', 'plan_description', 'company', 'financial_year',
-        'sprint_frequency', 'selected_period', 'context_start_date', 'context_end_date',
+        'sprint_frequency', 'context_start_date', 'context_end_date',
         'parent_objective', 'objective_title', 'key_result_title'
     ].forEach((fieldname) => frm.set_df_property(fieldname, 'read_only', 1));
 
+	frm.set_df_property('context_preview_html', 'label', __('Context and Preview'));
+	frm.toggle_display('context_preview_html', 1);
+
     [
-        'priority', 'status', 'due_date', 'owner_user', 'reviewer', 'department',
+        'action_item_setup_heading', 'priority', 'status', 'owner_user', 'reviewer', 'department',
         'parent_plan', 'parent_objective', 'objective_title', 'key_result_title',
-        'sprint_frequency', 'selected_period', 'progress_visualization_html',
+        'plan_title', 'plan_description', 'company', 'financial_year', 'sprint_frequency',
+        'context_start_date', 'context_end_date', 'timeline_preview', 'progress_visualization_html',
         'execution_progress_section', 'execution_progress_col_break',
         'assignment_section', 'assignment_col_break_1', 'assignment_col_break_2',
         'completion_date', 'start_date', 'inherited_context_section', 'inherited_col_break'
     ].forEach((fieldname) => frm.set_df_property(fieldname, 'hidden', 1));
+
+    if (frm.fields_dict.description && frm.fields_dict.description.$input) {
+        frm.fields_dict.description.$input.css('height', '80px');
+    }
+
+    const progress_field = frm.fields_dict.progress;
+    const assigned_to_field = frm.fields_dict.assigned_to;
+    if (progress_field && progress_field.$wrapper) {
+        progress_field.$wrapper.css({
+            'width': '48%',
+            'display': 'inline-block',
+            'vertical-align': 'top'
+        });
+    }
+    if (assigned_to_field && assigned_to_field.$wrapper) {
+        assigned_to_field.$wrapper.css({
+            'width': '48%',
+            'display': 'inline-block',
+            'margin-right': '4%',
+            'vertical-align': 'top'
+        });
+    }
+
+    if (window.okr_management && window.okr_management.ui && window.okr_management.ui.apply_context_panel_style) {
+        window.okr_management.ui.apply_context_panel_style(frm);
+    }
 }
 
 function clear_context(frm) {
     [
-        'parent_plan', 'plan_title', 'plan_description', 'company', 'financial_year', 'sprint_frequency', 'selected_period',
+        'parent_plan', 'plan_title', 'plan_description', 'company', 'financial_year', 'sprint_frequency',
         'context_start_date', 'context_end_date', 'parent_objective', 'objective_title', 'key_result_title'
     ].forEach((fieldname) => frm.set_value(fieldname, ''));
-    render_timeline_preview(frm);
+    render_context_preview(frm);
 }
 
 function fetch_parent_key_result_context(frm) {
@@ -127,53 +161,117 @@ function fetch_parent_key_result_context(frm) {
             key_result_title: kr.key_result_title || ''
         };
         if (!frm.doc.reviewer) values.reviewer = kr.reviewer || '';
-        return Promise.all(Object.entries(values).map(([key, value]) => frm.set_value(key, value)))
-            .then(() => load_plan_context(frm, kr.parent_plan));
+        frm.set_value(values);
+        load_plan_context(frm, kr.parent_plan, kr);
     });
 }
 
-function load_plan_context(frm, plan_name) {
+function load_plan_context(frm, plan_name, kr) {
     if (!plan_name) {
-        frm.set_value('plan_title', '');
-        frm.set_value('plan_description', '');
-        frm.set_value('sprint_frequency', '');
-        frm.set_value('selected_period', '');
-        render_timeline_preview(frm);
+        frm.set_value({
+            plan_title: '',
+            plan_description: '',
+            sprint_frequency: '',
+        });
+        render_context_preview(frm, { kr });
         return;
     }
-    frappe.db.get_value('OKR Plan', plan_name, ['plan_name', 'description', 'sprint_frequency', 'period_selection'])
+    frappe.db.get_value('OKR Plan', plan_name, ['plan_name', 'description', 'sprint_frequency'])
         .then((response) => {
             if (frm.doc.parent_plan !== plan_name) return;
             const plan = response.message || {};
             if (plan.plan_name) frappe.utils.add_link_title('OKR Plan', plan_name, plan.plan_name);
-            return Promise.all([
-                frm.set_value('plan_title', plan.plan_name || ''),
-                frm.set_value('plan_description', plan.description || ''),
-                frm.set_value('sprint_frequency', plan.sprint_frequency || ''),
-                frm.set_value('selected_period', plan.period_selection || __('Custom'))
-            ]).then(() => render_timeline_preview(frm));
+            frm.set_value({
+                plan_title: plan.plan_name || '',
+                plan_description: plan.description || '',
+                sprint_frequency: plan.sprint_frequency || '',
+            });
+            render_context_preview(frm, { kr, plan });
         });
 }
 
-function render_timeline_preview(frm) {
-    const field = frm.fields_dict.timeline_preview;
+function render_context_preview(frm, context) {
+    const field = frm.fields_dict.context_preview_html;
     if (!field || !field.$wrapper) return;
-    let text = __('Select a Key Result to preview its timeline.');
-    let detail = '';
-    if (frm.doc.context_start_date && frm.doc.context_end_date) {
-        text = frappe.datetime.str_to_user(frm.doc.context_start_date)
-            + ' &rarr; ' + frappe.datetime.str_to_user(frm.doc.context_end_date);
-        detail = __('{0} Days', [
-            frappe.datetime.get_day_diff(frm.doc.context_end_date, frm.doc.context_start_date) + 1
+
+    const ctx = context || {};
+    const kr = ctx.kr || {};
+    const plan = ctx.plan || {};
+
+    let timeline_text = __('Select a Key Result to preview its timeline.');
+    let timeline_detail = '';
+    const start_date = kr.start_date || frm.doc.context_start_date;
+    const end_date = kr.end_date || frm.doc.context_end_date;
+    if (start_date && end_date) {
+        timeline_text = frappe.datetime.str_to_user(start_date)
+            + ' → ' + frappe.datetime.str_to_user(end_date);
+        timeline_detail = __('{0} Days', [
+            frappe.datetime.get_day_diff(end_date, start_date) + 1
         ]);
     }
-    field.$wrapper.html(
-        '<div class="form-group"><div class="control-label">' + __('Timeline Preview')
-        + '</div><div class="like-disabled-input" style="height:var(--input-height);'
-        + 'min-height:var(--input-height);padding:6px 12px;display:flex;align-items:center;'
-        + 'border-radius:var(--border-radius);overflow:hidden;"><div style="font-size:13px;'
-        + 'font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
-        + text + (detail ? ' <span style="color:var(--text-muted);">&bull; ' + detail + '</span>' : '')
-        + '</div></div></div>'
-    );
+
+    const icons = {
+        target:   '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+        flag:     '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
+        plan:     '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+        building: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M3 9h6"/><path d="M3 15h6"/><path d="M15 3v18"/><path d="M15 9h6"/><path d="M15 15h6"/></svg>',
+        calendar: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+        clock:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        notes:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+    };
+
+    const cards = [
+        { icon: icons.target,   label: __('Key Result'),       value: kr.key_result_title || frm.doc.key_result_title },
+        { icon: icons.flag,     label: __('Objective'),        value: kr.objective_title || frm.doc.objective_title },
+        { icon: icons.plan,     label: __('Plan'),             value: plan.plan_name || frm.doc.plan_title },
+        { icon: icons.building, label: __('Organization'),     value: kr.company || frm.doc.company },
+        { icon: icons.calendar, label: __('Financial Year'),   value: kr.financial_year || frm.doc.financial_year },
+        { icon: icons.clock,    label: __('Timeline'),         value: timeline_text + (timeline_detail ? ' • ' + timeline_detail : '') },
+        { icon: icons.notes,    label: __('Plan Description'), value: plan.description || frm.doc.plan_description, wide: true },
+    ];
+
+    render_preview_cards(field, cards, __('Select a Key Result to preview its context.'));
+}
+
+function render_preview_cards(field, cards, empty_message) {
+    if (window.okr_management && window.okr_management.ui && window.okr_management.ui.render_preview_cards) {
+        window.okr_management.ui.render_preview_cards(field, cards, empty_message);
+        return;
+    }
+    if (!field || !field.$wrapper) return;
+    const visible_cards = cards || [];
+    const escape_html = (val) => frappe.utils.escape_html(String(val ?? "—"));
+    const card_html = visible_cards.length
+        ? visible_cards.map((card) => {
+            if (!card) return "";
+            const wide = Boolean(card.wide);
+            let val = "—";
+            if (card.value !== undefined && card.value !== null && String(card.value).trim() !== "") {
+                val = String(card.value);
+            }
+            const content = card.html
+                || '<div style="font-size:13px;font-weight:' + (wide ? '500' : '600') + ';color:#1e293b;line-height:' + (wide ? '1.5' : '1.4') + ';word-break:break-word;white-space:pre-wrap;">'
+                    + escape_html(val)
+                    + '</div>';
+            return '<div style="' + (wide ? 'width:100%;' : 'flex:1 1 45%;min-width:180px;')
+                + 'display:flex;align-items:' + (wide ? 'flex-start' : 'center')
+                + ';gap:10px;background:#f8f9fc;border:1px solid #e3e8ef;border-radius:10px;padding:10px 14px;">'
+                + '<span style="font-size:18px;flex-shrink:0;margin-top:' + (wide ? '2px' : '0') + ';color:#5b6b8a;display:flex;align-items:center;">'
+                + (card.icon || "📌") + '</span>'
+                + '<div style="min-width:0;">'
+                + '<div style="font-size:10px;font-weight:600;color:#8d99ae;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;">'
+                + escape_html(__(card.label || "")) + '</div>'
+                + content
+                + '</div></div>';
+        }).join('')
+        : '<div style="width:100%;padding:12px 14px;border:1px dashed #d6dbe6;border-radius:10px;color:var(--text-muted);background:#fbfcfe;">'
+            + escape_html(empty_message || __("No context available."))
+            + '</div>';
+
+    const wrapper_html = '<div style="display:flex;flex-wrap:wrap;gap:12px;">' + card_html + '</div>';
+    if (typeof field.set_value === 'function') {
+        field.set_value(wrapper_html);
+    } else {
+        field.$wrapper.html(wrapper_html);
+    }
 }

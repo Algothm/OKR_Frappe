@@ -10,7 +10,7 @@
  "icon": "solid-success",
  "idx": 0,
  "indicator_color": "green",
- "is_hidden": 0,
+ "is_hidden": 1,
  "label": "Check-In",
  "links": [
   {

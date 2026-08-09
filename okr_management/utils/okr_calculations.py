@@ -67,6 +67,7 @@ def recalculate_key_result_progress(key_result_name: str | None) -> None:
 	set_if_has(values, 'OKR Key Result', 'action_item_count', action_item_count)
 	set_if_has(values, 'OKR Key Result', 'checkin_count', checkin_count)
 
+
 	if values:
 		frappe.db.set_value('OKR Key Result', key_result_name, values, update_modified=False)
 	recalculate_from_key_result(key_result_name)
@@ -156,21 +157,3 @@ def recalculate_from_key_result_doc(doc: Any, method: str | None = None) -> None
 def recalculate_from_objective_doc(doc: Any, method: str | None = None) -> None:
 	recalculate_plan_progress(safe_get(doc, 'parent_plan'))
 
-
-def sync_checkin_progress(doc: Any, method: str | None = None) -> None:
-	key_result_name = safe_get(doc, 'key_result')
-	if not key_result_name or not frappe.db.exists('OKR Key Result', key_result_name):
-		return
-
-	calculation_mode = frappe.db.get_value('OKR Key Result', key_result_name, 'calculation_mode')
-	if calculation_mode != 'Check-in Based':
-		return
-
-	values: dict[str, Any] = {}
-	progress = flt(safe_get(doc, 'progress', 0))
-	set_if_has(values, 'OKR Key Result', 'current_value', flt(safe_get(doc, 'current_value', 0)))
-	set_if_has(values, 'OKR Key Result', 'target_progress', progress)
-	set_if_has(values, 'OKR Key Result', 'score', progress)
-	if values:
-		frappe.db.set_value('OKR Key Result', key_result_name, values, update_modified=False)
-	recalculate_from_key_result(key_result_name)
