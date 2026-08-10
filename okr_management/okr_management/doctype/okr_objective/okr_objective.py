@@ -21,7 +21,7 @@ STATUS_TRANSITIONS = {
 
 SETUP_LOCKED_STATUSES = {"Active", "On Hold", "Completed", "Closed"}
 ACTIVE_LOCKED_STATUSES = {"Active", "On Hold", "Completed", "Closed"}
-PLAN_ACTIVE_REQUIRED_STATUSES = {"Active", "On Hold"}
+PLAN_ACTIVE_REQUIRED_STATUSES = {"Active", "On Hold", "Completed", "Closed"}
 COMPLETED_KR_STATUSES = {"Achieved", "Completed", "Closed"}
 GOVERNANCE_ROLES = {"OKR Admin", "OKR Manager"}
 MANAGER_ROLES = {"OKR Admin", "OKR Manager", "Department Head"}

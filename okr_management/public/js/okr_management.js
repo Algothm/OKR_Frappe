@@ -13,10 +13,6 @@ frappe.provide("okr_management");
         { name: "OKR Workspace", parent: "", path: "/app/okr-workspace" },
         { name: "OKR Admin Workspace", parent: "", path: "/app/admin-workspace" },
         { name: "Plan", parent: "OKR Admin Workspace", path: "/app/okr-plan" },
-        { name: "Objective", parent: "OKR Workspace", path: "/app/okr-objective" },
-        { name: "Key Result", parent: "OKR Workspace", path: "/app/okr-key-result" },
-        { name: "Action Item", parent: "OKR Workspace", path: "/app/okr-action-item" },
-        { name: "Check-In", parent: "OKR Workspace", path: "/app/okr-check-in" },
     ];
     const CUSTOM_PAGE_SLUGS = new Set(["okr-workspace", "admin-workspace"]);
     const fallback_route = is_admin_ui_user() ? "admin-workspace" : "okr-workspace";
@@ -44,7 +40,7 @@ frappe.provide("okr_management");
             ? visible_cards.map((card) => {
                 if (!card) return "";
                 const wide = Boolean(card.wide);
-                
+
                 let val = "—";
                 if (card.value !== undefined && card.value !== null && String(card.value).trim() !== "") {
                     val = String(card.value);
@@ -178,7 +174,7 @@ frappe.provide("okr_management");
             return [admin_user ? "admin-workspace" : "okr-workspace"];
         }
 
-        if (parts.length === 1 && first === "okr-plan" && !admin_user) {
+        if (parts.length === 1 && RAW_OKR_LIST_SLUGS.has(first) && !admin_user) {
             return ["okr-workspace"];
         }
         if (parts.length === 1 && first === "okr-workspace" && admin_user) return ["admin-workspace"];

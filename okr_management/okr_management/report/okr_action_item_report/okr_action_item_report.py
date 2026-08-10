@@ -19,7 +19,7 @@ def execute(filters=None):
         conditions.append("ai.parent_key_result = %(key_result)s")
         values["key_result"] = filters.key_result
     if filters.get("owner"):
-        conditions.append("ai.owner_user = %(owner)s")
+        conditions.append("emp.user_id = %(owner)s")
         values["owner"] = filters.owner
     if filters.get("status"):
         conditions.append("ai.status = %(status)s")
@@ -38,7 +38,7 @@ def execute(filters=None):
             kr.key_result_title,
             ai.name as action_item,
             ai.action_item_title,
-            ai.owner_user as owner,
+            emp.user_id as owner,
             ai.department,
             ai.status,
             ai.priority,
@@ -46,6 +46,7 @@ def execute(filters=None):
             ai.due_date,
             ai.notes
         from `tabOKR Action Item` ai
+        left join `tabEmployee` emp on emp.name = ai.assigned_to
         left join `tabOKR Objective` obj on obj.name = ai.parent_objective
         left join `tabOKR Key Result` kr on kr.name = ai.parent_key_result
         {where}

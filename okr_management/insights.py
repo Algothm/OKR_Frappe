@@ -145,7 +145,7 @@ def _get_objective_rows() -> list[frappe._dict]:
 
 
 def _get_key_result_rows() -> list[frappe._dict]:
-	fields = ["name", "key_result_title", "objective", "parent_plan", "owner_user", "status", "target_progress", "confidence", "end_date"]
+	fields = ["name", "key_result_title", "objective", "parent_plan", "assignee", "status", "target_progress", "confidence", "end_date"]
 	fields = [field for field in fields if field == "name" or _has_field("OKR Key Result", field)]
 	return frappe.get_all("OKR Key Result", fields=fields, order_by="modified desc", limit_page_length=2000)
 
@@ -248,7 +248,7 @@ def get_health_rows() -> list[dict[str, Any]]:
 			reasons.append("Missed check-in")
 		if reasons:
 			department = frappe.db.get_value("OKR Objective", kr.get("objective"), "department") if kr.get("objective") else None
-			rows.append(_health_row("Key Result", kr.name, kr.get("key_result_title") or kr.name, kr.get("owner_user"), kr.get("parent_plan"), department, progress, confidence, kr.get("end_date"), reasons))
+			rows.append(_health_row("Key Result", kr.name, kr.get("key_result_title") or kr.name, kr.get("assignee"), kr.get("parent_plan"), department, progress, confidence, kr.get("end_date"), reasons))
 
 	rank = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
 	return sorted(rows, key=lambda row: (rank.get(row["risk_level"], 9), row.get("days_remaining") if row.get("days_remaining") is not None else 9999, row["progress"]))
@@ -292,7 +292,7 @@ def _key_results_for_alignment() -> dict[str, list[dict[str, Any]]]:
 			"type": "Key Result",
 			"record": kr.name,
 			"title": kr.get("key_result_title") or kr.name,
-			"owner": kr.get("owner_user"),
+			"owner": kr.get("assignee"),
 			"status": kr.get("status"),
 			"progress": round(flt(kr.get("target_progress")), 2),
 			"confidence": round(flt(kr.get("confidence")), 2),
@@ -467,7 +467,7 @@ def get_action_item_signals(limit: int = 20) -> dict[str, Any]:
 	due_soon_date = getdate(add_days(nowdate(), 7))
 	rows = frappe.get_all(
 		"OKR Action Item",
-		fields=["name", "action_item_title", "parent_key_result", "parent_objective", "parent_plan", "owner_user", "department", "status", "priority", "start_date", "due_date", "notes", "modified"],
+		fields=["name", "action_item_title", "parent_key_result", "parent_objective", "parent_plan", "assigned_to", "department", "status", "priority", "start_date", "due_date", "notes", "modified"],
 		filters={"status": ["not in", ["Completed", "Cancelled"]]},
 		order_by="due_date asc, modified desc",
 		limit_page_length=1000,
@@ -505,7 +505,7 @@ def get_executive_attention() -> dict[str, Any]:
 		owner = checkin.reported_by
 		if owner and (owner not in owner_latest or getdate(checkin.checkin_date) > getdate(owner_latest[owner])):
 			owner_latest[owner] = checkin.checkin_date
-	owners = sorted({row.get("owner_user") for row in objectives + krs if row.get("owner_user")})
+	owners = sorted({row.get("owner_user") for row in objectives if row.get("owner_user")} | {row.get("assignee") for row in krs if row.get("assignee")})
 	inactive_owners = []
 	cutoff_14 = getdate(add_days(nowdate(), -14))
 	for owner in owners:

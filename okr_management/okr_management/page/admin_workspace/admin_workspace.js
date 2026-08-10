@@ -59,6 +59,15 @@ class OKRAdminWorkspace {
                 // Refresh trigger
                 this.body.on('click', '[data-refresh]', () => this.load());
                 this.body.on('click', '[data-select-plan]', (e) => this.select_plan($(e.currentTarget).data('select-plan')));
+                this.body.on('click', '[data-plan-toggle]', (e) => {
+                        e.preventDefault();
+                        $(e.currentTarget).closest('.okr-plan-tree-card').toggleClass('expanded');
+                });
+                this.body.on('click', '[data-objective-toggle]', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        $(e.currentTarget).closest('.okr-plan-objective').toggleClass('expanded');
+                });
                 this.body.on('click', '[data-summary-card]', (e) => this._handle_summary_card_click($(e.currentTarget).data('summary-card')));
                 this.body.on('click', '[data-clear-plan]', (e) => { e.preventDefault(); this.clear_plan(); });
 
@@ -161,7 +170,7 @@ class OKRAdminWorkspace {
                         // Filter plan cards: show only plans with blocked > 0
                         const all_plans = this.data.plan_summaries || [];
                         this.body.find('.okr-plan-card').each((i, el) => {
-                                const plan_name = $(el).data('select-plan');
+                                const plan_name = $(el).data('plan-name');
                                 const plan = all_plans.find(p => p.name === plan_name);
                                 const blocked = plan ? cint(plan.blocked_objectives || plan.blocked || 0) : 0;
                                 $(el).toggle(blocked > 0);
@@ -180,7 +189,7 @@ class OKRAdminWorkspace {
                         // Filter plan cards: show only plans with progress >= 100 or status Completed
                         const all_plans = this.data.plan_summaries || [];
                         this.body.find('.okr-plan-card').each((i, el) => {
-                                const plan_name = $(el).data('select-plan');
+                                const plan_name = $(el).data('plan-name');
                                 const plan = all_plans.find(p => p.name === plan_name);
                                 const progress = plan ? flt(plan.progress || 0) : 0;
                                 const status = plan ? (plan.status || '') : '';
@@ -217,7 +226,7 @@ class OKRAdminWorkspace {
                 this.body.addClass('loading');
                 frappe.call({
                         method: 'okr_management.okr_management.page.admin_workspace.admin_workspace.get_dashboard_data',
-                        args: { ...this.filters, quarter: '', sprint: '', owner: '' },
+                        args: { ...this.filters, owner: '' },
                         freeze: true,
                         freeze_message: __('Syncing Operational Control Room...'),
                         callback: (r) => {
@@ -267,7 +276,7 @@ class OKRAdminWorkspace {
                                         });
                                         const all_plans = this.data.plan_summaries || [];
                                         this.body.find('.okr-plan-card').each((i, el) => {
-                                                const plan_name = $(el).data('select-plan');
+                                                const plan_name = $(el).data('plan-name');
                                                 const plan = all_plans.find(p => p.name === plan_name);
                                                 const blocked = plan ? cint(plan.blocked_objectives || plan.blocked || 0) : 0;
                                                 $(el).toggle(blocked > 0);
@@ -281,7 +290,7 @@ class OKRAdminWorkspace {
 
                                         const all_plans = this.data.plan_summaries || [];
                                         this.body.find('.okr-plan-card').each((i, el) => {
-                                                const plan_name = $(el).data('select-plan');
+                                                const plan_name = $(el).data('plan-name');
                                                 const plan = all_plans.find(p => p.name === plan_name);
                                                 const progress = plan ? flt(plan.progress || 0) : 0;
                                                 const status = plan ? (plan.status || '') : '';
@@ -409,7 +418,7 @@ class OKRAdminWorkspace {
                 const obj_count = cint(row.objectives || 0);
 
                 return `
-                        <button type="button" class="okr-plan-card ${active ? 'active' : ''}" data-select-plan="${this.e(row.name)}">
+                        <div class="okr-plan-tree-card ${active ? 'active expanded' : ''}"><button type="button" class="okr-plan-card ${active ? 'active' : ''}" data-plan-toggle data-plan-name="${this.e(row.name)}">
                                 <div class="okr-plan-card__head">
                                         <div>
                                                 <strong>${this.e(row.plan_name || row.name)}</strong>
@@ -419,7 +428,7 @@ class OKRAdminWorkspace {
                                                         <span class="okr-plan-meta-stats">${obj_count} Objective${obj_count !== 1 ? 's' : ''} · <span class="${blocked > 0 ? 'okr-plan-critical-text' : ''}">${blocked} Blocked</span></span>
                                                 </div>
                                         </div>
-                                        <span class="okr-status-pill okr-status-pill--${this.status_slug(row.status)}">${this.e(row.status || 'Draft')}</span>
+                                        <span class="okr-chevron"></span><span class="okr-status-pill okr-status-pill--${this.status_slug(row.status)}">${this.e(row.status || 'Draft')}</span>
                                 </div>
                                 <div class="okr-plan-progress">
                                         <div>
@@ -430,8 +439,42 @@ class OKRAdminWorkspace {
                                                 <div class="okr-progress-bar__fill okr-progress-bar__fill--${progress_class}" style="width: ${this.progress_width(row.progress)}%;"></div>
                                         </div>
                                 </div>
-                        </button>
+                        </button><div class="okr-plan-tree-body">${this.render_plan_tree(row)}</div></div>
                 `;
+        }
+
+        render_plan_tree(plan) {
+                const rows = plan.objective_tree || [];
+                if (!rows.length) return '<div class="okr-plan-tree-empty">' + __('No objectives in this plan.') + '</div>';
+                return rows.map((obj, i) => {
+                        const krs = obj.key_results || [];
+                        const actions = krs.reduce((n, kr) => n + (kr.action_items || []).length, 0);
+                        return '<section class="okr-plan-objective ' + (i === 0 ? 'expanded' : '') + '"><button class="okr-plan-objective__header" data-objective-toggle>' +
+                                '<span class="okr-objective-badge">O</span><span class="okr-plan-objective__title"><strong>' + this.e(obj.title) + '</strong><small>' +
+                                this.pluralize(krs.length, 'Key Result') + ' &middot; ' + this.pluralize(actions, 'Action Item') + '</small></span><b>' + this.percent(obj.progress) +
+                                '</b><span class="okr-status-pill okr-status-pill--' + this.status_slug(obj.status) + '">' + this.e(obj.status || 'Draft') +
+                                '</span><span class="okr-chevron"></span></button><div class="okr-plan-objective__body">' +
+                                (krs.length ? krs.map(kr => this.render_plan_kr(kr)).join('') : '<div class="okr-plan-tree-empty">' + __('No key results.') + '</div>') + '</div></section>';
+                }).join('');
+        }
+
+        render_plan_kr(kr) {
+                const items = kr.action_items || [];
+                return '<div class="okr-plan-kr"><div class="okr-plan-kr__header"><span class="okr-kr-badge">KR</span><strong>' + this.e(kr.title) +
+                        '</strong>' + this.period_badge(kr.period_label) + '<span>' + this.pluralize(items.length, 'Action Item') + '</span><b>' + this.percent(kr.progress) +
+                        '</b></div><div class="okr-plan-actions">' + (items.length ? items.map(ai => this.render_plan_action(ai)).join('') :
+                        '<div class="okr-plan-tree-empty">' + __('No action items.') + '</div>') + '</div></div>';
+        }
+
+        render_plan_action(ai) {
+                const checks = ai.checkins || [];
+                return '<details class="okr-plan-action"><summary><span class="okr-ai-badge">AI</span><span><strong>' + this.e(ai.title) + '</strong><small>' +
+                        this.e(ai.owner || 'Unassigned') + ' &middot; ' + this.e(ai.due_date || '-') + '</small></span><b>' + this.percent(ai.progress) +
+                        '</b><span class="okr-status-pill okr-status-pill--' + this.status_slug(ai.status) + '">' + this.e(ai.status || 'Draft') +
+                        '</span><em>' + this.pluralize(checks.length, 'Check-in') + '</em></summary><div class="okr-plan-checkins">' +
+                        (checks.length ? checks.map(ck => '<div><span>' + this.e(ck.date) + '</span><strong>' + this.percent(ck.progress) + '</strong><p>' +
+                        this.e(ck.note || __('No update')) + (ck.blockers ? '<br><b>' + __('Blocker') + ':</b> ' + this.e(ck.blockers) : '') + '</p></div>').join('') :
+                        '<div class="okr-plan-tree-empty">' + __('No check-ins yet.') + '</div>') + '</div></details>';
         }
 
 

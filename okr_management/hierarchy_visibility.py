@@ -3,14 +3,15 @@ from __future__ import annotations
 import frappe
 
 
-def _plan_team_plans(user):
-    return set(
-        frappe.get_all(
-            "OKR Plan Team Member",
-            filters={"member_user": user, "parenttype": "OKR Plan"},
-            pluck="parent",
-        )
-    )
+EDITABLE_PLAN_TEAM_ROLES = {"Admin", "Contributor"}
+CHECKIN_OVERRIDE_ROLES = {"System Manager", "OKR Admin"}
+
+
+def _plan_team_plans(user, roles=None):
+    filters = {"member_user": user, "parenttype": "OKR Plan"}
+    if roles:
+        filters["role"] = ["in", sorted(roles)]
+    return set(frappe.get_all("OKR Plan Team Member", filters=filters, pluck="parent"))
 
 
 def get_hierarchy_visibility_scope(user=None):
@@ -26,12 +27,15 @@ def get_hierarchy_visibility_scope(user=None):
             "full_key_results": set(),
             "direct_action_items": set(),
             "full_plan_names": set(),
+            "editable_plan_names": set(),
             "checkin_override": True,
             "read_all": True,
         }
 
     employees = set(frappe.get_all("Employee", filters={"user_id": user, "status": "Active"}, pluck="name"))
     full_plan_names = _plan_team_plans(user)
+    editable_plan_names = _plan_team_plans(user, EDITABLE_PLAN_TEAM_ROLES)
+    checkin_override = bool(CHECKIN_OVERRIDE_ROLES & set(frappe.get_roles(user)))
     full_plan_objectives = set()
     if full_plan_names:
         full_plan_objectives.update(
@@ -97,7 +101,8 @@ def get_hierarchy_visibility_scope(user=None):
         "full_key_results": authority_krs,
         "direct_action_items": direct_actions,
         "full_plan_names": full_plan_names,
-        "checkin_override": False,
+        "editable_plan_names": editable_plan_names,
+        "checkin_override": checkin_override,
         "read_all": False,
     }
 
@@ -160,7 +165,7 @@ def key_result_permission(doc, user=None, ptype=None):
     if ptype == "create" and not scope["read_all"]:
         return bool(doc.objective) and (
             doc.objective in scope["owned_objectives"]
-            or frappe.db.get_value("OKR Objective", doc.objective, "parent_plan") in scope["full_plan_names"]
+            or frappe.db.get_value("OKR Objective", doc.objective, "parent_plan") in scope["editable_plan_names"]
         )
     return _hierarchy_permission(doc, user, ptype, "visible_key_results", "owned_key_results")
 
@@ -177,7 +182,7 @@ def action_item_permission(doc, user=None, ptype=None):
         return bool(parent) and (
             doc.parent_key_result in scope["owned_key_results"]
             or parent.objective in scope["owned_objectives"]
-            or parent.parent_plan in scope["full_plan_names"]
+            or parent.parent_plan in scope["editable_plan_names"]
         )
     return _hierarchy_permission(doc, user, ptype, "visible_action_items", "direct_action_items")
 
@@ -185,7 +190,7 @@ def action_item_permission(doc, user=None, ptype=None):
 def checkin_permission(doc, user=None, ptype=None):
     user = user or frappe.session.user
     scope = get_hierarchy_visibility_scope(user)
-    if scope["read_all"]:
+    if scope["read_all"] or scope["checkin_override"]:
         return None
     if ptype in {"create", "write", "delete", "submit", "cancel", "amend"}:
         return bool(doc.action_item) and doc.action_item in scope["direct_action_items"]

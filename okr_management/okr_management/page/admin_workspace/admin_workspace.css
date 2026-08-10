@@ -386,6 +386,18 @@
   color: var(--muted);
 }
 
+
+/* Admin plan hierarchy */
+.okr-plan-tree-card>.okr-plan-card{width:100%}.okr-plan-tree-card>.okr-plan-card .okr-chevron{margin-left:10px}
+.okr-plan-tree-card.expanded>.okr-plan-card .okr-chevron,.okr-plan-objective.expanded>.okr-plan-objective__header .okr-chevron{transform:rotate(180deg)}
+.okr-plan-tree-body{display:none;padding:14px;border:1px solid #dce4f1;border-top:0;border-radius:0 0 16px 16px;background:#fff}.okr-plan-tree-card.expanded>.okr-plan-tree-body{display:block}.okr-plan-tree-card.expanded>.okr-plan-card{border-radius:16px 16px 0 0}
+.okr-plan-objective{border:1px solid #e0e6ef;border-radius:12px;margin-bottom:10px;overflow:hidden}.okr-plan-objective__header{width:100%;border:0;background:#f8faff;padding:13px;display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:10px;align-items:center;text-align:left}
+.okr-objective-badge{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;background:#e5edff;color:#3159a5;font-weight:800}.okr-plan-objective__title,.okr-plan-action summary>span:nth-child(2){display:flex;flex-direction:column;min-width:0}.okr-plan-objective__title small,.okr-plan-action small{color:var(--muted);margin-top:3px}
+.okr-plan-objective__body{display:none;padding:10px 12px 12px}.okr-plan-objective.expanded>.okr-plan-objective__body{display:block}.okr-plan-kr{border-left:3px solid #b9c9ed;padding:8px 0 8px 12px;margin-bottom:10px}.okr-plan-kr__header{display:flex;gap:9px;align-items:center}.okr-plan-kr__header strong{flex:1}.okr-plan-actions{margin:9px 0 0 37px}
+.okr-plan-action{border-top:1px solid #e8edf4}.okr-plan-action summary{cursor:pointer;list-style:none;padding:10px 0;display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:10px;align-items:center}.okr-plan-action summary::-webkit-details-marker{display:none}.okr-plan-action summary em{color:#526781;font-size:11px;font-style:normal}
+.okr-plan-checkins{margin:0 0 10px 37px;padding:8px 12px;background:#f7f9fc;border-radius:8px}.okr-plan-checkins>div{display:grid;grid-template-columns:90px 55px minmax(0,1fr);gap:10px;padding:6px 0;border-bottom:1px solid #e6ebf2}.okr-plan-checkins p{margin:0;color:#52606f}.okr-plan-tree-empty{padding:14px;color:var(--muted);text-align:center}
+@media(max-width:720px){.okr-plan-objective__header{grid-template-columns:auto minmax(0,1fr) auto}.okr-plan-objective__header .okr-status-pill,.okr-plan-objective__header>b{display:none}.okr-plan-actions{margin-left:8px}.okr-plan-action summary{grid-template-columns:auto minmax(0,1fr) auto}.okr-plan-action summary .okr-status-pill,.okr-plan-action summary em{display:none}.okr-plan-checkins{margin-left:0}}
+
 /* -- 5. OKR Plans -- */
 .okr-plan-grid {
   display: grid;
@@ -1732,4 +1744,48 @@
 
 [data-theme="dark"] .okr-admin-page .okr-attention-row:hover {
   background: var(--subtle-fg);
+}
+
+
+/* Plan hierarchy layout guard: override the legacy full-height plan card rule. */
+.okr-plan-grid {
+  align-items: start;
+  grid-auto-rows: max-content;
+}
+
+.okr-plan-tree-card {
+  position: relative;
+  min-width: 0;
+  height: auto;
+  align-self: start;
+  overflow: visible;
+}
+
+.okr-plan-tree-card > .okr-plan-card {
+  position: relative;
+  height: auto;
+  min-height: 0;
+}
+
+.okr-plan-tree-card > .okr-plan-tree-body {
+  position: relative;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  z-index: 0;
+}
+
+.okr-plan-tree-card + .okr-plan-tree-card {
+  margin-top: 0;
+}
+
+
+/* Keep the plan status pill at the far-right edge of the card header. */
+.okr-plan-tree-card > .okr-plan-card .okr-plan-card__head > .okr-chevron {
+  margin-left: auto;
+}
+
+.okr-plan-tree-card > .okr-plan-card .okr-plan-card__head > .okr-status-pill {
+  flex: 0 0 auto;
+  margin-left: 4px;
 }

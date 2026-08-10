@@ -47,20 +47,6 @@ def activate_plan(plan_name: str, as_of_date=None) -> bool:
 	plan.status = "Active"
 	plan.flags.ignore_permissions = True
 	plan.save()
-	frappe.db.set_value(
-		"OKR Objective",
-		{"parent_plan": plan.name, "status": "Draft"},
-		"status",
-		"Active",
-		update_modified=True,
-	)
-	frappe.db.set_value(
-		"OKR Key Result",
-		{"parent_plan": plan.name, "status": ["in", ["Draft", "Planned"]]},
-		"status",
-		"Active",
-		update_modified=True,
-	)
 	return True
 
 

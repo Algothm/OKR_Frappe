@@ -11,8 +11,7 @@ class OKRWorkspace {
                 this.wrapper = wrapper;
                 this.page = frappe.ui.make_app_page({ parent: wrapper, single_column: true });
                 this.$body = $('<div class="okr-workspace-page"></div>').appendTo(this.page.main);
-                this.filters = Object.assign({ year: '', sprint: '', level: 'Department', owner: 'me' }, frappe.session.okr_workspace_filters || {});
-                delete this.filters.quarter;
+                this.filters = Object.assign({ year: '', plan: '', level: 'Department', owner: 'me' }, frappe.session.okr_workspace_filters || {});
                 this.state = { objectives: {}, key_results: {}, action_history: {}, action_checkin: null, selected_objective: null };
                 this.attachment = '';
                 this.saving_checkin = false;
@@ -38,7 +37,7 @@ class OKRWorkspace {
                                                 <div class="okr-pop-head"><strong>${__('Filter Context')}</strong><button data-close-filter>${frappe.utils.icon('close', 'sm')}</button></div>
                                                 <div class=okr-pop-content>
                                                 <div class="okr-filter-group"><label>${__('Financial Year')}</label><div data-year-pills class="okr-pill-row"></div></div>
-                                                <div class="okr-filter-group"><label>${__('Plan')}</label><div data-sprint-pills class="okr-pill-row okr-pill-row-wrap"></div></div>
+                                                <div class="okr-filter-group"><label>${__('Plan')}</label><div data-plan-pills class="okr-pill-row okr-pill-row-wrap"></div></div>
                                                 <div class="okr-filter-group"><label>${__('Level')}</label><div data-level-pills class="okr-pill-row"></div></div>
                                                 <div class="okr-filter-group"><label>${__('Owner')}</label><div data-owner-pills class="okr-pill-row"></div></div>
                                                 </div>
@@ -158,7 +157,7 @@ class OKRWorkspace {
                         frappe.db.get_value('OKR Objective', target_obj, ['parent_plan', 'financial_year', 'level']).then(r => {
                                 const val = r.message || {};
                                 this.filters.year = val.financial_year || '';
-                                this.filters.sprint = val.parent_plan || '';
+                                this.filters.plan = val.parent_plan || '';
                                 this.filters.level = val.level || '';
                                 this.filters.owner = 'all';
                                 this.state.selected_objective = target_obj;
@@ -196,7 +195,7 @@ class OKRWorkspace {
         render_filter_pills() {
                 if (!this.options) return;
                 this.render_pill_group('year', (this.options.years || []).slice(0, 4).map(y => ({ label: y.name, value: y.name })));
-                this.render_pill_group('sprint', [{ label: __('All'), value: '' }].concat((this.options.sprints || []).slice(0, 5).map(s => ({ label: s.plan_name || s.name, value: s.name }))));
+                this.render_pill_group('plan', [{ label: __('All'), value: '' }].concat((this.options.plans || []).slice(0, 5).map(s => ({ label: s.plan_name || s.name, value: s.name }))));
                 this.render_pill_group('level', (this.options.levels || []).map(l => ({ label: __(l), value: l })));
                 this.render_pill_group('owner', [{ label: __('Assigned to Me'), value: 'me' }, { label: __('All'), value: 'all' }]);
         }
@@ -209,13 +208,13 @@ class OKRWorkspace {
         }
 
         render_active_filters() {
-                const labels = [this.filters.year, this.sprint_label(), this.filters.level || __('All Levels'), this.filters.owner === 'me' ? __('Me') : __('All')];
+                const labels = [this.filters.year, this.plan_label(), this.filters.level || __('All Levels'), this.filters.owner === 'me' ? __('Me') : __('All')];
                 this.$body.find('[data-active-filters]').html(labels.filter(Boolean).map(v => `<span>${frappe.utils.escape_html(v)}</span>`).join(''));
         }
 
-        sprint_label() {
-                const sprint = (this.options.sprints || []).find(s => s.name === this.filters.sprint);
-                return sprint ? (sprint.plan_name || sprint.name) : __('All Plans');
+        plan_label() {
+                const plan = (this.options.plans || []).find(row => row.name === this.filters.plan);
+                return plan ? (plan.plan_name || plan.name) : __('All Plans');
         }
 
         render_content() {
@@ -450,7 +449,7 @@ class OKRWorkspace {
 
         context(label, value) { return `<div><span>${label}</span><strong>${frappe.utils.escape_html(value || '-')}</strong></div>`; }
         no_actions() { return `<div class="okr-no-actions">${__('No action items under this Key Result.')}</div>`; }
-        empty_state() { return `<div class="okr-empty-workspace"><div class="okr-empty-icon">◎</div><h3>${__('No OKRs found')}</h3><p>${__('No objectives match the current filter. Try a different quarter, level, or owner.')}</p><button class="btn btn-primary" data-adjust-filter>${__('Adjust Filter')}</button></div>`; }
+        empty_state() { return `<div class="okr-empty-workspace"><div class="okr-empty-icon">◎</div><h3>${__('No OKRs found')}</h3><p>${__('No objectives match the current filter. Try a different plan, level, or owner.')}</p><button class="btn btn-primary" data-adjust-filter>${__('Adjust Filter')}</button></div>`; }
 
         is_kr_blocked(kr) {
                 if (kr.status === 'Blocked') return true;

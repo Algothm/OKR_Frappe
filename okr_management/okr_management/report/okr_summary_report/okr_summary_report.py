@@ -23,7 +23,7 @@ def execute(filters=None):
 		conditions.append("obj.parent_plan = %(plan)s")
 		values["plan"] = filters.plan
 	if filters.get("owner"):
-		conditions.append("coalesce(kr.owner_user, obj.owner_user) = %(owner)s")
+		conditions.append("coalesce(kr.assignee, obj.owner_user) = %(owner)s")
 		values["owner"] = filters.owner
 	if filters.get("status"):
 		conditions.append("coalesce(kr.status, obj.status) = %(status)s")
@@ -31,7 +31,7 @@ def execute(filters=None):
 	where = " where " + " and ".join(conditions) if conditions else ""
 	data = frappe.db.sql(f"""
 		select obj.parent_plan, obj.name as objective, obj.objective_title, kr.name as key_result,
-			kr.key_result_title, coalesce(kr.owner_user, obj.owner_user) as owner,
+			kr.key_result_title, coalesce(kr.assignee, obj.owner_user) as owner,
 			coalesce(kr.status, obj.status) as status, coalesce(kr.target_progress, obj.progress) as progress,
 			obj.confidence as confidence,
 			coalesce(kr.start_date, obj.start_date) as start_date, coalesce(kr.end_date, obj.end_date) as end_date

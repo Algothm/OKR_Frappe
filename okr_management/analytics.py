@@ -79,7 +79,7 @@ def get_executive_insights(days_without_update: int = 14, risk_progress: float =
 	)
 	key_results = frappe.get_all(
 		"OKR Key Result",
-		fields=["name", "key_result_title", "objective", "owner_user", "status", "target_progress", "confidence", "end_date", "modified"],
+		fields=["name", "key_result_title", "objective", "assignee", "status", "target_progress", "confidence", "end_date", "modified"],
 		order_by="modified desc",
 		limit_page_length=500,
 	)
@@ -112,7 +112,7 @@ def get_executive_insights(days_without_update: int = 14, risk_progress: float =
 		if reasons:
 			key_results_need_attention.append({**kr, "reasons": list(dict.fromkeys(reasons))})
 
-	owners = sorted({item.owner_user for item in objectives + key_results if item.get("owner_user")})
+	owners = sorted({item.owner_user for item in objectives if item.get("owner_user")} | {item.assignee for item in key_results if item.get("assignee")})
 	owners_without_recent_update = []
 	for owner in owners:
 		latest = frappe.get_all(

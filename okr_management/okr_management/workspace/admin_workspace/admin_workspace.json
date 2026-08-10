@@ -40,16 +40,9 @@
  "number_cards": [],
  "owner": "Administrator",
  "parent_page": "",
- "public": 1,
+ "public": 0,
  "quick_lists": [],
- "roles": [
-  {
-   "role": "System Manager"
-  },
-  {
-   "role": "OKR Admin"
-  }
- ],
+ "roles": [],
  "sequence_id": 2.0,
  "shortcuts": [
   {

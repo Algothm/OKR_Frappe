@@ -83,6 +83,9 @@ class OKRPlan(Document):
 
 	def on_update(self) -> None:
 		recalculate_plan_progress(self.name)
+		previous = self.get_doc_before_save()
+		if previous and previous.status == "Draft" and self.status == "Active":
+			activate_plan_hierarchy(self.name)
 
 	def on_trash(self) -> None:
 		self.validate_no_dependents_before_delete()
@@ -143,11 +146,6 @@ class OKRPlan(Document):
 				label = self.meta.get_label(fieldname) or fieldname
 				frappe.throw(_("{0} cannot be changed after an OKR Plan becomes Active.").format(label))
 
-	def validate_closing_requirements(self) -> None:
-		active_objective = frappe.db.exists("OKR Objective", {"parent_plan": self.name, "status": "Active"})
-		if active_objective:
-			frappe.throw(_("OKR Plan cannot be Closed while dependent OKR Objectives are still Active."))
-
 	def preserve_system_calculated_progress(self) -> None:
 		if self.is_new():
 			self.progress = 0
@@ -158,6 +156,36 @@ class OKRPlan(Document):
 	def validate_no_dependents_before_delete(self) -> None:
 		if frappe.db.exists("OKR Objective", {"parent_plan": self.name}):
 			frappe.throw(_("OKR Plan cannot be deleted because dependent OKR Objectives exist."))
+
+
+def activate_plan_hierarchy(plan_name: str) -> None:
+	"""Activate Draft Objectives/KRs through document saves so validation and hooks run."""
+	for objective_name in frappe.get_all(
+		"OKR Objective", filters={"parent_plan": plan_name, "status": "Draft"}, pluck="name"
+	):
+		objective = frappe.get_doc("OKR Objective", objective_name)
+		objective.status = "Active"
+		objective.flags.ignore_permissions = True
+		objective.save()
+
+	active_objectives = frappe.get_all(
+		"OKR Objective", filters={"parent_plan": plan_name, "status": "Active"}, pluck="name"
+	)
+	if not active_objectives:
+		return
+	for key_result_name in frappe.get_all(
+		"OKR Key Result",
+		filters={
+			"parent_plan": plan_name,
+			"objective": ["in", active_objectives],
+			"status": ["in", ["Draft", "Planned"]],
+		},
+		pluck="name",
+	):
+		key_result = frappe.get_doc("OKR Key Result", key_result_name)
+		key_result.status = "Active"
+		key_result.flags.ignore_permissions = True
+		key_result.save()
 
 
 def _fiscal_year_dates(financial_year: str) -> tuple:
@@ -204,6 +232,8 @@ def get_period_label(item_date, plan: Document | str) -> str:
 
 @frappe.whitelist()
 def get_plan_context(plan_name: str) -> dict:
+	if frappe.session.user != "Administrator":
+		frappe.throw(_("Only Administrator can access OKR Plan context."), frappe.PermissionError)
 	plan = frappe.get_doc("OKR Plan", plan_name)
 	start_date, end_date = get_plan_timeline(plan)
 	members = [

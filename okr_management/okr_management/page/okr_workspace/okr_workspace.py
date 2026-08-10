@@ -4,7 +4,7 @@ import frappe
 from frappe.utils import flt, getdate, nowdate, today
 
 from okr_management.hierarchy_visibility import get_hierarchy_visibility_scope
-from okr_management.okr_management.doctype.okr_plan.okr_plan import get_period_label
+from okr_management.utils.periods import add_period_labels
 
 
 def get_workspace_plan_names() -> list[str]:
@@ -35,23 +35,23 @@ def get_active_plan_names() -> list[str]:
     return frappe.get_all("OKR Plan", filters={"status": "Active"}, pluck="name")
 
 
-def empty_workspace_response(year, quarter, sprint, level, owner) -> dict:
-    return base_response([], year, quarter, sprint, level, owner)
+def empty_workspace_response(year, plan, level, owner) -> dict:
+    return base_response([], year, plan, level, owner)
 
 
 @frappe.whitelist()
-def get_workspace_data(year: str | None = None, quarter: str | None = None, sprint: str | None = None, level: str | None = None, owner: str | None = "me") -> dict:
+def get_workspace_data(year: str | None = None, plan: str | None = None, level: str | None = None, owner: str | None = "me") -> dict:
     workspace_plan_names = get_workspace_plan_names()
     if not workspace_plan_names:
-        return empty_workspace_response(year, quarter, sprint, level, owner)
+        return empty_workspace_response(year, plan, level, owner)
 
     filters = {"parent_plan": ["in", workspace_plan_names]}
     scope = get_hierarchy_visibility_scope()
     filters["name"] = ["in", list(scope["visible_objectives"])]
     if year:
         filters["financial_year"] = year
-    if sprint:
-        filters["parent_plan"] = sprint
+    if plan:
+        filters["parent_plan"] = plan
     if level:
         filters["level"] = level
 
@@ -96,7 +96,7 @@ def get_workspace_data(year: str | None = None, quarter: str | None = None, spri
         if objective["key_results"] or objective.name in scope["owned_objectives"]:
             hierarchy.append(objective)
 
-    return base_response(hierarchy, year, quarter, sprint, level, owner)
+    return base_response(hierarchy, year, plan, level, owner)
 
 
 @frappe.whitelist()
@@ -106,14 +106,13 @@ def get_filter_options() -> dict:
     years = sorted(years, key=lambda row: (0 if row.name == "2026-2027" else 1 if not row.name.startswith("_Test") else 2, row.name), reverse=False)
     return {
         "years": years[:30],
-        "sprints": frappe.get_all(
+        "plans": frappe.get_all(
             "OKR Plan",
             filters={"name": ["in", workspace_plan_names]} if workspace_plan_names else {"name": ["is", "not set"]},
             fields=["name", "plan_name", "financial_year", "status", "planned_activation_date"],
             order_by="modified desc",
             limit_page_length=100,
         ),
-        "quarters": ["Q1", "Q2", "Q3", "Q4"],
         "levels": ["Organization", "Department", "Team", "Individual"],
     }
 
@@ -121,7 +120,7 @@ def get_filter_options() -> dict:
 @frappe.whitelist()
 def save_workspace_checkin(action_item: str, progress: float, update: str, blocker: str | None = None, dependency: str | None = None, attachment: str | None = None, status: str | None = None) -> dict:
     scope = get_hierarchy_visibility_scope()
-    if not scope["read_all"] and action_item not in scope["direct_action_items"]:
+    if not (scope["read_all"] or scope["checkin_override"]) and action_item not in scope["direct_action_items"]:
         frappe.throw("Only the employee assigned to this Action Item can submit its Check-In", frappe.PermissionError)
     doc = frappe.new_doc("OKR Check In")
     doc.action_item = action_item
@@ -176,40 +175,13 @@ def save_workspace_checkin(action_item: str, progress: float, update: str, block
     }
 
 
-def base_response(objectives, year, quarter, sprint, level, owner) -> dict:
+def base_response(objectives, year, plan, level, owner) -> dict:
     return {
         "today": today(),
-        "filters": {"year": year, "quarter": quarter, "sprint": sprint, "level": level, "owner": owner or "me"},
+        "filters": {"year": year, "plan": plan, "level": level, "owner": owner or "me"},
         "objectives": objectives,
     }
 
-
-def include_objectives_with_my_action_items(objectives, filters) -> list:
-    names = {row.name for row in objectives}
-    action_filters = {
-        "owner_user": frappe.session.user,
-        "status": ["!=", "Cancelled"],
-        "parent_plan": filters.get("parent_plan", ["in", get_active_plan_names()]),
-    }
-    actions = frappe.get_all("OKR Action Item", filters=action_filters, fields=["parent_objective"])
-    extra_names = {row.parent_objective for row in actions if row.parent_objective and row.parent_objective not in names}
-    if not extra_names:
-        return objectives
-    extra_filters = {"name": ["in", list(extra_names)], "parent_plan": filters.get("parent_plan", ["in", get_active_plan_names()])}
-    if filters.get("financial_year"):
-        extra_filters["financial_year"] = filters["financial_year"]
-    if filters.get("sprint"):
-        extra_filters["parent_plan"] = filters["parent_plan"]
-    if filters.get("level"):
-        extra_filters["level"] = filters["level"]
-    extra = frappe.get_all(
-        "OKR Objective",
-        filters=extra_filters,
-        fields=["name", "objective_title", "parent_plan", "level", "priority", "owner_user", "status", "progress", "start_date", "end_date"],
-        order_by="priority desc, modified desc",
-        limit_page_length=100,
-    )
-    return objectives + extra
 
 
 def get_key_results(objective_names: list[str]) -> list:
@@ -254,22 +226,6 @@ def get_action_items(kr_names: list[str]) -> list:
         limit_page_length=800,
     )
 
-
-def add_period_labels(key_results: list, action_items: list) -> None:
-    plan_names = {row.parent_plan for row in [*key_results, *action_items] if row.get("parent_plan")}
-    plans = {
-        row.name: row
-        for row in frappe.get_all(
-            "OKR Plan",
-            filters={"name": ["in", list(plan_names)]},
-            fields=["name", "financial_year", "sprint_frequency"],
-        )
-    } if plan_names else {}
-
-    dated_rows = [(row, "end_date") for row in key_results] + [(row, "due_date") for row in action_items]
-    for row, date_field in dated_rows:
-        plan = plans.get(row.get("parent_plan"))
-        row["period_label"] = get_period_label(row.get(date_field), plan) if plan else ""
 
 
 def get_checkin_history(action_item_names: list[str]) -> dict:

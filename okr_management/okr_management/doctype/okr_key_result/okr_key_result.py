@@ -130,6 +130,18 @@ class OKRKeyResult(Document):
 
     def validate_lifecycle(self) -> None:
         if self.status == "Active":
+            parent_status = frappe.db.get_value(
+                "OKR Objective", self.objective, ["status", "parent_plan"], as_dict=True
+            )
+            plan_status = (
+                frappe.db.get_value("OKR Plan", parent_status.parent_plan, "status")
+                if parent_status and parent_status.parent_plan else None
+            )
+            if not parent_status or parent_status.status != "Active":
+                frappe.throw(_("Key Result cannot become Active unless Parent Objective is Active."))
+            if plan_status != "Active":
+                frappe.throw(_("Key Result cannot become Active unless Parent Plan is Active."))
+
             start = self.start_date
             end = self.end_date
             if start and getdate(today()) < getdate(start):
@@ -243,8 +255,21 @@ class OKRKeyResult(Document):
                 frappe.throw(_("{0} is inherited from Parent Objective and cannot be changed manually.").format(self.meta.get_label(fieldname)))
 
     def on_update(self) -> None:
+        self.resync_action_item_context_after_objective_move()
         from okr_management.utils.okr_calculations import recalculate_objective_progress
         recalculate_objective_progress(self.objective)
+
+    def resync_action_item_context_after_objective_move(self) -> None:
+        """Refresh denormalized hierarchy fields on children after a KR move."""
+        previous = self.get_doc_before_save()
+        if not previous or previous.objective == self.objective:
+            return
+        for action_name in frappe.get_all(
+            "OKR Action Item", filters={"parent_key_result": self.name}, pluck="name"
+        ):
+            action = frappe.get_doc("OKR Action Item", action_name)
+            action.flags.ignore_permissions = True
+            action.save()
 
     def on_trash(self) -> None:
         if frappe.db.count("OKR Action Item", {"parent_key_result": self.name}) > 0:

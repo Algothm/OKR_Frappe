@@ -4,10 +4,10 @@
         "OKR Admin Workspace": admin ? "/app/admin-workspace" : "/app/okr-workspace",
         "Plan": admin ? "/app/okr-plan" : "/app/okr-workspace",
         "OKR Workspace": admin ? "/app/admin-workspace" : "/app/okr-workspace",
-        "Objective": "/app/okr-objective",
-        "Key Result": "/app/okr-key-result",
-        "Action Item": "/app/okr-action-item",
-        "Check-In": "/app/okr-check-in",
+        "Objective": admin ? "/app/okr-objective" : "/app/okr-workspace",
+        "Key Result": admin ? "/app/okr-key-result" : "/app/okr-workspace",
+        "Action Item": admin ? "/app/okr-action-item" : "/app/okr-workspace",
+        "Check-In": admin ? "/app/okr-check-in" : "/app/okr-workspace",
     };
 
     function leave_obsolete_route() {

@@ -6,13 +6,7 @@ from frappe.desk.desktop import get_workspace_sidebar_items as _get_workspace_si
 
 ROOT_WORKSPACE = "OKR Management"
 ADMIN_WORKSPACES = {"Admin Workspace", "OKR Plan Planning", "OKR Sprint Planning"}
-USER_WORKSPACES = {
-    "OKR Workspace",
-    "OKR Objective Execution",
-    "OKR Key Result Execution",
-    "OKR Action Item Execution",
-    "Check-In",
-}
+USER_WORKSPACES = {"OKR Workspace"}
 
 
 @frappe.whitelist()
@@ -32,10 +26,6 @@ def get_workspace_sidebar_items():
         "Admin Workspace": "admin-workspace",
         "OKR Plan Planning": "okr-plan",
         "OKR Workspace": "okr-workspace",
-        "OKR Objective Execution": "okr-objective",
-        "OKR Key Result Execution": "okr-key-result",
-        "OKR Action Item Execution": "okr-action-item",
-        "Check-In": "okr-check-in",
     }
     for page in result["pages"]:
         page["route"] = routes.get(page.get("name"), "")

@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 import frappe
 from frappe.utils import add_days, flt, getdate, today
 
-from okr_management.okr_management.doctype.okr_plan.okr_plan import get_period_label
+from okr_management.utils.periods import add_period_labels
 
 
 no_cache = 1
@@ -37,16 +37,16 @@ def get_filter_options() -> dict:
     )
     return {
         "years": years,
-        "sprints": plans, "plans": plans, "departments": departments,
+        "plans": plans, "departments": departments,
         "owners": get_owner_options(),
         "statuses": ["Draft", "Active", "On Hold", "Completed", "Closed", "Archived"],
     }
 
 
 @frappe.whitelist()
-def get_dashboard_data(year=None, quarter=None, plan=None, sprint=None, department=None, owner=None, status=None) -> dict:
+def get_dashboard_data(year=None, plan=None, department=None, owner=None, status=None) -> dict:
     require_admin_workspace_access()
-    filters = scrub_filters(year, quarter, plan or sprint, department, owner, status)
+    filters = scrub_filters(year, plan, department, owner, status)
     plan_names = get_plan_names(filters)
     all_objectives = get_objectives(filters, plan_names)
     achieved_objectives = [
@@ -54,17 +54,22 @@ def get_dashboard_data(year=None, quarter=None, plan=None, sprint=None, departme
         if flt(row.progress) >= 100 or row.status in {"Completed", "Closed"}
     ]
     objectives = [row for row in all_objectives if row not in achieved_objectives]
-    objective_names = [row.name for row in objectives]
+    # Admin tree includes the complete plan, including achieved objectives.
+    objective_names = [row.name for row in all_objectives]
     key_results = get_key_results(filters, plan_names, objective_names)
     kr_names = [row.name for row in key_results]
     action_items = get_action_items(filters, plan_names, objective_names, kr_names)
     add_period_labels(key_results, action_items)
     checkins = get_checkins(filters, plan_names, objective_names, kr_names)
     plans = get_plans(filters, plan_names)
-    department_performance = build_department_performance(objectives, key_results, action_items)
-    metrics = build_metrics(objectives, action_items)
+    dashboard_objective_names = {row.name for row in objectives}
+    dashboard_key_results = [row for row in key_results if row.objective in dashboard_objective_names]
+    dashboard_action_items = [row for row in action_items if row.parent_objective in dashboard_objective_names]
+    dashboard_checkins = [row for row in checkins if row.objective in dashboard_objective_names]
+    department_performance = build_department_performance(objectives, dashboard_key_results, dashboard_action_items)
+    metrics = build_metrics(objectives, dashboard_action_items)
     metrics["departments_at_risk"] = len([row for row in department_performance if row["status"] in {"At Risk", "Critical"}])
-    attention_list, attention_count = build_attention_required(objectives, action_items, checkins)
+    attention_list, attention_count = build_attention_required(objectives, dashboard_action_items, dashboard_checkins)
     metrics["achieved_objectives"] = len(achieved_objectives)
     return {
         "filters": filters, "metrics": metrics,
@@ -73,24 +78,29 @@ def get_dashboard_data(year=None, quarter=None, plan=None, sprint=None, departme
         "attention_required": attention_list,
         "achieved_objectives": achieved_objectives,
         "attention_count": attention_count,
-        "critical_activity": build_critical_activity(objectives, action_items, plans),
-        "manager_performance": build_manager_performance(objectives, action_items),
-        "plan_summaries": build_plan_summaries(plans, objectives, key_results, action_items, checkins, []),
+        "critical_activity": build_critical_activity(objectives, dashboard_action_items, plans),
+        "manager_performance": build_manager_performance(objectives, dashboard_action_items),
+        "plan_summaries": build_plan_summaries(plans, all_objectives, key_results, action_items, checkins),
         "updated_at": frappe.utils.now_datetime().strftime("%Y-%m-%d %H:%M:%S"),
     }
 
 
-def scrub_filters(year, quarter, plan, department, owner, status) -> dict:
-    return {"year": year or "", "quarter": quarter or "", "plan": plan or "",
-            "department": department or "", "owner": owner or "", "status": status or ""}
+def scrub_filters(year, plan, department, owner, status) -> dict:
+    return {"year": year or "", "plan": plan or "", "department": department or "",
+            "owner": owner or "", "status": status or ""}
 
 
 def get_owner_options() -> list[dict]:
     owners = set()
-    for doctype, fieldname in (("OKR Objective", "owner_user"), ("OKR Key Result", "owner_user"),
-                               ("OKR Action Item", "owner_user"), ("OKR Check In", "reported_by")):
+    for doctype, fieldname in (("OKR Objective", "owner_user"), ("OKR Key Result", "assignee"),
+                               ("OKR Check In", "reported_by")):
         rows = frappe.get_all(doctype, fields=[fieldname], limit_page_length=1000)
         owners.update(row.get(fieldname) for row in rows if row.get(fieldname))
+    employee_names = frappe.get_all("OKR Action Item", pluck="assigned_to", limit_page_length=1000)
+    if employee_names:
+        owners.update(frappe.get_all(
+            "Employee", filters={"name": ["in", employee_names]}, pluck="user_id", limit_page_length=1000
+        ))
     if not owners:
         return []
     return frappe.get_all("User", filters={"name": ["in", list(owners)]},
@@ -157,7 +167,7 @@ def get_objectives(filters: dict, plan_names: list[str] | None) -> list[dict]:
 
 def get_key_results(filters: dict, plan_names: list[str] | None, objective_names: list[str]) -> list[dict]:
     doc_filters = {}
-    add_common_filters(doc_filters, filters)
+    add_common_filters(doc_filters, filters, owner_field="assignee")
     apply_names_filter(doc_filters, "parent_plan", plan_names)
     if objective_names:
         doc_filters["objective"] = ["in", objective_names]
@@ -166,13 +176,16 @@ def get_key_results(filters: dict, plan_names: list[str] | None, objective_names
     return frappe.get_all(
         "OKR Key Result", filters=doc_filters,
         fields=["name", "key_result_title", "objective", "parent_plan", "financial_year", "department",
-                "owner_user", "status", "target_progress", "end_date", "modified", "creation"], limit_page_length=20000,
+                "assignee", "status", "target_progress", "end_date", "modified", "creation"], limit_page_length=20000,
     )
 
 
 def get_action_items(filters: dict, plan_names: list[str] | None, objective_names: list[str], kr_names: list[str]) -> list[dict]:
     doc_filters = {"status": ["!=", "Cancelled"]}
-    add_common_filters(doc_filters, filters)
+    add_common_filters(doc_filters, {**filters, "owner": ""})
+    if filters.get("owner"):
+        employee_names = frappe.get_all("Employee", filters={"user_id": filters["owner"]}, pluck="name")
+        doc_filters["assigned_to"] = ["in", employee_names or ["__none__"]]
     apply_names_filter(doc_filters, "parent_plan", plan_names)
     if objective_names:
         doc_filters["parent_objective"] = ["in", objective_names]
@@ -183,25 +196,11 @@ def get_action_items(filters: dict, plan_names: list[str] | None, objective_name
     return frappe.get_all(
         "OKR Action Item", filters=doc_filters,
         fields=["name", "action_item_title", "parent_key_result", "parent_objective", "parent_plan",
-                "financial_year", "department", "owner_user", "status", "priority", "progress",
+                "financial_year", "department", "assigned_to", "owner_user", "status", "priority", "progress",
                 "due_date", "modified", "creation"], order_by="due_date asc, modified desc",
         limit_page_length=20000,
     )
 
-
-def add_period_labels(key_results: list, action_items: list) -> None:
-    plan_names = {row.parent_plan for row in [*key_results, *action_items] if row.get("parent_plan")}
-    plans = {
-        row.name: row
-        for row in frappe.get_all(
-            "OKR Plan",
-            filters={"name": ["in", list(plan_names)]},
-            fields=["name", "financial_year", "sprint_frequency"],
-        )
-    } if plan_names else {}
-    for row, date_field in ([(row, "end_date") for row in key_results] + [(row, "due_date") for row in action_items]):
-        plan = plans.get(row.get("parent_plan"))
-        row["period_label"] = get_period_label(row.get(date_field), plan) if plan else ""
 
 
 def get_checkins(filters: dict, plan_names: list[str] | None, objective_names: list[str], kr_names: list[str]) -> list[dict]:
@@ -221,13 +220,13 @@ def get_checkins(filters: dict, plan_names: list[str] | None, objective_names: l
         doc_filters["key_result"] = ["in", ["__none__"]]
     return frappe.get_all(
         "OKR Check In", filters=doc_filters,
-        fields=["name", "checkin_date", "reported_by", "key_result", "objective", "parent_plan",
-                "department", "progress", "confidence", "blockers", "modified", "creation"],
+        fields=["name", "checkin_date", "reported_by", "action_item", "key_result", "objective", "parent_plan",
+                "department", "progress", "confidence", "achievements", "blockers", "modified", "creation"],
         order_by="checkin_date desc, creation desc", limit_page_length=20000,
     )
 
 
-def build_plan_summaries(plans, objectives, key_results, action_items, checkins, sprints) -> list[dict]:
+def build_plan_summaries(plans, objectives, key_results, action_items, checkins) -> list[dict]:
     recent_cutoff = getdate(add_days(today(), -7))
 
     objectives_by_plan = defaultdict(list)
@@ -239,12 +238,16 @@ def build_plan_summaries(plans, objectives, key_results, action_items, checkins,
     departments_by_plan = defaultdict(set)
     target_dates_by_plan = defaultdict(list)
     modified_by_plan = defaultdict(list)
-
-    for row in sprints:
-        if row.parent_plan and row.end_date:
-            target_dates_by_plan[row.parent_plan].append(row.end_date)
-        if row.parent_plan and row.modified:
-            modified_by_plan[row.parent_plan].append(row.modified)
+    key_results_by_objective = defaultdict(list)
+    actions_by_kr = defaultdict(list)
+    checkins_by_action = defaultdict(list)
+    for row in key_results:
+        key_results_by_objective[row.objective].append(row)
+    for row in action_items:
+        actions_by_kr[row.parent_key_result].append(row)
+    for row in checkins:
+        if row.get("action_item"):
+            checkins_by_action[row.action_item].append(row)
 
     for row in objectives:
         if not row.parent_plan:
@@ -313,8 +316,32 @@ def build_plan_summaries(plans, objectives, key_results, action_items, checkins,
             "target_date": str(max(target_dates)) if target_dates else "",
             "last_checkin": str(max(checkin_dates_by_plan.get(plan.name, []), default="")),
             "last_updated": str(max([value for value in last_updates if value], default=plan.modified or plan.creation or "")),
+            "objective_tree": build_plan_tree(objectives_by_plan.get(plan.name, []), key_results_by_objective, actions_by_kr, checkins_by_action),
         })
     return rows
+
+
+def build_plan_tree(objectives, key_results_by_objective, actions_by_kr, checkins_by_action):
+    result = []
+    for objective in objectives:
+        obj = {"name": objective.name, "title": objective.objective_title or objective.name,
+               "status": objective.status or "", "progress": flt(objective.progress),
+               "owner": objective.owner_user or "", "department": objective.department or "", "key_results": []}
+        for kr in key_results_by_objective.get(objective.name, []):
+            kr_data = {"name": kr.name, "title": kr.key_result_title or kr.name,
+                       "status": kr.status or "", "progress": flt(kr.target_progress),
+                       "period_label": kr.get("period_label") or "", "action_items": []}
+            for action in actions_by_kr.get(kr.name, []):
+                kr_data["action_items"].append({
+                    "name": action.name, "title": action.action_item_title or action.name,
+                    "status": action.status or "", "progress": flt(action.progress),
+                    "owner": action.owner_user or "", "due_date": str(action.due_date or ""),
+                    "checkins": [{"date": str(ck.checkin_date or ""), "progress": flt(ck.progress),
+                                  "reported_by": ck.reported_by or "", "note": ck.achievements or "",
+                                  "blockers": ck.blockers or ""} for ck in checkins_by_action.get(action.name, [])]})
+            obj["key_results"].append(kr_data)
+        result.append(obj)
+    return result
 
 
 def plan_health(progress: float, blocked_objectives: int, overdue_actions: int, stale_checkins: int) -> str:
@@ -399,7 +426,7 @@ def build_attention_required(objectives, action_items, checkins) -> list[dict]:
     )[:5]
     return capped_list, total_count
 
-def build_critical_activity(objectives, action_items, sprints) -> list[dict]:
+def build_critical_activity(objectives, action_items, plans) -> list[dict]:
     rows = []
     for row in objectives:
         if row.status in {"Completed", "Closed"} or flt(row.progress) >= 100:
@@ -407,7 +434,7 @@ def build_critical_activity(objectives, action_items, sprints) -> list[dict]:
     for row in action_items:
         if row.status == "Blocked":
             rows.append(activity_row("Objective Blocked", "OKR Action Item", row.name, row.action_item_title, row.owner_user, row.modified))
-    for row in sprints:
+    for row in plans:
         if row.status in {"Completed", "Closed"}:
             rows.append(activity_row("Plan Archived", "OKR Plan", row.name, row.plan_name, row.owner_user, row.modified))
 

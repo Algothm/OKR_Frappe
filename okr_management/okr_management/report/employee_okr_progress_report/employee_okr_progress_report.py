@@ -17,15 +17,16 @@ def execute(filters=None):
 		{"label": "Last Check-in", "fieldname": "last_checkin", "fieldtype": "Date", "width": 120},
 	]
 	base_filters = {"plan": filters.plan} if filters.get("plan") else {}
-	owners = set(frappe.get_all("OKR Objective", filters=base_filters, pluck="owner_user")) | set(frappe.get_all("OKR Key Result", filters=base_filters, pluck="owner_user")) | set(frappe.get_all("OKR Check In", filters=base_filters, pluck="reported_by"))
+	owners = set(frappe.get_all("OKR Objective", filters=base_filters, pluck="owner_user")) | set(frappe.get_all("OKR Key Result", filters=base_filters, pluck="assignee")) | set(frappe.get_all("OKR Check In", filters=base_filters, pluck="reported_by"))
 	if filters.get("owner"):
 		owners = {filters.owner}
 	data = []
 	for owner in sorted(filter(None, owners)):
-		owner_filters = {**base_filters, "owner_user": owner}
+		objective_filters = {**base_filters, "owner_user": owner}
+		kr_filters = {**base_filters, "assignee": owner}
 		checkin_filters = {**base_filters, "reported_by": owner}
-		obj = frappe.get_all("OKR Objective", filters=owner_filters, fields=["progress", "confidence"])
-		krs = frappe.get_all("OKR Key Result", filters=owner_filters, fields=["target_progress", "confidence"])
+		obj = frappe.get_all("OKR Objective", filters=objective_filters, fields=["progress", "confidence"])
+		krs = frappe.get_all("OKR Key Result", filters=kr_filters, fields=["target_progress", "confidence"])
 		checkins = frappe.get_all("OKR Check In", filters=checkin_filters, fields=["checkin_date"], order_by="checkin_date desc")
 		obj_avg = sum(flt(x.progress) for x in obj) / len(obj) if obj else 0
 		kr_avg = sum(flt(x.target_progress) for x in krs) / len(krs) if krs else 0
