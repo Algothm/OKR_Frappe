@@ -5,7 +5,10 @@ frappe.ui.form.on('OKR Objective', {
         }));
         const team_field = frappe.meta.get_docfield('OKR Objective Team', 'team', frm.doc.name);
         if (team_field) team_field.only_select = 1;
-        frm.set_query('parent_plan', () => ({ filters: { status: ['in', ['Draft', 'Active']] } }));
+        frm.set_query('parent_plan', () => ({
+            query: 'okr_management.okr_management.doctype.okr_objective.okr_objective.search_available_plans',
+            filters: { status: ['in', ['Draft', 'Active']] },
+        }));
         frm.set_query('level_details', () => frm.doc.level === 'Department' && frm.doc.company
             ? { filters: { company: frm.doc.company } } : {});
     },

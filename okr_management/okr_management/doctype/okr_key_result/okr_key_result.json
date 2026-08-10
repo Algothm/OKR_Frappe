@@ -43,8 +43,30 @@
          "role" : "Employee",
          "export" : 0,
          "report" : 0
+      },
+{
+         "write" : 1,
+         "email" : 0,
+         "read" : 1,
+         "delete" : 0,
+         "print" : 0,
+         "create" : 1,
+         "role" : "All",
+         "export" : 0,
+         "report" : 0
+      },
+{
+         "write" : 1,
+         "email" : 0,
+         "read" : 1,
+         "delete" : 0,
+         "print" : 0,
+         "create" : 1,
+         "role" : "Guest",
+         "export" : 0,
+         "report" : 0
       }
-   ],
+],
    "autoname" : "naming_series:",
    "actions" : [],
 "title_field":"key_result_title",

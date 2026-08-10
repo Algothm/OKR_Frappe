@@ -593,8 +593,30 @@
    "report": 0,
    "role": "Employee",
    "write": 1
+  },
+{
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "All",
+   "write": 1
+  },
+{
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "Guest",
+   "write": 1
   }
- ],
+],
  "sort_field": "modified",
  "sort_order": "DESC",
  "track_changes": 1

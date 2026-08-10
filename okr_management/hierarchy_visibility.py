@@ -155,7 +155,7 @@ def objective_permission(doc, user=None, ptype=None):
     user = user or frappe.session.user
     scope = get_hierarchy_visibility_scope(user)
     if ptype == "create" and not scope["read_all"]:
-        return "OKR User" in frappe.get_roles(user)
+        return user not in {"Guest", ""}
     return _hierarchy_permission(doc, user, ptype, "visible_objectives", "owned_objectives")
 
 

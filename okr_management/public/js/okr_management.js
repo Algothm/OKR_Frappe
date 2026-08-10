@@ -1,8 +1,7 @@
 frappe.provide("okr_management");
 
 (() => {
-    const RAW_OKR_LIST_SLUGS = new Set([
-        "okr-plan",
+    const USER_OKR_LIST_SLUGS = new Set([
         "okr-objective",
         "okr-key-result",
         "okr-action-item",
@@ -174,8 +173,11 @@ frappe.provide("okr_management");
             return [admin_user ? "admin-workspace" : "okr-workspace"];
         }
 
-        if (parts.length === 1 && RAW_OKR_LIST_SLUGS.has(first) && !admin_user) {
+        if (parts.length === 1 && first === "okr-plan" && !admin_user) {
             return ["okr-workspace"];
+        }
+        if (parts.length === 1 && USER_OKR_LIST_SLUGS.has(first) && admin_user) {
+            return ["admin-workspace"];
         }
         if (parts.length === 1 && first === "okr-workspace" && admin_user) return ["admin-workspace"];
         if (parts.length === 1 && first === "admin-workspace" && !admin_user) return ["okr-workspace"];

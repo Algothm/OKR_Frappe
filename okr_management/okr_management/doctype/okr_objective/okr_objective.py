@@ -322,3 +322,24 @@ def get_team_options(doctype, txt, searchfield, start, page_len, filters):
         page_length=page_len,
     )
     return [(user.name, user.full_name or user.name) for user in users]
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def search_available_plans(doctype, txt, searchfield, start, page_len, filters):
+    """Return selectable Plan names without granting access to Plan documents."""
+    if frappe.session.user == "Guest":
+        frappe.throw(_("Please log in to select an OKR Plan."), frappe.PermissionError)
+    plan_filters = {"status": ["in", ["Draft", "Active"]]}
+    requested_status = (filters or {}).get("status") if isinstance(filters, dict) else None
+    if requested_status:
+        plan_filters["status"] = requested_status
+    rows = frappe.get_all(
+        "OKR Plan",
+        filters=plan_filters,
+        or_filters={"name": ["like", f"%{txt}%"], "plan_name": ["like", f"%{txt}%"]},
+        fields=["name", "plan_name"],
+        order_by="modified desc",
+        start=start,
+        page_length=page_len,
+    )
+    return [[row.name, row.plan_name or row.name] for row in rows]

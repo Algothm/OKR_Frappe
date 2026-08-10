@@ -58,13 +58,35 @@
          "print": 0,
          "report": 0,
          "email": 0,
-         "create": 0,
+         "create": 1,
+         "read": 1,
+         "write": 0,
+         "export": 0,
+         "delete": 0
+      },
+{
+         "role": "All",
+         "print": 0,
+         "report": 0,
+         "email": 0,
+         "create": 1,
+         "read": 1,
+         "write": 0,
+         "export": 0,
+         "delete": 0
+      },
+{
+         "role": "Guest",
+         "print": 0,
+         "report": 0,
+         "email": 0,
+         "create": 1,
          "read": 1,
          "write": 0,
          "export": 0,
          "delete": 0
       }
-   ],
+],
    "autoname": "naming_series:",
    "index_web_pages_for_search": 1,
    "engine": "InnoDB",
@@ -144,7 +166,8 @@
          "reqd": 1,
          "fieldtype": "Link",
          "in_list_view": 1,
-         "in_standard_filter": 0
+         "in_standard_filter": 0,
+         "ignore_user_permissions": 1
       },
       {
          "in_standard_filter": 0,

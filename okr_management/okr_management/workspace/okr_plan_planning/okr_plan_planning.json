@@ -1,0 +1,53 @@
+{
+ "charts": [],
+ "content": "[]",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 1,
+ "icon": "organization",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "Plan",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Links",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "OKR Plan",
+   "link_count": 0,
+   "link_to": "OKR Plan",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "module": "OKR Management",
+ "name": "OKR Plan Planning",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "Admin Workspace",
+ "public": 0,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 2.1,
+ "shortcuts": [
+  {
+   "doc_view": "List",
+   "label": "OKR Plan",
+   "link_to": "OKR Plan",
+   "type": "DocType"
+  }
+ ],
+ "title": "OKR Plan"
+}
