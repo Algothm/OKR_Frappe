@@ -15,6 +15,11 @@ CLOSED_OBJECTIVE_STATUSES = {"Completed", "Cancelled", "Archived"}
 CLOSED_KR_STATUSES = {"Achieved", "Missed", "Closed"}
 
 
+def _require_administrator() -> None:
+	if frappe.session.user != "Administrator":
+		frappe.throw(_("Only Administrator can access executive OKR insights."), frappe.PermissionError)
+
+
 def _has_field(doctype: str, fieldname: str) -> bool:
 	return bool(frappe.get_meta(doctype).has_field(fieldname))
 
@@ -326,6 +331,7 @@ def _objective_alignment_node(objective: frappe._dict, children_by_parent: dict[
 @frappe.whitelist()
 def get_alignment_tree(sprint: str | None = None) -> list[dict[str, Any]]:
 	"""Return Company -> Department -> Objective hierarchy -> Key Results using existing OKR links."""
+	_require_administrator()
 	objectives = _get_objective_rows()
 	if sprint:
 		objectives = [row for row in objectives if row.get("sprint") == sprint]
@@ -495,6 +501,7 @@ def get_action_item_signals(limit: int = 20) -> dict[str, Any]:
 
 @frappe.whitelist()
 def get_executive_attention() -> dict[str, Any]:
+	_require_administrator()
 	health_rows = get_health_rows()
 	objectives = _get_objective_rows()
 	krs = _get_key_result_rows()
@@ -1395,6 +1402,7 @@ def _render_executive_report_html() -> str:
 
 @frappe.whitelist()
 def get_executive_report_preview() -> dict[str, Any]:
+	_require_administrator()
 	return {
 		"title": _("OKR Executive Report"),
 		"html": _render_executive_report_html(),
@@ -1403,6 +1411,7 @@ def get_executive_report_preview() -> dict[str, Any]:
 
 @frappe.whitelist()
 def download_executive_report_pdf() -> None:
+	_require_administrator()
 	html = _render_executive_report_html()
 	frappe.local.response.filename = "okr-executive-report.pdf"
 	frappe.local.response.filecontent = get_pdf(html, {"orientation": "Landscape", "load-error-handling": "ignore"})
