@@ -70,6 +70,11 @@ class TestOKRPermissionIntegration(FrappeTestCase):
             "parent_key_result": self.kr.name, "assigned_to": self.employees[2],
             "due_date": self.kr.end_date,
         }).insert(ignore_permissions=True)
+        self.other_action = frappe.get_doc({
+            "doctype": "OKR Action Item", "action_item_title": "Other Assignee Action",
+            "parent_key_result": self.kr.name, "assigned_to": self.employees[1],
+            "due_date": self.kr.end_date,
+        }).insert(ignore_permissions=True)
 
     def test_plan_and_admin_workspace_are_administrator_only(self):
         frappe.set_user(self.users["outsider"])
@@ -95,6 +100,8 @@ class TestOKRPermissionIntegration(FrappeTestCase):
         action_scope = get_hierarchy_visibility_scope(self.users["action"])
         self.assertIn(self.action.name, action_scope["direct_action_items"])
         self.assertIn(self.action.name, action_scope["visible_action_items"])
+        self.assertNotIn(self.other_action.name, action_scope["direct_action_items"])
+        self.assertNotIn(self.other_action.name, action_scope["visible_action_items"])
         self.assertNotIn(self.kr.name, action_scope["owned_key_results"])
 
     def test_checkin_override_roles_are_consistent(self):
@@ -147,3 +154,15 @@ class TestOKRPermissionIntegration(FrappeTestCase):
         })
         with self.assertRaises(frappe.ValidationError):
             invalid.insert(ignore_permissions=True)
+
+        # Exercise the independent Plan guard even if inconsistent legacy data
+        # contains an Active Objective under a Draft Plan.
+        frappe.db.set_value("OKR Objective", draft_objective.name, "status", "Active")
+        invalid_plan_parent = frappe.get_doc({
+            "doctype": "OKR Key Result", "key_result_title": "Invalid Draft Plan KR",
+            "objective": draft_objective.name, "assignee": self.users["kr"],
+            "metric_type": "Percentage", "metric_direction": "Increase", "target_value": 100,
+            "end_date": draft_objective.end_date, "status": "Active",
+        })
+        with self.assertRaises(frappe.ValidationError):
+            invalid_plan_parent.insert(ignore_permissions=True)
