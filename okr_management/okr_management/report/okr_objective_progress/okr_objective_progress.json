@@ -1,0 +1,13 @@
+{
+  "add_total_row": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "is_standard": "Yes",
+  "name": "OKR Objective Progress",
+  "ref_doctype": "OKR Objective",
+  "report_name": "OKR Objective Progress",
+  "report_type": "Query Report",
+  "query": "select o.name, o.objective_title, o.parent_plan, o.company, o.department, o.owner_user, o.progress, o.confidence, o.status, count(k.name) as key_result_count from `tabOKR Objective` o left join `tabOKR Key Result` k on k.objective = o.name group by o.name, o.objective_title, o.parent_plan, o.company, o.department, o.owner_user, o.progress, o.confidence, o.status order by o.modified desc"
+}

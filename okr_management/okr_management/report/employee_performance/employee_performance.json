@@ -1,0 +1,13 @@
+{
+  "add_total_row": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "is_standard": "Yes",
+  "name": "Employee Performance",
+  "ref_doctype": "OKR Objective",
+  "report_name": "Employee Performance",
+  "report_type": "Query Report",
+  "query": "select owner_user as employee, count(name) as objective_count, round(avg(progress), 2) as average_progress, round(avg(confidence), 2) as average_confidence from `tabOKR Objective` group by owner_user order by average_progress desc"
+}

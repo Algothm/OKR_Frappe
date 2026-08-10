@@ -1,0 +1,22 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "creation": "2026-06-22 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": ["linked_objective", "relationship_type", "weight", "comment"],
+  "fields": [
+    {"fieldname": "linked_objective", "fieldtype": "Link", "label": "Linked Objective", "options": "OKR Objective", "req": 1, "in_list_view": 1},
+    {"fieldname": "relationship_type", "fieldtype": "Select", "label": "Relationship Type", "options": "Supports\nDepends On\nContributes To\nInforms", "default": "Supports", "req": 1},
+    {"fieldname": "weight", "fieldtype": "Percent", "label": "Weight", "default": "0"},
+    {"fieldname": "comment", "fieldtype": "Small Text", "label": "Comment"}
+  ],
+  "istable": 1,
+  "module": "OKR Management",
+  "name": "OKR Objective Alignment",
+  "naming_rule": "By fieldname",
+  "permissions": [],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+}

@@ -1,0 +1,623 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-06-22 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee_update_section",
+  "checkin_update_heading",
+  "action_item",
+  "key_result",
+  "progress",
+  "action_status",
+  "achievements",
+  "attachment",
+  "context_preview_col_break",
+  "context_preview_heading",
+  "context_preview_html",
+  "is_latest",
+  "checkin_history_html",
+  "action_item_title_context",
+  "progress_overview_context",
+  "key_result_name_context",
+  "key_result_description_context",
+  "objective_name_context",
+  "objective_description_context",
+  "plan_name_context",
+  "plan_description_context",
+  "organization_context",
+  "financial_year_context",
+  "timeline_preview_context",
+  "assigned_to_context",
+  "naming_series",
+  "objective",
+  "parent_plan",
+  "reported_by",
+  "checkin_date",
+  "financial_year",
+  "company",
+  "department",
+  "current_value",
+  "confidence",
+  "next_steps",
+  "blockers",
+  "notes",
+  "status",
+  "progress_percent",
+  "self_rating",
+  "has_dependency",
+  "dependent_department",
+  "dependency_description",
+  "impact_level",
+  "escalate_to_department",
+  "reason_for_escalation",
+  "expected_resolution_date",
+  "review_status",
+  "manager_feedback",
+  "action_required",
+  "review_date",
+  "reviewed_by",
+  "checkin_context_section",
+  "checkin_context_col_break",
+  "employee_update_col_break",
+  "dependency_section",
+  "escalation_section",
+  "summary_sidebar_section",
+  "technical_section",
+  "checkin_context_col_break_2",
+  "checkin_context_col_break_3"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "OKR-CHECKIN-.YYYY.-",
+   "default": "OKR-CHECKIN-.YYYY.-",
+   "reqd": 1,
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "key_result",
+   "fieldtype": "Link",
+   "label": "Key Result",
+   "options": "OKR Key Result",
+   "reqd": 1,
+   "in_list_view": 1,
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "checkin_update_heading",
+   "fieldtype": "HTML",
+   "options": "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Check-In Update</div>"
+  },
+  {
+   "fieldname": "action_item",
+   "fieldtype": "Link",
+   "label": "Action Item",
+   "options": "OKR Action Item",
+   "read_only": 0,
+   "reqd": 1,
+   "in_list_view": 1,
+   "hidden": 0,
+   "description": ""
+  },
+  {
+   "fieldname": "objective",
+   "fieldtype": "Link",
+   "label": "Objective",
+   "options": "OKR Objective",
+   "read_only": 1,
+   "description": "Auto-filled from the selected Key Result.",
+   "hidden": 1
+  },
+  {
+   "fieldname": "parent_plan",
+   "fieldtype": "Link",
+   "label": "Parent Sprint",
+   "options": "OKR Plan",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "reported_by",
+   "fieldtype": "Link",
+   "label": "Submitted By",
+   "options": "User",
+   "reqd": 1,
+   "description": "Defaults to the logged-in user.",
+   "read_only": 1,
+   "default": "__user",
+   "hidden": 1,
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "checkin_date",
+   "fieldtype": "Date",
+   "label": "Check-In Date",
+   "reqd": 1,
+   "default": "Today",
+   "read_only": 1,
+   "hidden": 1,
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "financial_year",
+   "fieldtype": "Link",
+   "label": "Financial Year",
+   "options": "Fiscal Year",
+   "read_only": 1,
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "current_value",
+   "fieldtype": "Float",
+   "label": "Current Value",
+   "reqd": 0,
+   "in_list_view": 0,
+   "default": 0,
+   "hidden": 1
+  },
+  {
+   "fieldname": "progress",
+   "fieldtype": "Percent",
+   "label": "Progress (%)",
+   "read_only": 0,
+   "default": 0,
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "",
+   "hidden": 0
+  },
+  {
+   "fieldname": "confidence",
+   "fieldtype": "Select",
+   "label": "Confidence",
+   "options": "Green\nYellow\nRed\nGray",
+   "default": "Green",
+   "reqd": 0,
+   "description": "Current confidence rating for this Key Result.",
+   "hidden": 1
+  },
+  {
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Attachment",
+   "description": "",
+   "hidden": 0
+  },
+  {
+   "fieldname": "achievements",
+   "fieldtype": "Small Text",
+   "label": "Progress Update",
+   "description": "",
+   "reqd": 1,
+   "hidden": 0
+  },
+  {
+   "fieldname": "next_steps",
+   "fieldtype": "Small Text",
+   "label": "Next Steps",
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "blockers",
+   "fieldtype": "Small Text",
+   "label": "Blocker",
+   "description": "What is preventing progress?",
+   "reqd": 0,
+   "hidden": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Comment",
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nSubmitted",
+   "default": "Submitted",
+   "reqd": 1,
+   "in_list_view": 0,
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "progress_percent",
+   "fieldtype": "Percent",
+   "label": "Progress Percent",
+   "hidden": 1,
+   "read_only": 1,
+   "default": 0
+  },
+  {
+   "fieldname": "self_rating",
+   "fieldtype": "Rating",
+   "label": "Self Rating",
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "has_dependency",
+   "fieldtype": "Check",
+   "label": "Has Dependency",
+   "default": 0,
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "dependent_department",
+   "fieldtype": "Link",
+   "label": "Dependent Department",
+   "options": "Department",
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "dependency_description",
+   "fieldtype": "Small Text",
+   "label": "Dependency",
+   "description": "Any cross-team/person dependency?",
+   "reqd": 0,
+   "hidden": 1
+  },
+  {
+   "fieldname": "impact_level",
+   "fieldtype": "Select",
+   "label": "Impact Level",
+   "options": "Low\nMedium\nHigh\nCritical",
+   "default": "Medium",
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "escalate_to_department",
+   "fieldtype": "Link",
+   "label": "Escalate To Department",
+   "options": "Department",
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "reason_for_escalation",
+   "fieldtype": "Long Text",
+   "label": "Reason for Escalation",
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "expected_resolution_date",
+   "fieldtype": "Date",
+   "label": "Expected Resolution Date",
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "review_status",
+   "fieldtype": "Select",
+   "label": "Review Status",
+   "options": "Approved\nNeeds Improvement\nBlocked\nEscalated",
+   "default": "Approved",
+   "read_only": 1,
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "manager_feedback",
+   "fieldtype": "Long Text",
+   "label": "Manager Feedback",
+   "read_only": 1,
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "action_required",
+   "fieldtype": "Long Text",
+   "label": "Action Required",
+   "read_only": 1,
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "review_date",
+   "fieldtype": "Date",
+   "label": "Review Date",
+   "read_only": 1,
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "reviewed_by",
+   "fieldtype": "Link",
+   "label": "Reviewed By",
+   "options": "User",
+   "read_only": 1,
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "checkin_context_section",
+   "fieldtype": "Section Break",
+   "label": "Check-In Context",
+   "hidden": 1
+  },
+  {
+   "fieldname": "checkin_context_col_break",
+   "fieldtype": "Column Break",
+   "hidden": 1
+  },
+  {
+   "fieldname": "employee_update_section",
+   "fieldtype": "Section Break",
+   "label": "",
+   "hidden": 0
+  },
+  {
+   "fieldname": "employee_update_col_break",
+   "fieldtype": "Column Break",
+   "hidden": 1
+  },
+  {
+   "fieldname": "dependency_section",
+   "fieldtype": "Section Break",
+   "label": "Cross-Department Dependency",
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "escalation_section",
+   "fieldtype": "Section Break",
+   "label": "Escalation Plan",
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "summary_sidebar_section",
+   "fieldtype": "Section Break",
+   "label": "Review Summary",
+   "hidden": 1,
+   "reqd": 0
+  },
+  {
+   "fieldname": "technical_section",
+   "fieldtype": "Section Break",
+   "label": "System Details",
+   "collapsible": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "checkin_context_col_break_2",
+   "fieldtype": "Column Break",
+   "hidden": 1
+  },
+  {
+   "fieldname": "checkin_context_col_break_3",
+   "fieldtype": "Column Break",
+   "hidden": 1
+  },
+  {
+   "fieldname": "action_status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "In Progress\nBlocked\nArchived",
+   "default": "In Progress",
+   "reqd": 1
+  },
+  {
+   "fieldname": "context_preview_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "context_preview_heading",
+   "fieldtype": "HTML",
+   "hidden": 1,
+   "options": "<div style=\"font-size:14px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Context and Preview</div>"
+  },
+  {
+   "fieldname": "action_item_title_context",
+   "fieldtype": "Data",
+   "label": "Action Item",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "progress_overview_context",
+   "fieldtype": "Data",
+   "label": "Progress Overview",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "key_result_name_context",
+   "fieldtype": "Data",
+   "label": "Key Result",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "key_result_description_context",
+   "fieldtype": "Small Text",
+   "label": "Key Result Description",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "objective_name_context",
+   "fieldtype": "Data",
+   "label": "Objective",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "objective_description_context",
+   "fieldtype": "Small Text",
+   "label": "Objective Description",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "plan_name_context",
+   "fieldtype": "Data",
+   "label": "Plan",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "plan_description_context",
+   "fieldtype": "Small Text",
+   "label": "Plan Description",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "organization_context",
+   "fieldtype": "Data",
+   "label": "Organization",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "financial_year_context",
+   "fieldtype": "Data",
+   "label": "Financial Year",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "timeline_preview_context",
+   "fieldtype": "Data",
+   "label": "Timeline",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "assigned_to_context",
+   "fieldtype": "Data",
+   "label": "Assigned To",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "context_preview_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "is_latest",
+   "fieldtype": "Check",
+   "label": "Is Latest",
+   "default": 1,
+   "hidden": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "checkin_history_html",
+   "fieldtype": "HTML",
+   "label": "Check-In History"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "module": "OKR Management",
+ "name": "OKR Check In",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "OKR Admin",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "OKR Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "Employee",
+   "write": 1
+  },
+{
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "All",
+   "write": 1
+  },
+{
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "Guest",
+   "write": 1
+  }
+],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

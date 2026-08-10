@@ -1,0 +1,13 @@
+{
+  "chart_name": "Department Progress",
+  "chart_type": "Bar",
+  "document_type": "OKR Objective",
+  "based_on": "department",
+  "value_based_on": "Count",
+  "is_public": 1,
+  "filters_json": "[]",
+  "timeseries": 0,
+  "use_count": 1,
+  "doctype": "Dashboard Chart",
+  "name": "OKR Department Progress"
+}

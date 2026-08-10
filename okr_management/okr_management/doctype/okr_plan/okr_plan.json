@@ -1,0 +1,214 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-06-30 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "plan_details_section",
+  "plan_name",
+  "plan_details_col_break_1",
+  "financial_year",
+  "plan_details_col_break_2",
+  "company",
+  "plan_details_row_2",
+  "plan_details_col_break",
+  "status",
+  "planned_activation_date",
+  "plan_details_col_break_3",
+  "description",
+  "owner_user",
+  "context_preview_heading",
+  "context_preview_html",
+  "sprint_configuration_section",
+  "sprint_frequency",
+  "sprint_config_col_2",
+  "plan_team_section",
+  "members",
+  "technical_section",
+  "progress",
+  "objective_count",
+  "naming_series"
+ ],
+ "fields": [
+  {
+   "fieldname": "plan_details_section",
+   "fieldtype": "Section Break",
+   "label": "Plan Details"
+  },
+  {
+   "fieldname": "plan_name",
+   "fieldtype": "Data",
+   "label": "Plan Name",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Organization",
+   "options": "Company",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "financial_year",
+   "fieldtype": "Link",
+   "label": "Financial Year",
+   "options": "Fiscal Year",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 0
+  },
+  {
+   "fieldname": "owner_user",
+   "fieldtype": "Link",
+   "label": "Plan Admin",
+   "options": "User",
+   "reqd": 0,
+   "hidden": 1,
+   "in_list_view": 0,
+   "in_standard_filter": 0
+  },
+  {
+   "fieldname": "progress",
+   "fieldtype": "Percent",
+   "label": "Progress",
+   "read_only": 1,
+   "hidden": 1,
+   "default": "0",
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "plan_details_col_break",
+   "fieldtype": "Column Break",
+   "hidden": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nActive\nArchived",
+   "default": "Draft",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "planned_activation_date",
+   "fieldtype": "Date",
+   "label": "Planned Activation Date",
+   "description": "The Draft Plan activates automatically on this date.",
+   "mandatory_depends_on": "eval:doc.status=='Draft'",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "objective_count",
+   "fieldtype": "Int",
+   "label": "Objective Count",
+   "read_only": 1,
+   "default": 0,
+   "hidden": 1,
+   "reqd": 0,
+   "in_list_view": 0,
+   "in_standard_filter": 0
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description",
+   "max_height": "104px"
+  },
+  {
+   "fieldname": "context_preview_heading",
+   "fieldtype": "HTML",
+   "options": "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Context</div>",
+   "hidden": 1
+  },
+  {
+   "fieldname": "context_preview_html",
+   "fieldtype": "HTML",
+   "label": "Context Preview",
+   "hidden": 1
+  },
+  {
+   "fieldname": "plan_team_section",
+   "fieldtype": "Section Break",
+   "label": "Plan Team"
+  },
+  {
+   "fieldname": "members",
+   "fieldtype": "Table",
+   "label": "Add Member",
+   "options": "OKR Plan Team Member"
+  },
+  {
+   "fieldname": "sprint_configuration_section",
+   "fieldtype": "Section Break",
+   "label": "Sprint Configuration"
+  },
+  {
+   "default": "Quarterly",
+   "fieldname": "sprint_frequency",
+   "fieldtype": "Select",
+   "in_standard_filter": 0,
+   "label": "Sprint Frequency",
+   "options": "Monthly\nQuarterly",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sprint_config_col_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "technical_section",
+   "fieldtype": "Section Break",
+   "label": "System Details",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "OKR-PLAN-.YYYY.-",
+   "default": "OKR-PLAN-.YYYY.-",
+   "reqd": 1,
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "plan_details_col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "plan_details_col_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "plan_details_row_2",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "plan_details_col_break_3",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "module": "OKR Management",
+ "name": "OKR Plan",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "title_field": "plan_name",
+ "search_fields": "plan_name,name,financial_year,company,status",
+ "show_title_field_in_link": 1
+}

@@ -1,0 +1,15 @@
+{
+ "doctype": "Number Card",
+ "name": "Average Review Rating",
+ "label": "Average Review Rating",
+ "type": "Custom",
+ "document_type": "OKR Objective Review",
+ "method": "okr_management.analytics.average_review_rating",
+ "is_public": 1,
+ "is_standard": 1,
+ "module": "OKR Management",
+ "owner": "Administrator",
+ "modified_by": "Administrator",
+ "docstatus": 0,
+ "idx": 0
+}

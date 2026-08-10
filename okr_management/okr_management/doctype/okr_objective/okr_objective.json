@@ -1,0 +1,441 @@
+{
+   "show_title_field_in_link": 1,
+"title_field":"objective_title",
+   "track_changes": 1,
+   "creation": "2026-06-22 00:00:00.000000",
+   "sort_field": "modified",
+   "owner": "Administrator",
+   "sort_order": "DESC",
+   "search_fields": "objective_title,name,parent_plan,owner_user,status",
+   "default_view": "List",
+   "permissions": [
+      {
+         "print": 1,
+         "role": "OKR Admin",
+         "email": 1,
+         "create": 1,
+         "report": 1,
+         "read": 1,
+         "write": 1,
+         "export": 1,
+         "delete": 1
+      },
+      {
+         "delete": 1,
+         "export": 1,
+         "write": 1,
+         "read": 1,
+         "create": 1,
+         "email": 1,
+         "report": 1,
+         "print": 1,
+         "role": "OKR Manager"
+      },
+      {
+         "write": 1,
+         "read": 1,
+         "delete": 0,
+         "export": 1,
+         "role": "Department Head",
+         "print": 1,
+         "report": 1,
+         "create": 1,
+         "email": 1
+      },
+      {
+         "role": "Team Lead",
+         "print": 1,
+         "report": 1,
+         "email": 0,
+         "create": 1,
+         "read": 1,
+         "write": 1,
+         "export": 1,
+         "delete": 0
+      },
+      {
+         "role": "Employee",
+         "print": 0,
+         "report": 0,
+         "email": 0,
+         "create": 1,
+         "read": 1,
+         "write": 0,
+         "export": 0,
+         "delete": 0
+      },
+{
+         "role": "All",
+         "print": 0,
+         "report": 0,
+         "email": 0,
+         "create": 1,
+         "read": 1,
+         "write": 0,
+         "export": 0,
+         "delete": 0
+      },
+{
+         "role": "Guest",
+         "print": 0,
+         "report": 0,
+         "email": 0,
+         "create": 1,
+         "read": 1,
+         "write": 0,
+         "export": 0,
+         "delete": 0
+      }
+],
+   "autoname": "naming_series:",
+   "index_web_pages_for_search": 1,
+   "engine": "InnoDB",
+   "fields": [
+      {
+         "hidden": 1,
+         "read_only": 1,
+         "options": "OKR-OBJ-.YYYY.-",
+         "fieldtype": "Select",
+         "reqd": 1,
+         "default": "OKR-OBJ-.YYYY.-",
+         "fieldname": "naming_series",
+         "label": "Naming Series"
+      },
+      {
+         "in_standard_filter": 1,
+         "in_list_view": 1,
+         "fieldname": "objective_title",
+         "fieldtype": "Data",
+         "reqd": 1,
+         "label": "Title"
+      },
+      {
+         "label": "Level",
+         "fieldname": "level",
+         "default": "Department",
+         "in_standard_filter": 1,
+         "reqd": 1,
+         "fieldtype": "Select",
+         "in_list_view": 1,
+         "options": "Organization\nDepartment\nTeam\nIndividual",
+         "hidden": 0
+      },
+      {
+         "label": "Priority",
+         "fieldname": "priority",
+         "default": "High",
+         "in_standard_filter": 0,
+         "reqd": 1,
+         "fieldtype": "Select",
+         "options": "Low\nMedium\nHigh",
+         "in_list_view": 1
+      },
+      {
+         "label": "Objective Owner",
+         "fieldname": "owner_user",
+         "in_standard_filter": 0,
+         "reqd": 0,
+         "fieldtype": "Link",
+         "options": "User",
+         "in_list_view": 0,
+         "hidden": 1
+      },
+      {
+         "fieldtype": "Link",
+         "hidden": 1,
+         "in_list_view": 0,
+         "options": "User",
+         "fieldname": "reviewer",
+         "label": "Reviewer",
+         "description": "",
+         "in_standard_filter": 0
+      },
+      {
+         "label": "Description",
+         "fieldname": "description",
+         "fieldtype": "Small Text",
+         "max_height": "104px",
+         "in_standard_filter": 1
+      },
+      {
+         "label": "Plan",
+         "fieldname": "parent_plan",
+         "options": "OKR Plan",
+         "read_only": 0,
+         "hidden": 0,
+         "reqd": 1,
+         "fieldtype": "Link",
+         "in_list_view": 1,
+         "in_standard_filter": 0,
+         "ignore_user_permissions": 1
+      },
+      {
+         "in_standard_filter": 0,
+         "label": "Financial Year",
+         "fieldname": "financial_year",
+         "options": "Fiscal Year",
+         "read_only": 1,
+         "in_list_view": 0,
+         "fieldtype": "Link"
+      },
+      {
+         "reqd": 1,
+         "fieldtype": "Link",
+         "read_only": 1,
+         "options": "Company",
+         "in_list_view": 0,
+         "label": "Organization",
+         "fieldname": "company",
+         "in_standard_filter": 0
+      },
+      {
+         "description": "Select the department for this objective.",
+         "in_standard_filter": 0,
+         "fieldname": "department",
+         "label": "Department",
+         "hidden": 1,
+         "options": "Department",
+         "read_only": 0,
+         "in_list_view": 0,
+         "fieldtype": "Link",
+         "reqd": 0
+      },
+      {
+         "in_list_view": 0,
+         "read_only": 1,
+         "options": "User",
+         "hidden": 1,
+         "fieldtype": "Link",
+         "in_standard_filter": 0,
+         "label": "Plan Owner",
+         "fieldname": "plan_owner"
+      },
+      {
+         "fieldtype": "Date",
+         "fieldname": "start_date",
+         "label": "Start Date",
+         "reqd": 0,
+         "hidden": 0,
+         "read_only": 0,
+         "in_list_view": 0
+      },
+      {
+         "label": "End Date",
+         "reqd": 0,
+         "fieldtype": "Date",
+         "fieldname": "end_date",
+         "in_list_view": 0,
+         "read_only": 0,
+         "hidden": 0
+      },
+      {
+         "in_standard_filter": 0,
+         "default": "Draft",
+         "fieldname": "status",
+         "label": "Status",
+         "options": "Draft\nActive\nOn Hold\nCompleted\nClosed",
+         "in_list_view": 0,
+         "fieldtype": "Select",
+         "reqd": 1
+      },
+      {
+         "fieldtype": "Check",
+         "fieldname": "partial_completion_accepted",
+         "label": "Manager Accepted Partial Completion",
+         "depends_on": "eval:doc.status=='Completed' || doc.status=='Closed'",
+         "default": 0
+      },
+      {
+         "fieldname": "completion_notes",
+         "fieldtype": "Small Text",
+         "label": "Completion Notes",
+         "depends_on": "eval:doc.partial_completion_accepted"
+      },
+      {
+         "read_only": 1,
+         "in_list_view": 0,
+         "hidden": 1,
+         "fieldtype": "Percent",
+         "default": "0",
+         "label": "Progress",
+         "fieldname": "progress"
+      },
+      {
+         "default": 0,
+         "label": "Key Result Count",
+         "fieldname": "key_result_count",
+         "in_list_view": 0,
+         "read_only": 1,
+         "hidden": 1,
+         "fieldtype": "Int"
+      },
+      {
+         "label": "Objective Type",
+         "fieldtype": "Select",
+         "fieldname": "objective_type",
+         "options": "Company\nDepartment\nTeam\nIndividual",
+         "default": "Department",
+         "hidden": 1
+      },
+      {
+         "label": "Parent Objective",
+         "fieldtype": "Link",
+         "fieldname": "parent_objective",
+         "options": "OKR Objective",
+         "hidden": 1
+      },
+      {
+         "default": "3",
+         "label": "Confidence",
+         "fieldname": "confidence",
+         "read_only": 1,
+         "options": "1\n2\n3\n4\n5",
+         "hidden": 1,
+         "fieldtype": "Select"
+      },
+      {
+         "fieldtype": "Table",
+         "fieldname": "alignment_map",
+         "label": "Alignment Map",
+         "hidden": 1,
+         "options": "OKR Objective Alignment"
+      },
+      {
+         "label": "",
+         "fieldtype": "Section Break",
+         "fieldname": "objective_details_section"
+      },
+      {
+         "label": "",
+         "fieldname": "objective_details_col_break",
+         "fieldtype": "Column Break"
+      },
+      {
+         "hidden": 1,
+         "label": "Assignment",
+         "fieldname": "timeline_section",
+         "fieldtype": "Section Break"
+      },
+      {
+         "label": "System Details",
+         "fieldtype": "Section Break",
+         "fieldname": "technical_section",
+         "collapsible": 1
+      },
+      {
+         "hidden": 1,
+         "fieldtype": "Section Break",
+         "fieldname": "objective_alignment_section",
+         "label": "Alignment Map"
+      },
+      {
+         "read_only": 1,
+         "options": "DocType",
+         "hidden": 1,
+         "label": "Level Details Type",
+         "fieldtype": "Link",
+         "fieldname": "level_details_doctype"
+      },
+      {
+         "mandatory_depends_on": "eval:doc.level && !['Organization', 'Team'].includes(doc.level)",
+         "depends_on": "eval:doc.level && !['Organization', 'Team'].includes(doc.level)",
+         "options": "level_details_doctype",
+         "fieldtype": "Dynamic Link",
+         "fieldname": "level_details",
+         "label": "Level Details"
+      },
+      {
+         "fieldname": "plan_name",
+         "fieldtype": "Data",
+         "label": "Plan Name",
+         "read_only": 1
+      },
+      {
+         "fieldname": "plan_description",
+         "fieldtype": "Small Text",
+         "label": "Plan Description",
+         "read_only": 1,
+         "max_height": "104px"
+      },
+      {
+         "fieldname": "plan_team_preview",
+         "fieldtype": "HTML",
+         "label": "Plan Team"
+      },
+      {
+         "fieldname": "timeline_preview",
+         "fieldtype": "HTML",
+         "label": "Timeline",
+         "hidden": 1
+      },
+      {
+         "fieldname": "objective_setup_heading",
+         "fieldtype": "HTML",
+         "hidden": 1,
+         "options": "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Objective Setup</div>"
+      },
+      {
+         "fieldtype": "HTML",
+         "fieldname": "plan_context_heading",
+         "hidden": 1,
+         "options": "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Context and Preview</div>"
+      },
+      {
+         "fieldname": "context_preview_html",
+         "fieldtype": "HTML",
+         "label": "Context Preview"
+      },
+      {
+         "fieldname": "teams",
+         "fieldtype": "Table",
+         "label": "Team Users",
+         "options": "OKR Objective Team",
+         "depends_on": "eval:doc.level=='Team'"
+      }
+   ],
+   "module": "OKR Management",
+   "allow_rename": 1,
+   "field_order": [
+      "objective_details_section",
+      "objective_setup_heading",
+      "parent_plan",
+      "objective_title",
+      "description",
+      "level",
+      "level_details_doctype",
+      "level_details",
+      "teams",
+      "priority",
+      "status",
+      "partial_completion_accepted",
+      "completion_notes",
+      "objective_details_col_break",
+      "plan_context_heading",
+      "context_preview_html",
+      "company",
+      "plan_name",
+      "plan_description",
+      "financial_year",
+      "timeline_preview",
+      "plan_team_preview",
+      "timeline_section",
+      "technical_section",
+      "naming_series",
+      "progress",
+      "key_result_count",
+      "objective_type",
+      "parent_objective",
+      "confidence",
+      "owner_user",
+      "reviewer",
+      "plan_owner",
+      "department",
+      "objective_alignment_section",
+      "alignment_map"
+   ],
+   "actions": [],
+"name":"OKR Objective",
+   "doctype": "DocType",
+   "istable": 0,
+   "naming_rule": "By \"Naming Series\" field"
+}

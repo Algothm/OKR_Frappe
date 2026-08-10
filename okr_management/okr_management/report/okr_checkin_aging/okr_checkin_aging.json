@@ -1,0 +1,13 @@
+{
+  "add_total_row": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "is_standard": "Yes",
+  "name": "OKR Check-in Aging",
+  "ref_doctype": "OKR Check In",
+  "report_name": "OKR Check-in Aging",
+  "report_type": "Query Report",
+  "query": "select name, key_result, objective, parent_plan as plan, reported_by, checkin_date, progress_percent, round(self_rating * 5) as 'Employee Rating', round(manager_rating * 5) as 'Manager Rating', review_status, status from `tabOKR Check In` order by checkin_date desc"
+}

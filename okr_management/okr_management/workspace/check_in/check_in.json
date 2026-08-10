@@ -1,0 +1,56 @@
+{
+ "charts": [],
+ "content": "[]",
+ "creation": "2026-07-07 22:46:52.441930",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 1,
+ "icon": "solid-success",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Check-In",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Links",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "OKR Check In",
+   "link_count": 0,
+   "link_to": "OKR Check In",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-07-07 22:46:52.441930",
+ "modified_by": "Administrator",
+ "module": "OKR Management",
+ "name": "Check-In",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "OKR Workspace",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 3.4,
+ "shortcuts": [
+  {
+   "doc_view": "List",
+   "label": "OKR Check In",
+   "link_to": "OKR Check In",
+   "type": "DocType"
+  }
+ ],
+ "title": "OKR Check In"
+}

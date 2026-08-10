@@ -1,0 +1,475 @@
+{
+ "owner": "Administrator",
+ "fields": [
+  {
+   "fieldtype": "Section Break",
+   "fieldname": "details_section",
+   "label": ""
+  },
+  {
+   "label": "Title",
+   "reqd": 1,
+   "fieldtype": "Data",
+   "fieldname": "action_item_title",
+   "in_list_view": 1
+  },
+  {
+   "fieldtype": "Column Break",
+   "fieldname": "details_col_break",
+   "label": ""
+  },
+  {
+   "label": "Description",
+   "fieldtype": "Small Text",
+   "fieldname": "description"
+  },
+  {
+   "hidden": 1,
+   "label": "Assignment",
+   "fieldname": "assignment_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldtype": "Link",
+   "in_list_view": 0,
+   "options": "User",
+   "label": "Action Item Owner",
+   "fieldname": "owner_user",
+   "reqd": 1,
+   "default": "__user",
+   "hidden": 1
+  },
+  {
+   "columns": 3,
+   "hidden": 1,
+   "fieldtype": "Column Break",
+   "fieldname": "assignment_col_break_1"
+  },
+  {
+   "fieldname": "priority",
+   "reqd": 1,
+   "default": "Medium",
+   "hidden": 1,
+   "fieldtype": "Select",
+   "options": "Low\nMedium\nHigh\nCritical",
+   "label": "Priority"
+  },
+  {
+   "fieldname": "assignment_col_break_2",
+   "fieldtype": "Column Break",
+   "columns": 3,
+   "hidden": 1
+  },
+  {
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "options": "Open\nIn Progress\nBlocked\nCompleted\nCancelled",
+   "label": "Status",
+   "fieldname": "status",
+   "reqd": 1,
+   "default": "Open",
+   "hidden": 1
+  },
+  {
+   "fieldname": "execution_progress_section",
+   "fieldtype": "Section Break",
+   "label": "Execution Progress",
+   "hidden": 1
+  },
+  {
+   "label": "Progress %",
+   "default": 0,
+   "fieldtype": "Percent",
+   "fieldname": "progress",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "assigned_to",
+   "fieldtype": "Link",
+   "label": "Assigned To",
+   "options": "Employee",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "hidden": 1,
+   "label": "Progress Visualization",
+   "fieldtype": "HTML",
+   "fieldname": "progress_visualization_html"
+  },
+  {
+   "columns": 6,
+   "hidden": 1,
+   "fieldtype": "Column Break",
+   "fieldname": "execution_progress_col_break"
+  },
+  {
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 0,
+   "reqd": 1,
+   "fieldname": "due_date",
+   "fieldtype": "Date",
+   "hidden": 0,
+   "label": "Due Date"
+  },
+  {
+   "hidden": 1,
+   "label": "Open",
+   "in_list_view": 0,
+   "fieldtype": "Button",
+   "fieldname": "open_action_item"
+  },
+  {
+   "hidden": 1,
+   "label": "Check-In",
+   "in_list_view": 0,
+   "fieldname": "check_in",
+   "fieldtype": "Button"
+  },
+  {
+   "hidden": 1,
+   "options": "User",
+   "label": "Reviewer",
+   "fieldname": "reviewer",
+   "fieldtype": "Link"
+  },
+  {
+   "label": "Start Date",
+   "hidden": 1,
+   "fieldtype": "Date",
+   "fieldname": "start_date"
+  },
+  {
+   "fieldname": "timeline_col_break",
+   "fieldtype": "Column Break",
+   "hidden": 1
+  },
+  {
+   "label": "Key Result Timeline Display",
+   "hidden": 1,
+   "fieldname": "kr_timeline_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "hidden": 1,
+   "label": "Execution",
+   "fieldtype": "Section Break",
+   "fieldname": "timeline_section"
+  },
+  {
+   "fieldtype": "Section Break",
+   "fieldname": "progress_section",
+   "label": "Progress",
+   "hidden": 1
+  },
+  {
+   "hidden": 1,
+   "fieldtype": "Column Break",
+   "fieldname": "progress_col_break"
+  },
+  {
+   "hidden": 1,
+   "label": "Completion Date",
+   "read_only": 1,
+   "fieldtype": "Date",
+   "fieldname": "completion_date"
+  },
+  {
+   "hidden": 1,
+   "default": 0,
+   "label": "Weight %",
+   "fieldname": "weight",
+   "fieldtype": "Percent"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes",
+   "hidden": 1
+  },
+  {
+   "hidden": 1,
+   "default": "OKR-ACT-.YYYY.-",
+   "reqd": 1,
+   "fieldname": "naming_series",
+   "label": "Naming Series",
+   "options": "OKR-ACT-.YYYY.-",
+   "read_only": 1,
+   "fieldtype": "Select"
+  },
+  {
+   "hidden": 1,
+   "label": "Inherited Context",
+   "collapsible": 1,
+   "fieldname": "inherited_context_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "parent_key_result",
+   "reqd": 1,
+   "hidden": 0,
+   "fieldtype": "Link",
+   "read_only": 0,
+   "in_list_view": 1,
+   "label": "Key Result",
+   "options": "OKR Key Result"
+  },
+  {
+   "label": "Open Parent Key Result Link",
+   "hidden": 1,
+   "fieldname": "open_parent_kr_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldtype": "Link",
+   "fieldname": "parent_objective",
+   "read_only": 1,
+   "options": "OKR Objective",
+   "label": "Objective",
+   "hidden": 1
+  },
+  {
+   "hidden": 1,
+   "fieldname": "parent_plan",
+   "options": "OKR Plan",
+   "label": "Plan",
+   "read_only": 1,
+   "fieldtype": "Link"
+  },
+  {
+   "hidden": 1,
+   "fieldtype": "Column Break",
+   "fieldname": "inherited_col_break"
+  },
+  {
+   "label": "Organization",
+   "options": "Company",
+   "hidden": 0,
+   "fieldtype": "Link",
+   "fieldname": "company",
+   "read_only": 1
+  },
+  {
+   "label": "Department",
+   "options": "Department",
+   "hidden": 1,
+   "fieldtype": "Link",
+   "fieldname": "department",
+   "read_only": 1
+  },
+  {
+   "read_only": 1,
+   "fieldtype": "Link",
+   "fieldname": "financial_year",
+   "hidden": 0,
+   "options": "Fiscal Year",
+   "label": "Financial Year"
+  },
+  {
+   "fieldname": "action_item_setup_heading",
+   "fieldtype": "HTML",
+   "options": "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Action Item Setup</div>"
+  },
+  {
+   "fieldtype": "HTML",
+   "fieldname": "context_preview_heading",
+   "options": "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Context and Preview</div>"
+  },
+  {
+   "fieldtype": "HTML",
+   "fieldname": "context_preview_html",
+   "label": "Context Preview",
+   "hidden": 0
+  },
+  {
+   "fieldname": "sprint_frequency",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "label": "Sprint Frequency",
+   "hidden": 1
+  },
+  {
+   "hidden": 1,
+   "label": "Start Date",
+   "read_only": 1,
+   "fieldtype": "Date",
+   "fieldname": "context_start_date"
+  },
+  {
+   "label": "End Date",
+   "hidden": 1,
+   "fieldname": "context_end_date",
+   "fieldtype": "Date",
+   "read_only": 1
+  },
+  {
+   "label": "Key Result",
+   "hidden": 1,
+   "fieldtype": "Data",
+   "fieldname": "key_result_title",
+   "read_only": 1
+  },
+  {
+   "fieldname": "timeline_preview",
+   "fieldtype": "HTML",
+   "label": "Timeline",
+   "hidden": 1
+  },
+  {
+   "fieldname": "objective_title",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "label": "Objective",
+   "hidden": 1
+  },
+  {
+   "label": "Plan",
+   "read_only": 1,
+   "fieldname": "plan_title",
+   "fieldtype": "Data"
+  },
+  {
+   "label": "Plan Description",
+   "read_only": 1,
+   "fieldtype": "Small Text",
+   "fieldname": "plan_description"
+  }
+ ],
+ "creation": "2026-06-24 00:00:00.000000",
+ "doctype": "DocType",
+ "index_web_pages_for_search": 1,
+ "module": "OKR Management",
+ "allow_rename": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "naming_rule": "By \"Naming Series\" field",
+ "field_order": [
+  "details_section",
+  "action_item_setup_heading",
+  "parent_key_result",
+  "action_item_title",
+  "description",
+  "assigned_to",
+  "due_date",
+  "progress",
+  "details_col_break",
+  "context_preview_heading",
+  "context_preview_html",
+  "plan_title",
+  "plan_description",
+  "company",
+  "financial_year",
+  "sprint_frequency",
+  "timeline_preview",
+  "objective_title",
+  "key_result_title",
+  "parent_plan",
+  "context_start_date",
+  "context_end_date",
+  "parent_objective",
+  "priority",
+  "status",
+  "owner_user",
+  "reviewer",
+  "department",
+  "progress_visualization_html",
+  "execution_progress_section",
+  "execution_progress_col_break",
+  "assignment_section",
+  "assignment_col_break_1",
+  "assignment_col_break_2",
+  "start_date",
+  "completion_date",
+  "weight",
+  "notes",
+  "naming_series",
+  "open_action_item",
+  "check_in",
+  "open_parent_kr_html",
+  "kr_timeline_html",
+  "timeline_col_break",
+  "timeline_section",
+  "progress_section",
+  "progress_col_break",
+  "inherited_context_section",
+  "inherited_col_break"
+ ],
+ "name": "OKR Action Item",
+ "actions": [],
+"title_field":"action_item_title",
+ "permissions": [
+  {
+   "export": 1,
+   "delete": 1,
+   "write": 1,
+   "read": 1,
+   "report": 1,
+   "role": "OKR Admin",
+   "email": 1,
+   "create": 1,
+   "print": 1
+  },
+  {
+   "role": "OKR Manager",
+   "report": 1,
+   "read": 1,
+   "print": 1,
+   "create": 1,
+   "email": 1,
+   "delete": 1,
+   "write": 1,
+   "export": 1
+  },
+  {
+   "write": 1,
+   "delete": 1,
+   "export": 0,
+   "report": 0,
+   "read": 1,
+   "role": "Team Lead",
+   "email": 0,
+   "create": 1,
+   "print": 0
+  },
+  {
+   "write": 1,
+   "export": 0,
+   "delete": 1,
+   "print": 0,
+   "create": 1,
+   "email": 0,
+   "role": "Employee",
+   "report": 0,
+   "read": 1
+  },
+{
+   "write": 1,
+   "export": 0,
+   "delete": 1,
+   "print": 0,
+   "create": 1,
+   "email": 0,
+   "role": "All",
+   "report": 0,
+   "read": 1
+  },
+{
+   "write": 1,
+   "export": 0,
+   "delete": 1,
+   "print": 0,
+   "create": 1,
+   "email": 0,
+   "role": "Guest",
+   "report": 0,
+   "read": 1
+  }
+],
+ "autoname": "naming_series:",
+ "istable": 0,
+ "engine": "InnoDB",
+ "show_title_field_in_link": 1
+}

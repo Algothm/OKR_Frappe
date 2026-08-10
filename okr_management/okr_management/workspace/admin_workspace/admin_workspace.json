@@ -1,0 +1,56 @@
+{
+ "charts": [],
+ "content": "[]",
+ "creation": "2026-07-09 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 1,
+ "icon": "organization",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "OKR Admin Workspace",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Links",
+   "link_count": 0,
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Admin Workspace",
+   "link_count": 0,
+   "link_to": "admin-workspace",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-07-09 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "OKR Management",
+ "name": "Admin Workspace",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 0,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 2.0,
+ "shortcuts": [
+  {
+   "doc_view": "",
+   "label": "Admin Workspace",
+   "link_to": "admin-workspace",
+   "type": "Page"
+  }
+ ],
+ "title": "OKR Admin Workspace"
+}

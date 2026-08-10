@@ -1,0 +1,13 @@
+{
+  "chart_name": "Organization Progress",
+  "chart_type": "Percentage",
+  "document_type": "OKR Plan",
+  "based_on": "status",
+  "value_based_on": "Count",
+  "is_public": 1,
+  "filters_json": "[]",
+  "timeseries": 0,
+  "use_count": 1,
+  "doctype": "Dashboard Chart",
+  "name": "OKR Organization Progress"
+}

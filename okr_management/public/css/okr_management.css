@@ -1,0 +1,528 @@
+/* ============================================================
+   OKR Management — Global App Styles
+   Loaded on every Frappe page via hooks.py app_include_css
+   ============================================================ */
+
+/* ---- Shared OKR badge/pill styles ---- */
+.okr-badge {
+	display: inline-block;
+	font-size: 10px;
+	font-weight: 600;
+	padding: 2px 6px;
+	border-radius: 4px;
+	background: var(--bg-light-gray, #f1f5f9);
+	color: var(--text-muted, #64748b);
+	margin-right: 5px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.okr-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 11px;
+	font-weight: 600;
+	padding: 3px 9px;
+	border-radius: 999px;
+	white-space: nowrap;
+}
+.okr-pill-critical { background: #fee2e2; color: #991b1b; }
+.okr-pill-high     { background: #ffedd5; color: #9a3412; }
+.okr-pill-medium   { background: #fef9c3; color: #854d0e; }
+.okr-pill-low      { background: #dcfce7; color: #166534; }
+.okr-pill-default  { background: #e2e8f0; color: #334155; }
+
+/* ---- Progress bars ---- */
+.okr-progressbar {
+	height: 7px;
+	border-radius: 999px;
+	background: var(--border-color, #e2e8f0);
+	overflow: hidden;
+}
+.okr-progressbar-fill {
+	display: block;
+	height: 100%;
+	border-radius: 999px;
+	background: linear-gradient(90deg, #2563eb 0%, #10b981 100%);
+	transition: width 0.6s ease;
+}
+.okr-progressbar-fill.danger  { background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%); }
+.okr-progressbar-fill.warning { background: linear-gradient(90deg, #f97316 0%, #f59e0b 100%); }
+
+/* ---- KPI card accent colors (workspace number cards) ---- */
+.okr-kpi-card { transition: box-shadow 0.2s, transform 0.15s; }
+.okr-kpi-card:hover { box-shadow: var(--shadow-md, 0 4px 16px rgba(0,0,0,0.12)); transform: translateY(-2px); }
+
+/* ---- Spin animation (shared) ---- */
+@keyframes okr-spin { to { transform: rotate(360deg); } }
+
+/* ---- Print: hide Frappe chrome when printing any OKR executive page ---- */
+@media print {
+	.navbar,
+	.page-head,
+	.page-actions,
+	.layout-side-section,
+	.body-sidebar,
+	.sidebar-toggle-btn,
+	.page-breadcrumbs {
+		display: none !important;
+	}
+	.page-content-wrapper,
+	.layout-main,
+	.layout-main-section {
+		padding: 0 !important;
+		margin: 0 !important;
+		width: 100% !important;
+		max-width: none !important;
+		box-shadow: none !important;
+	}
+}
+
+/* ============================================================
+   SaaS Layout, Grid, & Cards styling for OKR forms
+   ============================================================ */
+
+/* Stretch container to take up full browser width */.page-container[data-page-route^="Form/OKR "],
+.page-container[data-page-route^="Form/okr-" i] {
+	max-width: 95% !important;
+	width: 95% !important;
+	margin: 0 auto !important;
+}
+
+@media (min-width: 1600px) {
+	.page-container[data-page-route^="Form/OKR "],
+	.page-container[data-page-route^="Form/okr-" i] {
+		max-width: 98% !important;
+		width: 98% !important;
+	}
+}
+
+/* Ensure intermediate form wrappers are stretched fully */
+.page-container[data-page-route^="Form/OKR "] .layout-main,
+.page-container[data-page-route^="Form/okr-" i] .layout-main,
+.page-container[data-page-route^="Form/OKR "] .layout-main-section,
+.page-container[data-page-route^="Form/okr-" i] .layout-main-section,
+.page-container[data-page-route^="Form/OKR "] .layout-main-section-wrapper,
+.page-container[data-page-route^="Form/okr-" i] .layout-main-section-wrapper,
+.page-container[data-page-route^="Form/OKR "] .form-container,
+.page-container[data-page-route^="Form/okr-" i] .form-container,
+.page-container[data-page-route^="Form/OKR "] .form-body,
+.page-container[data-page-route^="Form/okr-" i] .form-body,
+.page-container[data-page-route^="Form/OKR "] .form-layout,
+.page-container[data-page-route^="Form/okr-" i] .form-layout {
+	max-width: 100% !important;
+	width: 100% !important;
+}
+
+@media (min-width: 992px) {
+	/* Target the form-page inside the layout section to be grid layout */
+	.page-container[data-page-route^="Form/OKR "] .form-page,
+	.page-container[data-page-route^="Form/okr-" i] .form-page {
+		display: grid !important;
+		grid-template-columns: 1.1fr 1fr !important; /* Arrange sections side-by-side */
+		gap: 16px 20px !important;
+		align-items: flex-start !important;
+		width: 100% !important;
+	}
+
+	.page-container[data-page-route^="Form/OKR "] .form-section,
+	.page-container[data-page-route^="Form/okr-" i] .form-section {
+		grid-column: auto !important;
+		margin-bottom: 0 !important;
+	}
+
+	.page-container[data-page-route^="Form/OKR "] .form-section[data-fieldname="technical_section"],
+	.page-container[data-page-route^="Form/okr-" i] .form-section[data-fieldname="technical_section"],
+	.page-container[data-page-route^="Form/OKR "] .form-section[data-fieldname="plan_team_section"],
+	.page-container[data-page-route^="Form/okr-" i] .form-section[data-fieldname="plan_team_section"],
+	.page-container[data-page-route^="Form/OKR "] .form-section[data-fieldname="notes_section"],
+	.page-container[data-page-route^="Form/okr-" i] .form-section[data-fieldname="notes_section"],
+	.page-container[data-page-route^="Form/OKR "] .form-section[data-fieldname="kr_notes_section"],
+	.page-container[data-page-route^="Form/okr-" i] .form-section[data-fieldname="kr_notes_section"],
+	.page-container[data-page-route^="Form/OKR "] .form-section[data-fieldname="objective_alignment_section"],
+	.page-container[data-page-route^="Form/okr-" i] .form-section[data-fieldname="objective_alignment_section"] {
+		grid-column: 1 / -1 !important;
+	}
+}
+
+/* Cards layout overrides for form sections */
+.page-container[data-page-route^="Form/OKR "] .form-section,
+.page-container[data-page-route^="Form/okr-" i] .form-section {
+	background: #ffffff;
+	border: 1px solid var(--border-color, #e2e8f0);
+	border-radius: 12px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+	padding: 18px;
+	margin-bottom: 10px;
+	width: 100% !important;
+}
+
+.page-container[data-page-route^="Form/OKR "] .form-section .section-head,
+.page-container[data-page-route^="Form/okr-" i] .form-section .section-head {
+	border-bottom: 1px solid var(--border-color, #f1f5f9);
+	padding-bottom: 10px;
+	margin-bottom: 14px;
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--text-color, #1e293b);
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+
+/* Micro Typography Improvements */
+[data-doctype^="OKR "] .frappe-control .control-label {
+	font-size: 11px !important;
+	font-weight: 600 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
+	color: var(--text-muted, #64748b) !important;
+	margin-bottom: 6px !important;
+}
+
+[data-doctype^="OKR "] .form-control {
+	border-radius: 8px !important;
+	border: 1px solid var(--border-color, #cbd5e1) !important;
+	padding: 8px 12px !important;
+	height: auto !important;
+	transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+}
+
+[data-doctype^="OKR "] .form-control:focus {
+	border-color: var(--primary, #2563eb) !important;
+	box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1) !important;
+}
+
+/* Custom Visual Status Badges */
+.okr-status-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 10px;
+	border-radius: 9999px;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+.okr-status-active    { background-color: #dcfce7; color: #166534; }
+.okr-status-atrisk    { background-color: #ffedd5; color: #9a3412; }
+.okr-status-blocked   { background-color: #fee2e2; color: #991b1b; }
+.okr-status-draft     { background-color: #dbeafe; color: #1e40af; }
+.okr-status-completed { background-color: #e0f2fe; color: #0369a1; }
+
+/* Dashboard Summary Widget blocks */
+.okr-summary-widget {
+	padding: 16px;
+	background: #ffffff;
+	border: 1px solid var(--border-color, #e2e8f0);
+	border-radius: 8px;
+	text-align: center;
+	margin-bottom: 12px;
+}
+.okr-summary-value {
+	font-size: 28px;
+	font-weight: 800;
+	color: var(--text-color, #0f172a);
+	line-height: 1.2;
+}
+.okr-summary-label {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--text-muted, #64748b);
+	margin-top: 4px;
+}
+
+/* OKR Action Item UI Polish overrides */
+[data-doctype="OKR Action Item"] .frappe-control[data-fieldname="description"] textarea {
+	height: 100px !important;
+	min-height: 100px !important;
+	resize: vertical !important;
+}
+
+[data-doctype="OKR Plan"] .frappe-control[data-fieldname="description"] textarea,
+.page-container[data-page-route^="Form/OKR Plan"] .frappe-control[data-fieldname="description"] textarea {
+	height: 96px !important;
+	min-height: 100px !important;
+	max-height: 120px !important;
+	resize: vertical !important;
+}
+
+[data-doctype="OKR Plan"] .frappe-control[data-fieldname="financial_year"],
+.page-container[data-page-route^="Form/OKR Plan"] .frappe-control[data-fieldname="financial_year"] {
+	box-sizing: border-box !important;
+	width: 100% !important;
+	margin-left: 0 !important;
+	margin-right: 0 !important;
+}
+
+[data-doctype="OKR Action Item"] .frappe-control[data-fieldname="status"] .control-value,
+[data-doctype="OKR Action Item"] .frappe-control[data-fieldname="priority"] .control-value {
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	font-size: 11px !important;
+	letter-spacing: 0.04em !important;
+	border-radius: 20px !important;
+	padding: 4px 12px !important;
+	display: inline-block !important;
+	text-align: center !important;
+	line-height: 1.5 !important;
+}
+
+/* Status read-only badges */
+.status-open .control-value { background-color: #dcfce7 !important; color: #166534 !important; border: 1px solid #bbf7d0 !important; }
+.status-open .control-value::before { content: "🟢 "; }
+.status-in-progress .control-value { background-color: #dbeafe !important; color: #1e40af !important; border: 1px solid #bfdbfe !important; }
+.status-in-progress .control-value::before { content: "🔵 "; }
+.status-blocked .control-value { background-color: #ffedd5 !important; color: #9a3412 !important; border: 1px solid #fed7aa !important; }
+.status-blocked .control-value::before { content: "🟠 "; }
+.status-completed .control-value { background-color: #dcfce7 !important; color: #166534 !important; border: 1px solid #bbf7d0 !important; }
+.status-completed .control-value::before { content: "🟢 "; }
+.status-cancelled .control-value { background-color: #f1f5f9 !important; color: #475569 !important; border: 1px solid #cbd5e1 !important; }
+.status-cancelled .control-value::before { content: "⚪ "; }
+
+/* Priority read-only badges */
+.priority-low .control-value { background-color: #f1f5f9 !important; color: #475569 !important; border: 1px solid #cbd5e1 !important; }
+.priority-medium .control-value { background-color: #fef9c3 !important; color: #854d0e !important; border: 1px solid #fef08a !important; }
+.priority-high .control-value { background-color: #ffedd5 !important; color: #9a3412 !important; border: 1px solid #fed7aa !important; }
+.priority-critical .control-value { background-color: #fee2e2 !important; color: #991b1b !important; border: 1px solid #fecaca !important; }
+
+/* Key Result Timeline info block styling */
+.kr-timeline-block {
+	border: 1px solid var(--border-color, #cbd5e1) !important;
+	border-radius: 8px !important;
+	background-color: var(--light-bg, #f8fafc) !important;
+}
+
+
+
+/* OKR Key Result action item toolbar */
+.page-container[data-page-route^="Form/OKR Key Result"] [data-fieldname="action_items"] .grid-custom-buttons {
+	display: flex;
+	justify-content: flex-end;
+	margin-bottom: 6px;
+}
+
+.page-container[data-page-route^="Form/OKR Key Result"] .okr-new-action-item-button {
+	background: #111827 !important;
+	border-color: #111827 !important;
+	color: #ffffff !important;
+}
+
+
+/* OKR Key Result action item check-in button */
+.page-container[data-page-route^="Form/OKR Key Result"] [data-fieldname="action_items"] [data-fieldname="check_in"] .btn {
+	background: #111827 !important;
+	border-color: #111827 !important;
+	color: #ffffff !important;
+}
+
+.okr-grid-checkin-button {
+	background: #111827 !important;
+	border-color: #111827 !important;
+	color: #ffffff !important;
+}
+
+
+/* Force Check-In grid cell to look like a button container */
+.page-container[data-page-route^="Form/OKR Key Result"] [data-fieldname="action_items"] .grid-static-col[data-fieldname="check_in"] .static-area {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	background: transparent !important;
+	border: none !important;
+	padding: 0 !important;
+	cursor: pointer !important;
+}
+
+/* Hide shortcut footer in Action Items table popup */
+.page-container[data-page-route^="Form/OKR Key Result"] [data-fieldname="action_items"] .grid-footer-toolbar {
+	display: none !important;
+}
+
+/* Hide Check-In button inside the row popup form */
+.grid-row-open [data-fieldname="check_in"] {
+	display: none !important;
+}
+
+/* Style the Save button inside the row popup */
+.grid-row-open [data-fieldname="save_row"] .btn {
+	background: #111827 !important;
+	border-color: #111827 !important;
+	color: #ffffff !important;
+	font-weight: 600 !important;
+	border-radius: 6px !important;
+	padding: 6px 16px !important;
+}
+
+
+/* SS2-style OKR Key Result action/check-in UI */
+/* SS2-style performance summary polish */
+.page-container[data-page-route^="Form/OKR Key Result"] [data-fieldname="summary_sidebar_section"] .section-body {
+	padding-top: 8px !important;
+}
+.page-container[data-page-route^="Form/OKR Key Result"] [data-fieldname="target_progress"] .control-input,
+.page-container[data-page-route^="Form/OKR Key Result"] [data-fieldname="action_item_count"] .control-input,
+.page-container[data-page-route^="Form/OKR Key Result"] [data-fieldname="checkin_count"] .control-input {
+	background: transparent !important;
+}
+.page-container[data-page-route^="Form/OKR Key Result"] [data-fieldname="target_progress"] .control-value,
+.page-container[data-page-route^="Form/OKR Key Result"] [data-fieldname="target_progress"] input {
+	font-size: 28px !important;
+	font-weight: 800 !important;
+	color: #2563eb !important;
+	background: transparent !important;
+	padding-left: 0 !important;
+}
+.page-container[data-page-route^="Form/OKR Key Result"] [data-fieldname="action_item_count"] input,
+.page-container[data-page-route^="Form/OKR Key Result"] [data-fieldname="checkin_count"] input {
+	font-size: 24px !important;
+	font-weight: 750 !important;
+	background: transparent !important;
+	padding-left: 0 !important;
+}
+.page-container[data-page-route^="Form/OKR Key Result"] [data-fieldname="target_progress"]::after {
+	content: "";
+	display: block;
+	height: 7px;
+	width: min(260px, 100%);
+	background: linear-gradient(90deg, #2563eb 0 35%, #e8e8f2 35% 100%);
+	border-radius: 999px;
+	margin-top: 8px;
+}
+
+/* ---- Sidebar modern rotating chevrons ---- */
+.sidebar-item-container .drop-icon svg {
+	display: none !important;
+}
+
+.sidebar-item-container .drop-icon:not(.hidden) {
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer !important;
+	color: var(--text-muted, #64748b) !important;
+}
+
+.sidebar-item-container .drop-icon.hidden {
+	display: none !important;
+}
+
+.sidebar-item-container .drop-icon::after {
+	content: "";
+	display: inline-block;
+	width: 5px;
+	height: 5px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(-45deg); /* Collapsed state: Right chevron (▶) */
+	transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+	margin-top: -2px; /* Vertical centering adjustment */
+}
+
+/* Expanded state: when toggle is active and svg use points to an up-pointing icon */
+.sidebar-item-container .drop-icon:has(use[href*="up"])::after,
+.sidebar-item-container .drop-icon:has(use[href*="small-up"])::after {
+	transform: rotate(45deg); /* Expanded state: Down chevron (▼) */
+}
+
+/* Hide drop chevron icons for specific OKR leaf nodes in the sidebar */
+.sidebar-item-container[item-name="OKR Plan"] .drop-icon,
+.sidebar-item-container[item-name="OKR Plan"] .drop-icon,
+.sidebar-item-container[item-name="OKR Objective"] .drop-icon,
+.sidebar-item-container[item-name="OKR Key Result"] .drop-icon,
+.sidebar-item-container[item-name="OKR Action Item"] .drop-icon,
+.sidebar-item-container[item-name="Check-In"] .drop-icon,
+.sidebar-item-container[item-name="OKR Check In"] .drop-icon {
+	display: none !important;
+}
+
+
+
+
+/* Check-In Action Item picker: emphasize the user-facing title over the ID. */
+.page-container[data-page-route^="Form/OKR Check In"] [data-fieldname="action_item"] .awesomplete > ul > li strong,
+.page-container[data-page-route^="Form/okr-check-in" i] [data-fieldname="action_item"] .awesomplete > ul > li strong {
+	font-size: 16px !important;
+	font-weight: 700 !important;
+	line-height: 1.35 !important;
+}
+
+.page-container[data-page-route^="Form/OKR Check In"] [data-fieldname="action_item"] .awesomplete > ul > li span.small,
+.page-container[data-page-route^="Form/okr-check-in" i] [data-fieldname="action_item"] .awesomplete > ul > li span.small {
+	display: inline-block;
+	margin-top: 2px;
+	font-size: 12px !important;
+	font-weight: 400 !important;
+	line-height: 1.25 !important;
+	color: var(--text-muted, #6b7280) !important;
+}
+
+/* ── Context & Preview: Frappe-style read-only fields ── */
+.okr-ctx-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px 20px;
+	width: 100%;
+}
+
+.okr-ctx-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+.okr-ctx-field.is-full {
+	grid-column: 1 / -1;
+}
+
+.okr-ctx-label {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--text-muted, #74808b);
+	letter-spacing: 0.02em;
+}
+
+.okr-ctx-box {
+	background: var(--control-bg, #f4f5f6);
+	border: 1px solid var(--border-color, #e2e8f0);
+	border-radius: 8px;
+	padding: 8px 12px;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text-color, #1f272e);
+	line-height: 1.5;
+	min-height: 36px;
+	word-break: break-word;
+}
+
+@media (max-width: 575px) {
+	.okr-ctx-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+
+.page-container[data-page-route*="OKR Key Result"] .frappe-control[data-fieldname="description"] textarea,
+.page-container[data-page-route*="okr-key-result" i] .frappe-control[data-fieldname="description"] textarea {
+	height: 74px !important;
+	min-height: 74px !important;
+	max-height: 74px !important;
+	resize: vertical !important;
+}
+
+.page-container[data-page-route*="OKR Objective"] .frappe-control[data-fieldname="description"] textarea,
+.page-container[data-page-route*="okr-objective" i] .frappe-control[data-fieldname="description"] textarea {
+	height: 100px !important;
+	min-height: 100px !important;
+	max-height: 100px !important;
+	resize: vertical !important;
+}
+
+[data-fieldname="kr_details_section"] .section-head,
+[data-fieldname="inherited_context_section"] .section-head,
+[data-fieldname="context_preview_heading"] {
+	display: none !important;
+}
