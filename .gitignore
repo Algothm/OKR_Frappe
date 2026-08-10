@@ -17,6 +17,7 @@ htmlcov/
 node_modules/
 
 # Frappe / bench generated files
+.agents/
 logs/
 sites/
 env/
