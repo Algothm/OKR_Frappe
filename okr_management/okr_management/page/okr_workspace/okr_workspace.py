@@ -132,6 +132,7 @@ def save_workspace_checkin(action_item: str, progress: float, update: str, block
     doc.action_status = status or "In Progress"
     doc.flags.ignore_permissions = True
     doc.save()
+    link_uploaded_attachment(doc)
     result = {"name": doc.name, "message": "Check-in saved successfully"}
 
     action = frappe.get_doc("OKR Action Item", action_item)
@@ -228,13 +229,39 @@ def get_action_items(kr_names: list[str]) -> list:
 
 
 
+
+def link_uploaded_attachment(checkin) -> None:
+    """Attach a Workspace upload so authorized hierarchy viewers can preview private files."""
+    if not checkin.attachment:
+        return
+    file_row = frappe.db.get_value(
+        "File",
+        {"file_url": checkin.attachment},
+        ["name", "owner", "attached_to_doctype", "attached_to_name"],
+        as_dict=True,
+    )
+    if not file_row:
+        frappe.throw("The selected attachment could not be found.")
+    if frappe.session.user != "Administrator" and file_row.owner != frappe.session.user:
+        frappe.throw("You can only attach files that you uploaded.", frappe.PermissionError)
+    if file_row.attached_to_name and (
+        file_row.attached_to_doctype != "OKR Check In" or file_row.attached_to_name != checkin.name
+    ):
+        frappe.throw("This file is already attached to another document.")
+    frappe.db.set_value(
+        "File",
+        file_row.name,
+        {"attached_to_doctype": "OKR Check In", "attached_to_name": checkin.name},
+        update_modified=False,
+    )
+
 def get_checkin_history(action_item_names: list[str]) -> dict:
     if not action_item_names:
         return {}
     rows = frappe.get_all(
         "OKR Check In",
         filters={"action_item": ["in", action_item_names], "status": "Submitted"},
-        fields=["action_item", "name", "checkin_date", "progress", "achievements", "blockers", "reported_by"],
+        fields=["action_item", "name", "checkin_date", "progress", "achievements", "blockers", "reported_by", "attachment"],
         order_by="checkin_date desc, creation desc",
         limit_page_length=2000,
     )

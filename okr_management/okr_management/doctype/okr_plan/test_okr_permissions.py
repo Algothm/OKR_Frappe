@@ -118,8 +118,28 @@ class TestOKRPermissionIntegration(FrappeTestCase):
         from okr_management.okr_management.page.okr_workspace.okr_workspace import save_workspace_checkin
 
         frappe.set_user(self.users["system"])
-        system_result = save_workspace_checkin(self.action.name, 10, "System Manager override")
+        proof = frappe.get_doc({
+            "doctype": "File",
+            "file_name": "okr-checkin-proof.txt",
+            "content": "proof",
+            "is_private": 1,
+        }).insert(ignore_permissions=True)
+        system_result = save_workspace_checkin(
+            self.action.name, 10, "System Manager override", attachment=proof.file_url
+        )
         self.assertTrue(system_result.get("name"))
+        self.assertEqual(system_result.get("checkin", {}).get("attachment"), proof.file_url)
+        proof.reload()
+        self.assertEqual(proof.attached_to_doctype, "OKR Check In")
+        self.assertEqual(proof.attached_to_name, system_result.get("name"))
+
+        from okr_management.okr_management.page.okr_workspace.okr_workspace import get_workspace_data
+        frappe.set_user(self.users["objective"])
+        self.assertIn(proof.file_url, str(get_workspace_data()))
+        frappe.set_user(self.users["kr"])
+        self.assertIn(proof.file_url, str(get_workspace_data()))
+        frappe.set_user("Administrator")
+        self.assertIn(proof.file_url, str(get_dashboard_data()))
         frappe.set_user(self.users["okr_admin"])
         admin_result = save_workspace_checkin(self.action.name, 20, "OKR Admin override")
         self.assertTrue(admin_result.get("name"))

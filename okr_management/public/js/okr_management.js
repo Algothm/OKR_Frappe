@@ -1,5 +1,42 @@
 frappe.provide("okr_management");
 
+okr_management.preview_attachment = function (file_url) {
+    if (!file_url) return;
+    let parsed;
+    try {
+        parsed = new URL(String(file_url), window.location.origin);
+    } catch (error) {
+        frappe.msgprint(__("Invalid attachment URL."));
+        return;
+    }
+    if (
+        parsed.origin !== window.location.origin
+        || !(parsed.pathname.startsWith("/files/") || parsed.pathname.startsWith("/private/files/"))
+    ) {
+        frappe.msgprint(__("Only files uploaded to this site can be previewed."));
+        return;
+    }
+    const preview_url = parsed.pathname + parsed.search;
+    const safe_url = frappe.utils.escape_html(preview_url);
+    const filename = decodeURIComponent(parsed.pathname.split("/").pop() || __("Attachment"));
+    const extension = filename.split(".").pop().toLowerCase();
+    const image_types = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"]);
+    const embedded_url = extension === "pdf" ? safe_url + "#toolbar=0&navpanes=0" : safe_url;
+    const preview_html = image_types.has(extension)
+        ? '<div style="display:flex;justify-content:center;max-height:72vh;overflow:auto;background:#f7f8fa;padding:12px;border-radius:8px">'
+            + '<img src="' + safe_url + '" alt="' + frappe.utils.escape_html(filename) + '" style="max-width:100%;height:auto;object-fit:contain">'
+            + '</div>'
+        : '<iframe src="' + embedded_url + '" title="' + frappe.utils.escape_html(filename)
+            + '" style="width:100%;height:72vh;border:1px solid var(--border-color);border-radius:8px;background:#fff"></iframe>';
+    const dialog = new frappe.ui.Dialog({
+        title: __("Attachment: {0}", [filename]),
+        size: "extra-large",
+        fields: [{ fieldtype: "HTML", fieldname: "attachment_preview" }],
+    });
+    dialog.fields_dict.attachment_preview.$wrapper.html(preview_html);
+    dialog.show();
+};
+
 (() => {
     const USER_OKR_LIST_SLUGS = new Set([
         "okr-objective",

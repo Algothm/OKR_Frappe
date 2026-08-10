@@ -58,6 +58,11 @@ class OKRAdminWorkspace {
 
                 // Refresh trigger
                 this.body.on('click', '[data-refresh]', () => this.load());
+                this.body.on('click', '[data-preview-attachment]', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        okr_management.preview_attachment($(e.currentTarget).attr('data-preview-attachment'));
+                });
                 this.body.on('click', '[data-select-plan]', (e) => this.select_plan($(e.currentTarget).data('select-plan')));
                 this.body.on('click', '[data-plan-toggle]', (e) => {
                         e.preventDefault();
@@ -473,7 +478,9 @@ class OKRAdminWorkspace {
                         '</b><span class="okr-status-pill okr-status-pill--' + this.status_slug(ai.status) + '">' + this.e(ai.status || 'Draft') +
                         '</span><em>' + this.pluralize(checks.length, 'Check-in') + '</em></summary><div class="okr-plan-checkins">' +
                         (checks.length ? checks.map(ck => '<div><span>' + this.e(ck.date) + '</span><strong>' + this.percent(ck.progress) + '</strong><p>' +
-                        this.e(ck.note || __('No update')) + (ck.blockers ? '<br><b>' + __('Blocker') + ':</b> ' + this.e(ck.blockers) : '') + '</p></div>').join('') :
+                        this.e(ck.note || __('No update')) + (ck.blockers ? '<br><b>' + __('Blocker') + ':</b> ' + this.e(ck.blockers) : '') +
+                        (ck.attachment ? '<br><button type="button" class="btn btn-xs btn-default" data-preview-attachment="' + this.e(ck.attachment) + '">' + __('View Attachment') + '</button>' : '') +
+                        '</p></div>').join('') :
                         '<div class="okr-plan-tree-empty">' + __('No check-ins yet.') + '</div>') + '</div></details>';
         }
 

@@ -221,7 +221,7 @@ def get_checkins(filters: dict, plan_names: list[str] | None, objective_names: l
     return frappe.get_all(
         "OKR Check In", filters=doc_filters,
         fields=["name", "checkin_date", "reported_by", "action_item", "key_result", "objective", "parent_plan",
-                "department", "progress", "confidence", "achievements", "blockers", "modified", "creation"],
+                "department", "progress", "confidence", "achievements", "blockers", "attachment", "modified", "creation"],
         order_by="checkin_date desc, creation desc", limit_page_length=20000,
     )
 
@@ -338,7 +338,7 @@ def build_plan_tree(objectives, key_results_by_objective, actions_by_kr, checkin
                     "owner": action.owner_user or "", "due_date": str(action.due_date or ""),
                     "checkins": [{"date": str(ck.checkin_date or ""), "progress": flt(ck.progress),
                                   "reported_by": ck.reported_by or "", "note": ck.achievements or "",
-                                  "blockers": ck.blockers or ""} for ck in checkins_by_action.get(action.name, [])]})
+                                  "blockers": ck.blockers or "", "attachment": ck.attachment or ""} for ck in checkins_by_action.get(action.name, [])]})
             obj["key_results"].append(kr_data)
         result.append(obj)
     return result

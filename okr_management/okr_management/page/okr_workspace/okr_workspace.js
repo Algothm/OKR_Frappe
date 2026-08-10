@@ -124,6 +124,10 @@ class OKRWorkspace {
                 this.$body.on('click', '[data-save-checkin]', () => this.save_checkin());
                 this.$body.on('click', '[data-attach-file]', () => this.attach_file());
                 this.$body.on('click', '[data-remove-attachment]', () => { this.attachment = ''; this.render_attachment(); });
+                this.$body.on('click', '[data-preview-attachment]', (e) => {
+                        e.preventDefault();
+                        okr_management.preview_attachment($(e.currentTarget).attr('data-preview-attachment'));
+                });
                 this.$body.on('click', '[data-adjust-filter]', () => this.$body.find('[data-filter-popover]').show());
                 this.$body.on('click', '[data-select-objective]', (e) => {
                         e.preventDefault();
@@ -404,7 +408,7 @@ class OKRWorkspace {
                 const rows = ai.history || [];
                 if (!rows.length) return `<div class="okr-history-empty">${__('No check-ins yet this sprint')}</div>`;
                 return `<div class="okr-history"><div class="okr-history-title">${__('Check-In History')}</div>${rows.map(row => `
-                        <div class="okr-history-row"><div><span>${frappe.datetime.str_to_user(row.checkin_date)}</span><strong>${flt(row.progress || 0, 2)}%</strong></div><p>${frappe.utils.escape_html(row.achievements || '')}${row.blockers ? `<br><b>${__('Blocker')}:</b> ${frappe.utils.escape_html(row.blockers)}` : ''}${row.attachment ? `<br><a href="${row.attachment}" target="_blank">${__('Attachment')}</a>` : ''}</p></div>
+                        <div class="okr-history-row"><div><span>${frappe.datetime.str_to_user(row.checkin_date)}</span><strong>${flt(row.progress || 0, 2)}%</strong></div><p>${frappe.utils.escape_html(row.achievements || '')}${row.blockers ? `<br><b>${__('Blocker')}:</b> ${frappe.utils.escape_html(row.blockers)}` : ''}${row.attachment ? `<br><button type="button" class="btn btn-xs btn-default" data-preview-attachment="${frappe.utils.escape_html(row.attachment)}">${__('View Attachment')}</button>` : ''}</p></div>
                 `).join('')}</div>`;
         }
 
