@@ -1,5 +1,47 @@
 frappe.provide("okr_management");
 
+frappe.listview_settings["OKR Objective"] = {
+    onload(listview) {
+        $(listview.page.wrapper).addClass("okr-objective-list");
+
+        if (!document.getElementById("okr-objective-list-layout")) {
+            $("<style>", { id: "okr-objective-list-layout" })
+                .text(`
+                    .okr-objective-list .list-row .level-left {
+                        min-width: 0;
+                        flex: 1 1 auto;
+                    }
+                    .okr-objective-list .list-row-col.list-subject {
+                        flex: 0 0 230px !important;
+                        min-width: 230px;
+                    }
+                    .okr-objective-list .list-row-col:nth-of-type(3) {
+                        flex: 1 1 420px !important;
+                        min-width: 220px;
+                    }
+                    .okr-objective-list .list-row-col:nth-of-type(4) {
+                        flex: 0 0 190px !important;
+                        min-width: 160px;
+                    }
+                    .okr-objective-list .list-row-col:nth-of-type(5) {
+                        flex: 0 0 130px !important;
+                        min-width: 110px;
+                    }
+                `)
+                .appendTo(document.head);
+        }
+
+        // Frappe counts the hidden tag column toward its responsive limit.
+        // Keep all four meaningful Objective columns visible at desktop sizes.
+        if (Number(listview.list_view_settings.total_fields || 0) < 5) {
+            listview.list_view_settings.total_fields = 5;
+            listview.setup_columns();
+            listview.render_header(true);
+            listview.refresh(true);
+        }
+    },
+};
+
 okr_management.preview_attachment = function (file_url) {
     if (!file_url) return;
     let parsed;
@@ -51,11 +93,13 @@ okr_management.preview_attachment = function (file_url) {
         { name: "Plan", parent: "OKR Admin Workspace", path: "/app/okr-plan" },
     ];
     const CUSTOM_PAGE_SLUGS = new Set(["okr-workspace", "admin-workspace"]);
-    const fallback_route = is_admin_ui_user() ? "admin-workspace" : "okr-workspace";
+    const fallback_route = is_admin_ui_user()
+        ? "admin-workspace"
+        : is_okr_ui_user() ? "okr-workspace" : "home";
     frappe.re_route["okr-management"] = fallback_route;
-    frappe.re_route["okr-admin-workspace"] = "admin-workspace";
-    frappe.re_route["admin-workspace"] = is_admin_ui_user() ? undefined : "okr-workspace";
-    frappe.re_route["okr-workspace"] = is_admin_ui_user() ? "admin-workspace" : undefined;
+    frappe.re_route["okr-admin-workspace"] = is_admin_ui_user() ? "admin-workspace" : fallback_route;
+    frappe.re_route["admin-workspace"] = is_admin_ui_user() ? undefined : fallback_route;
+    frappe.re_route["okr-workspace"] = is_okr_ui_user() ? undefined : fallback_route;
     frappe.re_route["plan"] = "okr-plan";
     frappe.re_route["objective"] = "okr-objective";
     frappe.re_route["key-result"] = "okr-key-result";
@@ -198,26 +242,36 @@ okr_management.preview_attachment = function (file_url) {
     }
 
     function is_admin_ui_user() {
-        return frappe.session.user === "Administrator";
+        return frappe.session.user === "Administrator" || frappe.user.has_role("OKR Admin");
+    }
+
+    function is_okr_ui_user() {
+        return frappe.user.has_role("OKR User");
     }
 
     function separated_route(route_parts) {
         const parts = Array.isArray(route_parts) ? route_parts : [];
         const first = String(parts[0] || "").toLowerCase();
         const admin_user = is_admin_ui_user();
+        const okr_user = is_okr_ui_user();
+        const admin_only = admin_user && !okr_user;
 
         if (parts.length === 1 && first === "okr-management") {
             return [admin_user ? "admin-workspace" : "okr-workspace"];
         }
 
         if (parts.length === 1 && first === "okr-plan" && !admin_user) {
-            return ["okr-workspace"];
+            return [okr_user ? "okr-workspace" : "home"];
         }
-        if (parts.length === 1 && USER_OKR_LIST_SLUGS.has(first) && admin_user) {
-            return ["admin-workspace"];
+        if (parts.length === 1 && USER_OKR_LIST_SLUGS.has(first) && !okr_user) {
+            return [admin_user ? "admin-workspace" : "home"];
         }
-        if (parts.length === 1 && first === "okr-workspace" && admin_user) return ["admin-workspace"];
-        if (parts.length === 1 && first === "admin-workspace" && !admin_user) return ["okr-workspace"];
+        if (parts.length === 1 && first === "okr-workspace" && !okr_user) {
+            return [admin_user ? "admin-workspace" : "home"];
+        }
+        if (parts.length === 1 && first === "admin-workspace" && !admin_user) {
+            return [okr_user ? "okr-workspace" : "home"];
+        }
         return parts;
     }
 
@@ -253,9 +307,14 @@ okr_management.preview_attachment = function (file_url) {
 
     function enforce_sidebar_separation() {
         const admin_user = is_admin_ui_user();
-        const hidden_names = admin_user
-            ? ["OKR Workspace", "OKR Objective Execution", "OKR Key Result Execution", "OKR Action Item Execution", "Check-In"]
-            : ["Admin Workspace", "OKR Plan Planning", "OKR Sprint Planning"];
+        const okr_user = is_okr_ui_user();
+        const admin_names = ["Admin Workspace", "OKR Plan Planning", "OKR Sprint Planning"];
+        const user_names = ["OKR Workspace", "OKR Objective Execution", "OKR Key Result Execution", "OKR Action Item Execution", "Action Item", "Check-In"];
+        const hidden_names = admin_user && okr_user
+            ? []
+            : admin_user
+                ? user_names
+                : okr_user ? admin_names : [...admin_names, ...user_names];
 
         hidden_names.forEach((name) => {
             jQuery('.sidebar-item-container[item-name="' + CSS.escape(name) + '"]').remove();

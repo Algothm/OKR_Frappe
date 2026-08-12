@@ -1,18 +1,21 @@
 (() => {
-    const admin = frappe.session.user === "Administrator";
+    const admin = frappe.session.user === "Administrator" || frappe.user.has_role("OKR Admin");
+    const okr_user = frappe.user.has_role("OKR User");
+    const admin_only = admin && !okr_user;
+    const fallback = admin ? "/app/admin-workspace" : okr_user ? "/app/okr-workspace" : "/app/home";
     const routes = {
-        "OKR Admin Workspace": admin ? "/app/admin-workspace" : "/app/okr-workspace",
-        "Plan": admin ? "/app/okr-plan" : "/app/okr-workspace",
-        "OKR Workspace": admin ? "/app/admin-workspace" : "/app/okr-workspace",
-        "Objective": admin ? "/app/admin-workspace" : "/app/okr-objective",
-        "Key Result": admin ? "/app/admin-workspace" : "/app/okr-key-result",
-        "Action Item": admin ? "/app/admin-workspace" : "/app/okr-action-item",
-        "Check-In": admin ? "/app/admin-workspace" : "/app/okr-check-in",
+        "OKR Admin Workspace": admin ? "/app/admin-workspace" : fallback,
+        "Plan": admin ? "/app/okr-plan" : fallback,
+        "OKR Workspace": okr_user ? "/app/okr-workspace" : fallback,
+        "Objective": okr_user ? "/app/okr-objective" : fallback,
+        "Key Result": okr_user ? "/app/okr-key-result" : fallback,
+        "Action Item": okr_user ? "/app/okr-action-item" : fallback,
+        "Check-In": okr_user ? "/app/okr-check-in" : fallback,
     };
 
     function leave_obsolete_route() {
         if (window.location.pathname !== "/app/okr-management") return false;
-        window.location.replace(admin ? "/app/admin-workspace" : "/app/okr-workspace");
+        window.location.replace(fallback);
         return true;
     }
 
