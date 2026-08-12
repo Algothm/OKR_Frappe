@@ -232,8 +232,10 @@ def get_period_label(item_date, plan: Document | str) -> str:
 
 @frappe.whitelist()
 def get_plan_context(plan_name: str) -> dict:
-	if frappe.session.user != "Administrator":
-		frappe.throw(_("Only Administrator can access OKR Plan context."), frappe.PermissionError)
+	from okr_management.permissions import is_okr_admin, is_okr_user
+
+	if not (is_okr_admin() or is_okr_user()):
+		frappe.throw(_("Only an OKR User or OKR Admin can access OKR Plan context."), frappe.PermissionError)
 	plan = frappe.get_doc("OKR Plan", plan_name)
 	start_date, end_date = get_plan_timeline(plan)
 	members = [

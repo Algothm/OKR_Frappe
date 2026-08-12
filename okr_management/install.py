@@ -9,13 +9,11 @@ def before_install() -> None:
 
 def after_install() -> None:
 	create_roles()
-	create_workspace()
 
 
 def create_roles() -> None:
 	roles = [
 		"OKR Admin",
-		"OKR Manager",
 		"Department Head",
 		"Team Lead",
 		"Employee",
