@@ -16,7 +16,7 @@ frappe.ui.form.on('OKR Objective Review', {
 });
 
 function is_okr_reviewer() {
-	return frappe.user.has_role('System Manager') || frappe.user.has_role('OKR Admin') || frappe.user.has_role('OKR Manager') || frappe.user.has_role('Team Lead');
+	return frappe.user.has_role('System Manager') || frappe.user.has_role('OKR Admin') || frappe.user.has_role('Team Lead');
 }
 
 function apply_review_permissions(frm) {
