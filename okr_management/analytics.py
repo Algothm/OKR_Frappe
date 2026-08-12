@@ -56,10 +56,10 @@ def average_review_rating() -> str:
 		obj = r.objective
 		if obj not in latest_ratings:
 			latest_ratings[obj] = flt(r.manager_rating) * 5.0
-
+			
 	if not latest_ratings:
 		return "★ 0.0 / 5"
-
+		
 	avg_rating = sum(latest_ratings.values()) / len(latest_ratings)
 	return f"★ {avg_rating:.1f} / 5"
 
@@ -141,3 +141,4 @@ def get_executive_insights(days_without_update: int = 14, risk_progress: float =
 		"owners_without_recent_update": owners_without_recent_update[:20],
 		"recommended_next_actions": recommended_next_actions,
 	}
+

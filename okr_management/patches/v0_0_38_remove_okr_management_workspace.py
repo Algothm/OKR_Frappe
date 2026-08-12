@@ -10,3 +10,4 @@ def execute() -> None:
     if frappe.db.exists("Workspace", "OKR Management"):
         frappe.delete_doc("Workspace", "OKR Management", force=True, ignore_permissions=True)
     frappe.clear_cache()
+

@@ -58,6 +58,7 @@ function sync_level_details(frm) {
     }
 }
 
+
 function configure_objective_status(frm, plan_status) {
     const statuses = ['Draft', 'Active', 'On Hold', 'Completed', 'Closed'];
     frm.set_df_property('status', 'options', statuses.join('\n'));
@@ -90,6 +91,13 @@ function configure_objective_form(frm) {
 
     const locked = !frm.is_new()
         && ['Active', 'On Hold', 'Completed', 'Closed'].includes(frm.doc.status);
+    frm.set_df_property('parent_plan', 'hidden', 0);
+    frm.set_df_property('parent_plan', 'reqd', 1);
+    frm.toggle_display('parent_plan', true);
+    frm.set_df_property('level', 'hidden', 0);
+    frm.set_df_property('level', 'reqd', 1);
+    frm.set_df_property('level', 'options', 'Organization\nDepartment\nTeam\nIndividual');
+    frm.toggle_display('level', true);
     ['parent_plan', 'level', 'level_details', 'teams', 'start_date', 'end_date'].forEach(
         (fieldname) => frm.set_df_property(
             fieldname,
@@ -97,6 +105,19 @@ function configure_objective_form(frm) {
             locked || (fieldname === 'level_details' && frm.doc.level === 'Individual')
         )
     );
+    frm.refresh_field('parent_plan');
+    frm.refresh_field('level');
+    if (frm.is_new()) {
+        ['parent_plan', 'objective_title', 'description', 'level', 'priority', 'status'].forEach((fieldname) => {
+            frm.set_df_property(fieldname, 'hidden', 0);
+            frm.set_df_property(fieldname, 'read_only', 0);
+            frm.toggle_display(fieldname, true);
+            frm.toggle_enable(fieldname, true);
+            frm.fields_dict[fieldname]?.$wrapper?.show();
+            frm.refresh_field(fieldname);
+        });
+        frm.enable_save();
+    }
     setTimeout(() => match_description_heights(frm), 0);
 
     if (window.okr_management && window.okr_management.ui && window.okr_management.ui.apply_context_panel_style) {

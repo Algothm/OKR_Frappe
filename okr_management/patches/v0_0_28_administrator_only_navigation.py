@@ -45,3 +45,4 @@ def execute() -> None:
     for user in TEST_USERS:
         if frappe.db.exists("User", user):
             _remove_admin_roles(user)
+

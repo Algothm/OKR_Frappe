@@ -29,10 +29,6 @@ frappe.ui.form.on('OKR Check In', {
         load_action_item_context(frm);
     },
 
-    progress(frm) {
-        frm.set_value('current_value', frm.doc.progress || 0);
-    },
-
 
     validate(frm) {
         if (!frm.doc.action_item) {
@@ -46,14 +42,15 @@ frappe.ui.form.on('OKR Check In', {
 
 function configure_form(frm) {
     const is_submitted = !frm.is_new() && frm.doc.status === 'Submitted';
-    ['action_item', 'progress', 'action_status', 'achievements', 'attachment'].forEach(
+    ['action_item', 'current_value', 'action_status', 'achievements', 'attachment'].forEach(
         (fieldname) => frm.set_df_property(fieldname, 'read_only', is_submitted)
     );
     if (is_submitted) frm.disable_save();
 
     frm.set_df_property('action_item', 'read_only', is_submitted);
     frm.set_df_property('action_item', 'reqd', 1);
-    frm.set_df_property('progress', 'reqd', 1);
+    frm.set_df_property('current_value', 'reqd', 1);
+    frm.set_df_property('progress', 'hidden', 1);
     frm.set_df_property('action_status', 'reqd', 1);
     frm.set_df_property('achievements', 'reqd', 1);
     frm.set_df_property('checkin_update_heading', 'hidden', 1);
@@ -96,6 +93,8 @@ function load_action_item_context(frm) {
         freeze: false,
         callback(r) {
             const context = r.message || {};
+            frm.okr_metric = context.metric || {};
+            configure_metric_value(frm);
             const updates = {};
             Object.keys(context).forEach(fieldname => {
                 if (frm.fields_dict[fieldname]) {
@@ -107,6 +106,21 @@ function load_action_item_context(frm) {
             });
         }
     });
+}
+
+function configure_metric_value(frm) {
+    const metric = frm.okr_metric || {};
+    const baseline = flt(metric.baseline_value || 0, 2);
+    const target = flt(metric.target_value || 0, 2);
+    const minimum = Math.min(baseline, target);
+    const maximum = Math.max(baseline, target);
+    frm.set_df_property('current_value', 'label', __('Progress'));
+
+    frm.set_df_property('current_value', 'description', __('Allowed range: {0} to {1}. Completion is calculated automatically.', [minimum, maximum]));
+    const field = frm.fields_dict.current_value;
+    if (field && field.$input) {
+        field.$input.attr({ min: minimum, max: maximum, step: 0.01 });
+    }
 }
 
 function clear_context(frm) {
@@ -206,3 +220,5 @@ function render_preview_cards(field, cards, empty_message) {
         'display': 'block'
     });
 }
+
+

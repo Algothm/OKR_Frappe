@@ -21,12 +21,43 @@ class OKRCheckIn(Document):
         self.reported_by = frappe.session.user
         self.checkin_date = nowdate()
         self.status = "Submitted"
-        self.progress = min(100.0, max(0.0, flt(self.progress)))
-        self.progress_percent = self.progress
-        self.current_value = self.progress
-
         if self.action_item:
             self.populate_from_action_item()
+            self.set_metric_progress()
+        else:
+            self.progress = min(100.0, max(0.0, flt(self.progress)))
+            self.progress_percent = self.progress
+
+    def set_metric_progress(self) -> None:
+        key_result = frappe.db.get_value(
+            "OKR Key Result",
+            self.key_result,
+            ["metric_type", "metric_direction", "baseline_value", "target_value"],
+            as_dict=True,
+        )
+        if not key_result:
+            frappe.throw(_("The selected Action Item has no valid Key Result."))
+
+        actual = flt(self.current_value)
+        baseline = flt(key_result.baseline_value)
+        target = flt(key_result.target_value)
+        lower, upper = sorted((baseline, target))
+        if key_result.metric_type == "Boolean":
+            if actual not in (0, 1):
+                frappe.throw(_("Current Value must be 0 or 1 for a Boolean Key Result."))
+            progress = 100.0 if actual else 0.0
+        else:
+            if not lower <= actual <= upper:
+                frappe.throw(_("Current Value must be between {0} and {1}.").format(lower, upper))
+            if target == baseline:
+                progress = 0.0
+            elif key_result.metric_direction == "Decrease":
+                progress = ((baseline - actual) / (baseline - target)) * 100.0
+            else:
+                progress = ((actual - baseline) / (target - baseline)) * 100.0
+
+        self.progress = min(100.0, max(0.0, progress))
+        self.progress_percent = self.progress
 
     def validate(self) -> None:
         ensure_required_link(self.action_item, "Action Item")
@@ -72,13 +103,14 @@ class OKRCheckIn(Document):
         self.company = plan.company
         self.department = getattr(action, "department", None)
 
-        if not self.action_status:
-            self.action_status = "In Progress" if action.status == "Open" else action.status
+        self.action_status = "In Progress" if action.status == "Open" else action.status
 
         self.action_item_title_context = action.action_item_title
+        metric_unit = key_result.currency if key_result.metric_type == "Currency" else key_result.unit_of_measure
+        unit_suffix = f" {metric_unit}" if metric_unit else ""
         self.progress_overview_context = _(
-            "Current: {0}% | Target: 100% | Status: {1}"
-        ).format(flt(action.progress, 2), "Not Started" if action.status == "Open" else action.status)
+            "Current Progress: {0}{1} | Target: {2}{1}"
+        ).format(flt(key_result.current_value, 2), unit_suffix, flt(key_result.target_value, 2))
         self.key_result_name_context = key_result.key_result_title
         self.key_result_description_context = key_result.description
         self.objective_name_context = objective.objective_title
@@ -106,9 +138,6 @@ class OKRCheckIn(Document):
         if self.is_new() and action.status not in ACTIVE_ACTION_STATUSES:
             frappe.throw(_("Check-Ins can only be created for active Action Items."))
 
-        if has_checkin_admin_access():
-            return
-
         employee = get_logged_in_employee(required=True)
 
         if action.assigned_to != employee:
@@ -128,6 +157,7 @@ class OKRCheckIn(Document):
 
 
         if self.key_result:
+            frappe.db.set_value("OKR Key Result", self.key_result, "current_value", flt(self.current_value))
             from okr_management.utils.okr_calculations import recalculate_key_result_progress
             recalculate_key_result_progress(self.key_result)
 
@@ -136,6 +166,7 @@ class OKRCheckIn(Document):
 
     def after_delete(self) -> None:
         if self.key_result:
+            frappe.db.set_value("OKR Key Result", self.key_result, "current_value", flt(self.current_value))
             from okr_management.utils.okr_calculations import recalculate_key_result_progress
             recalculate_key_result_progress(self.key_result)
         sync_checkin_latest_flags(self.action_item)
@@ -177,10 +208,6 @@ def rebuild_all_checkin_latest_flags() -> None:
 		sync_checkin_latest_flags(action_item)
 
 
-def has_checkin_admin_access() -> bool:
-    return bool({"System Manager", "OKR Admin"} & set(frappe.get_roles()))
-
-
 def get_logged_in_employee(required: bool = True) -> str | None:
     employee = frappe.db.get_value(
         "Employee",
@@ -196,11 +223,10 @@ def get_logged_in_employee(required: bool = True) -> str | None:
 @frappe.validate_and_sanitize_search_inputs
 def get_assigned_action_items(doctype, txt, searchfield, start, page_len, filters):
     employee = get_logged_in_employee(required=False)
-    is_admin = has_checkin_admin_access()
-    if not employee and not is_admin:
+
+    if not employee:
         return []
 
-    assignment_condition = "" if is_admin else "and ai.assigned_to = %(employee)s"
     return frappe.db.sql(
         f"""
         select ai.name, ai.action_item_title
@@ -208,7 +234,7 @@ def get_assigned_action_items(doctype, txt, searchfield, start, page_len, filter
         inner join `tabOKR Plan` plan on plan.name = ai.parent_plan
         where ai.status in ('Open', 'In Progress', 'Blocked')
           and plan.status = 'Active'
-          {assignment_condition}
+          and ai.assigned_to = %(employee)s
           and (ai.name like %(txt)s or ai.action_item_title like %(txt)s)
         order by ai.modified desc
         limit %(start)s, %(page_len)s
@@ -226,10 +252,18 @@ def get_action_item_context(action_item: str) -> dict:
     doc = frappe.new_doc("OKR Check In")
     doc.action_item = action_item
     doc.populate_from_action_item()
-    doc.progress = frappe.db.get_value("OKR Action Item", action_item, "progress") or 0
-    return {
+    metric = frappe.db.get_value(
+        "OKR Key Result",
+        doc.key_result,
+        ["metric_type", "metric_direction", "baseline_value", "current_value", "target_value", "currency", "unit_of_measure", "target_progress"],
+        as_dict=True,
+    )
+    doc.current_value = metric.current_value if metric.current_value is not None else (metric.baseline_value or 0)
+    doc.progress = metric.target_progress or 0
+    result = {
         fieldname: doc.get(fieldname)
         for fieldname in (
+            "current_value",
             "progress",
             "key_result",
             "objective",
@@ -252,3 +286,5 @@ def get_action_item_context(action_item: str) -> dict:
             "assigned_to_context",
         )
     }
+    result["metric"] = metric
+    return result

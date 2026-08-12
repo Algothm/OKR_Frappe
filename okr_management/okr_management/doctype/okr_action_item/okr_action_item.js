@@ -92,7 +92,7 @@ function apply_action_item_ui(frm) {
 	frm.toggle_display('context_preview_html', 1);
 
     [
-        'action_item_setup_heading', 'priority', 'status', 'owner_user', 'reviewer', 'department',
+        'action_item_setup_heading', 'progress', 'priority', 'status', 'owner_user', 'reviewer', 'department',
         'parent_plan', 'parent_objective', 'objective_title', 'key_result_title',
         'plan_title', 'plan_description', 'company', 'financial_year', 'sprint_frequency',
         'context_start_date', 'context_end_date', 'timeline_preview', 'progress_visualization_html',
@@ -105,18 +105,12 @@ function apply_action_item_ui(frm) {
         frm.fields_dict.description.$input.css('height', '80px');
     }
 
-    const progress_field = frm.fields_dict.progress;
+
     const assigned_to_field = frm.fields_dict.assigned_to;
-    if (progress_field && progress_field.$wrapper) {
-        progress_field.$wrapper.css({
-            'width': '48%',
-            'display': 'inline-block',
-            'vertical-align': 'top'
-        });
-    }
+
     if (assigned_to_field && assigned_to_field.$wrapper) {
         assigned_to_field.$wrapper.css({
-            'width': '48%',
+            'width': '100%',
             'display': 'inline-block',
             'margin-right': '4%',
             'vertical-align': 'top'

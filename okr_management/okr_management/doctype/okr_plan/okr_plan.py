@@ -23,7 +23,7 @@ class OKRPlan(Document):
 	def before_validate(self) -> None:
 		if not self.owner_user:
 			self.owner_user = frappe.session.user
-
+		
 		# Automatically add the current Plan Admin as the first Admin row if table is empty
 		if self.owner_user and not self.get("members"):
 			self.append("members", {
@@ -63,7 +63,7 @@ class OKRPlan(Document):
 
 	def validate_team_members(self) -> None:
 		members = self.get("members") or []
-
+		
 		# Ensure unique users in the team
 		seen_users = set()
 		for member in members:
@@ -72,12 +72,12 @@ class OKRPlan(Document):
 			if member.member_user in seen_users:
 				frappe.throw(_("User {0} is added more than once in the Plan Team.").format(member.member_user))
 			seen_users.add(member.member_user)
-
+			
 		# Filter roles that are Admin
 		owners = [m for m in members if m.role == "Admin"]
 		if not owners:
 			frappe.throw(_("At least one Admin must always exist in the Plan Team."))
-
+			
 		# Keep owner_user in sync with the first Admin in the table
 		self.owner_user = owners[0].member_user
 
@@ -232,8 +232,10 @@ def get_period_label(item_date, plan: Document | str) -> str:
 
 @frappe.whitelist()
 def get_plan_context(plan_name: str) -> dict:
-	if frappe.session.user != "Administrator":
-		frappe.throw(_("Only Administrator can access OKR Plan context."), frappe.PermissionError)
+	from okr_management.permissions import is_okr_admin, is_okr_user
+
+	if not (is_okr_admin() or is_okr_user()):
+		frappe.throw(_("Only an OKR User or OKR Admin can access OKR Plan context."), frappe.PermissionError)
 	plan = frappe.get_doc("OKR Plan", plan_name)
 	start_date, end_date = get_plan_timeline(plan)
 	members = [

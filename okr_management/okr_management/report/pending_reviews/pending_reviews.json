@@ -11,3 +11,4 @@
   "report_type": "Query Report",
   "query": "select name, key_result, objective, parent_plan as plan, reported_by, round(self_rating * 5) as 'Employee Rating', round(manager_rating * 5) as 'Manager Rating', review_status, checkin_date from `tabOKR Check In` where review_status in ('Draft', 'Submitted') order by checkin_date desc"
 }
+

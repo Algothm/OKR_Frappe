@@ -47,6 +47,23 @@ def get_current_value_from_progress(baseline_value: Any, target_value: Any, prog
 	return round(baseline + ((target - baseline) * flt(progress_percent) / 100.0), 2)
 
 
+def get_metric_progress(key_result: Any) -> float:
+	if not key_result:
+		return 0.0
+	if key_result.get('metric_type') == 'Boolean':
+		return 100.0 if flt(key_result.get('current_value')) else 0.0
+	baseline = flt(key_result.get('baseline_value'))
+	current = flt(key_result.get('current_value'))
+	target = flt(key_result.get('target_value'))
+	if target == baseline:
+		return 0.0
+	if key_result.get('metric_direction') == 'Decrease':
+		progress = ((baseline - current) / (baseline - target)) * 100.0
+	else:
+		progress = ((current - baseline) / (target - baseline)) * 100.0
+	return round(min(100.0, max(0.0, progress)), 2)
+
+
 def recalculate_key_result_progress(key_result_name: str | None) -> None:
 	if not key_result_name or not frappe.db.exists('OKR Key Result', key_result_name):
 		return
@@ -78,7 +95,11 @@ def get_key_result_progress(key_result_name: str, key_result: Any) -> float:
 	When Action Items exist, their average always determines KR progress.
 	When no Action Items exist, fall back to metric-based calculation.
 	"""
-	# Always use average of action items when they exist (regardless of calculation_mode)
+	# Manual KRs are measured by their configured actual value, regardless of Action Items.
+	if key_result and key_result.get('calculation_mode') == 'Manual':
+		return get_metric_progress(key_result)
+
+	# Automatic KRs use the average of their Action Item progress.
 	action_items = frappe.get_all(
 		'OKR Action Item',
 		filters={'parent_key_result': key_result_name, 'status': ['!=', 'Cancelled']},
@@ -156,3 +177,4 @@ def recalculate_from_key_result_doc(doc: Any, method: str | None = None) -> None
 
 def recalculate_from_objective_doc(doc: Any, method: str | None = None) -> None:
 	recalculate_plan_progress(safe_get(doc, 'parent_plan'))
+

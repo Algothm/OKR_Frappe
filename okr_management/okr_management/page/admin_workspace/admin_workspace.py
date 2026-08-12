@@ -8,12 +8,13 @@ from collections import Counter, defaultdict
 import frappe
 from frappe.utils import add_days, flt, getdate, today
 
+from okr_management.permissions import is_okr_admin
 from okr_management.utils.periods import add_period_labels
 
 
 no_cache = 1
 def require_admin_workspace_access() -> None:
-    if frappe.session.user == "Administrator":
+    if is_okr_admin():
         return
     frappe.throw("You are not permitted to access the Admin Workspace.", frappe.PermissionError)
 

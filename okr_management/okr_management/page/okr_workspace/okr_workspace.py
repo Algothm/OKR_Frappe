@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import frappe
+from frappe import _
 from frappe.utils import flt, getdate, nowdate, today
 
 from okr_management.hierarchy_visibility import get_hierarchy_visibility_scope
@@ -9,7 +10,7 @@ from okr_management.utils.periods import add_period_labels
 
 def get_workspace_plan_names() -> list[str]:
     scope = get_hierarchy_visibility_scope()
-    filters = {"status": ["in", ["Draft", "Active"]]}
+    filters = {}
     if scope["read_all"]:
         return frappe.get_all("OKR Plan", filters=filters, pluck="name")
 
@@ -47,7 +48,8 @@ def get_workspace_data(year: str | None = None, plan: str | None = None, level: 
 
     filters = {"parent_plan": ["in", workspace_plan_names]}
     scope = get_hierarchy_visibility_scope()
-    filters["name"] = ["in", list(scope["visible_objectives"])]
+    if not scope["read_all"]:
+        filters["name"] = ["in", list(scope["visible_objectives"])]
     if year:
         filters["financial_year"] = year
     if plan:
@@ -66,9 +68,11 @@ def get_workspace_data(year: str | None = None, plan: str | None = None, level: 
 
     objective_names = [row.name for row in objectives]
     key_results = get_key_results(objective_names)
-    key_results = [row for row in key_results if row.name in scope["visible_key_results"]]
+    if not scope["read_all"]:
+        key_results = [row for row in key_results if row.name in scope["visible_key_results"]]
     action_items = get_action_items([row.name for row in key_results])
-    action_items = [row for row in action_items if row.name in scope["visible_action_items"]]
+    if not scope["read_all"]:
+        action_items = [row for row in action_items if row.name in scope["visible_action_items"]]
     add_period_labels(key_results, action_items)
     histories = get_checkin_history([row.name for row in action_items])
     active_plan_names = set(get_active_plan_names())
@@ -77,14 +81,25 @@ def get_workspace_data(year: str | None = None, plan: str | None = None, level: 
     for action in action_items:
         action["history"] = histories.get(action.name, [])
         action["has_today_checkin"] = any(str(item.get("checkin_date")) == nowdate() for item in action["history"])
-        action["can_checkin"] = action.parent_plan in active_plan_names and (
-            scope["checkin_override"] or action.name in scope["direct_action_items"]
+        action["can_checkin"] = (
+            action.parent_plan in active_plan_names
+            and action.name in scope["direct_action_items"]
         )
         actions_by_kr.setdefault(action.parent_key_result, []).append(action)
 
     krs_by_objective = {}
     for kr in key_results:
         kr["action_items"] = actions_by_kr.get(kr.name, [])
+        reporting_actions = [item for item in kr["action_items"] if item.get("history")]
+        if reporting_actions:
+            latest_values = [flt(item["history"][0].current_value) for item in reporting_actions]
+            action_progress = [flt(item.progress) for item in reporting_actions]
+            kr["target_progress"] = sum(action_progress) / len(action_progress)
+            if kr.metric_type == "Percentage":
+                kr["current_value"] = sum(latest_values) / len(latest_values)
+            elif kr.metric_type in ("Currency", "Number"):
+                kr["current_value"] = sum(latest_values)
+                kr["target_value"] = flt(kr.target_value) * len(reporting_actions)
         kr["completed_action_items"] = sum(1 for item in kr["action_items"] if item.status in ("Completed", "Closed") or flt(item.progress or 0) >= 100)
         kr["total_action_items"] = len(kr["action_items"])
         kr["total_checkins"] = sum(len(item["history"]) for item in kr["action_items"])
@@ -102,29 +117,60 @@ def get_workspace_data(year: str | None = None, plan: str | None = None, level: 
 @frappe.whitelist()
 def get_filter_options() -> dict:
     workspace_plan_names = get_workspace_plan_names()
-    years = frappe.get_all("Fiscal Year", fields=["name"], order_by="year_start_date desc", limit_page_length=80)
-    years = sorted(years, key=lambda row: (0 if row.name == "2026-2027" else 1 if not row.name.startswith("_Test") else 2, row.name), reverse=False)
+    plans = frappe.get_all(
+        "OKR Plan",
+        filters={"name": ["in", workspace_plan_names]} if workspace_plan_names else {"name": ["is", "not set"]},
+        fields=["name", "plan_name", "financial_year", "status", "planned_activation_date"],
+        limit_page_length=100,
+    )
+    status_rank = {"Active": 0, "Draft": 1, "Archived": 2}
+    plans.sort(
+        key=lambda row: (
+            status_rank.get(row.status, 1),
+            -(getdate(row.planned_activation_date).toordinal() if row.planned_activation_date else 0),
+            row.plan_name or row.name,
+        )
+    )
+    default_plan = next((row.name for row in plans if row.status == "Active"), plans[0].name if plans else "")
     return {
-        "years": years[:30],
-        "plans": frappe.get_all(
-            "OKR Plan",
-            filters={"name": ["in", workspace_plan_names]} if workspace_plan_names else {"name": ["is", "not set"]},
-            fields=["name", "plan_name", "financial_year", "status", "planned_activation_date"],
-            order_by="modified desc",
-            limit_page_length=100,
-        ),
+        "plans": plans,
+        "default_plan": default_plan,
         "levels": ["Organization", "Department", "Team", "Individual"],
     }
 
 
 @frappe.whitelist()
-def save_workspace_checkin(action_item: str, progress: float, update: str, blocker: str | None = None, dependency: str | None = None, attachment: str | None = None, status: str | None = None) -> dict:
+def save_workspace_checkin(action_item: str, progress: float | None = None, update: str = "", blocker: str | None = None, dependency: str | None = None, attachment: str | None = None, status: str | None = None, current_value: float | None = None) -> dict:
     scope = get_hierarchy_visibility_scope()
-    if not (scope["read_all"] or scope["checkin_override"]) and action_item not in scope["direct_action_items"]:
+    if action_item not in scope["direct_action_items"]:
         frappe.throw("Only the employee assigned to this Action Item can submit its Check-In", frappe.PermissionError)
+    action = frappe.get_doc("OKR Action Item", action_item)
+    key_result_config = frappe.db.get_value(
+        "OKR Key Result", action.parent_key_result,
+        ["name", "metric_type", "metric_direction", "baseline_value", "current_value", "target_value"],
+        as_dict=True,
+    )
+    actual_value = flt(current_value if current_value is not None else progress)
+    baseline = flt(key_result_config.baseline_value)
+    target = flt(key_result_config.target_value)
+    lower, upper = sorted((baseline, target))
+    if key_result_config.metric_type != "Boolean" and not lower <= actual_value <= upper:
+        frappe.throw(_("Current value must be between {0} and {1}.").format(lower, upper))
+    if key_result_config.metric_type == "Boolean":
+        calculated_progress = 100.0 if actual_value else 0.0
+    elif target == baseline:
+        calculated_progress = 0.0
+    elif key_result_config.metric_direction == "Decrease":
+        calculated_progress = ((baseline - actual_value) / (baseline - target)) * 100.0
+    else:
+        calculated_progress = ((actual_value - baseline) / (target - baseline)) * 100.0
+    calculated_progress = min(100.0, max(0.0, calculated_progress))
+
+    frappe.db.set_value("OKR Key Result", key_result_config.name, "current_value", actual_value)
     doc = frappe.new_doc("OKR Check In")
     doc.action_item = action_item
-    doc.progress = flt(progress)
+    doc.current_value = actual_value
+    doc.progress = calculated_progress
     doc.achievements = update
     doc.blockers = blocker or ""
     doc.dependency = dependency or ""
@@ -185,10 +231,24 @@ def base_response(objectives, year, plan, level, owner) -> dict:
 
 
 
+def add_user_full_names(rows: list, source_field: str, target_field: str) -> list:
+    user_ids = {row.get(source_field) for row in rows if row.get(source_field)}
+    full_names = {
+        row.name: row.full_name or row.name
+        for row in frappe.get_all(
+            "User", filters={"name": ["in", list(user_ids)]}, fields=["name", "full_name"]
+        )
+    } if user_ids else {}
+    for row in rows:
+        user_id = row.get(source_field)
+        row[target_field] = full_names.get(user_id, user_id or "")
+    return rows
+
+
 def get_key_results(objective_names: list[str]) -> list:
     if not objective_names:
         return []
-    return frappe.get_all(
+    rows = frappe.get_all(
         "OKR Key Result",
         filters={"objective": ["in", objective_names]},
         fields=[
@@ -214,18 +274,20 @@ def get_key_results(objective_names: list[str]) -> list:
         order_by="priority desc, modified desc",
         limit_page_length=300,
     )
+    return add_user_full_names(rows, "assignee", "assignee_full_name")
 
 
 def get_action_items(kr_names: list[str]) -> list:
     if not kr_names:
         return []
-    return frappe.get_all(
+    rows = frappe.get_all(
         "OKR Action Item",
         filters={"parent_key_result": ["in", kr_names], "status": ["!=", "Cancelled"]},
         fields=["name", "action_item_title", "parent_key_result", "parent_plan", "owner_user", "status", "priority", "progress", "due_date"],
         order_by="due_date asc, modified desc",
         limit_page_length=800,
     )
+    return add_user_full_names(rows, "owner_user", "owner_full_name")
 
 
 
@@ -261,7 +323,7 @@ def get_checkin_history(action_item_names: list[str]) -> dict:
     rows = frappe.get_all(
         "OKR Check In",
         filters={"action_item": ["in", action_item_names], "status": "Submitted"},
-        fields=["action_item", "name", "checkin_date", "progress", "achievements", "blockers", "reported_by", "attachment"],
+        fields=["action_item", "name", "checkin_date", "progress", "current_value", "action_status", "achievements", "blockers", "reported_by", "attachment"],
         order_by="checkin_date desc, creation desc",
         limit_page_length=2000,
     )

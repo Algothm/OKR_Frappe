@@ -27,7 +27,8 @@ class TestOKRPermissionIntegration(FrappeTestCase):
             "action": self.make_user("action", ["Employee"]),
             "system": self.make_user("system", ["System Manager"]),
             "okr_admin": self.make_user("okr-admin", ["OKR Admin"]),
-            "manager": self.make_user("manager", ["OKR Manager"]),
+            "okr_user": self.make_user("okr-user", ["OKR User"]),
+            "dual_role": self.make_user("dual-role", ["OKR Admin", "OKR User"]),
             "outsider": self.make_user("outsider", ["Employee"]),
             "plain": self.make_user("plain", []),
         }
@@ -78,7 +79,7 @@ class TestOKRPermissionIntegration(FrappeTestCase):
             "due_date": self.kr.end_date,
         }).insert(ignore_permissions=True)
 
-    def test_plan_and_admin_workspace_are_administrator_only(self):
+    def test_plan_and_admin_workspace_are_okr_admin_only(self):
         frappe.set_user(self.users["outsider"])
         with self.assertRaises(frappe.PermissionError):
             frappe.get_list("OKR Plan", pluck="name")
@@ -88,6 +89,13 @@ class TestOKRPermissionIntegration(FrappeTestCase):
         from okr_management.okr_management.doctype.okr_plan.okr_plan import get_plan_context
         with self.assertRaises(frappe.PermissionError):
             get_plan_context(self.plan.name)
+        frappe.set_user(self.users["okr_user"])
+        self.assertIn(self.plan.name, frappe.get_list("OKR Plan", pluck="name"))
+        self.assertEqual(get_plan_context(self.plan.name)["parent_plan"], self.plan.name)
+        self.assertFalse(frappe.has_permission("OKR Plan", "write", doc=self.plan))
+        frappe.set_user(self.users["okr_admin"])
+        self.assertTrue(frappe.has_permission("OKR Plan", "read", doc=self.plan))
+        self.assertTrue(get_dashboard_data())
         frappe.set_user("Administrator")
         self.assertTrue(frappe.has_permission("OKR Plan", "read", doc=self.plan))
 
@@ -106,32 +114,39 @@ class TestOKRPermissionIntegration(FrappeTestCase):
         self.assertNotIn(self.other_action.name, action_scope["visible_action_items"])
         self.assertNotIn(self.kr.name, action_scope["owned_key_results"])
 
-    def test_checkin_override_roles_are_consistent(self):
+    def test_plan_membership_does_not_grant_every_objective_branch(self):
+        self.plan.append("members", {"member_user": self.users["okr_user"], "role": "Admin"})
+        self.plan.save(ignore_permissions=True)
+        member_scope = get_hierarchy_visibility_scope(self.users["okr_user"])
+        self.assertIn(self.plan.name, member_scope["full_plan_names"])
+        self.assertNotIn(self.objective.name, member_scope["visible_objectives"])
+        self.assertNotIn(self.action.name, member_scope["visible_action_items"])
+
+    def test_only_action_item_assignee_can_checkin(self):
         probe = frappe._dict(action_item=self.action.name)
-        self.assertIsNone(checkin_permission(probe, self.users["system"], "create"))
-        self.assertIsNone(checkin_permission(probe, self.users["okr_admin"], "create"))
-        self.assertFalse(checkin_permission(probe, self.users["manager"], "create"))
+        self.assertFalse(checkin_permission(probe, self.users["system"], "create"))
+        self.assertFalse(checkin_permission(probe, self.users["okr_admin"], "create"))
         self.assertFalse(checkin_permission(probe, self.users["outsider"], "create"))
         self.assertTrue(checkin_permission(probe, self.users["action"], "create"))
 
-    def test_workspace_save_honors_override_and_denial(self):
+    def test_workspace_save_allows_assignee_and_denies_overrides(self):
         from okr_management.okr_management.page.okr_workspace.okr_workspace import save_workspace_checkin
 
-        frappe.set_user(self.users["system"])
+        frappe.set_user(self.users["action"])
         proof = frappe.get_doc({
             "doctype": "File",
             "file_name": "okr-checkin-proof.txt",
             "content": "proof",
             "is_private": 1,
         }).insert(ignore_permissions=True)
-        system_result = save_workspace_checkin(
-            self.action.name, 10, "System Manager override", attachment=proof.file_url
+        assignee_result = save_workspace_checkin(
+            self.action.name, 10, "Assignee check-in", attachment=proof.file_url
         )
-        self.assertTrue(system_result.get("name"))
-        self.assertEqual(system_result.get("checkin", {}).get("attachment"), proof.file_url)
+        self.assertTrue(assignee_result.get("name"))
+        self.assertEqual(assignee_result.get("checkin", {}).get("attachment"), proof.file_url)
         proof.reload()
         self.assertEqual(proof.attached_to_doctype, "OKR Check In")
-        self.assertEqual(proof.attached_to_name, system_result.get("name"))
+        self.assertEqual(proof.attached_to_name, assignee_result.get("name"))
 
         from okr_management.okr_management.page.okr_workspace.okr_workspace import get_workspace_data
         frappe.set_user(self.users["objective"])
@@ -140,27 +155,30 @@ class TestOKRPermissionIntegration(FrappeTestCase):
         self.assertIn(proof.file_url, str(get_workspace_data()))
         frappe.set_user("Administrator")
         self.assertIn(proof.file_url, str(get_dashboard_data()))
-        frappe.set_user(self.users["okr_admin"])
-        admin_result = save_workspace_checkin(self.action.name, 20, "OKR Admin override")
-        self.assertTrue(admin_result.get("name"))
-        frappe.set_user(self.users["manager"])
-        with self.assertRaises(frappe.PermissionError):
-            save_workspace_checkin(self.action.name, 30, "Manager must be denied")
-        frappe.set_user(self.users["outsider"])
-        with self.assertRaises(frappe.PermissionError):
-            save_workspace_checkin(self.action.name, 30, "Non-assignee must be denied")
+        for denied_user in (self.users["system"], self.users["okr_admin"], self.users["outsider"]):
+            frappe.set_user(denied_user)
+            with self.assertRaises(frappe.PermissionError):
+                save_workspace_checkin(self.action.name, 20, "Non-assignee must be denied")
 
     def test_user_execution_routes_remain_available_for_non_admin(self):
         source = Path(frappe.get_app_path("okr_management", "public", "js", "okr_management.js")).read_text()
         for slug in ("okr-objective", "okr-key-result", "okr-action-item", "okr-check-in"):
             self.assertIn(f'"{slug}"', source)
-        self.assertIn("USER_OKR_LIST_SLUGS.has(first) && admin_user", source)
+        self.assertIn("USER_OKR_LIST_SLUGS.has(first) && !okr_user", source)
         self.assertNotIn("USER_OKR_LIST_SLUGS.has(first) && !admin_user", source)
 
     def test_sidebar_has_exact_admin_and_user_modes(self):
         from okr_management.navigation import get_workspace_sidebar_items
 
         frappe.set_user(self.users["plain"])
+        no_role_pages = {
+            page.get("name")
+            for page in get_workspace_sidebar_items().get("pages", [])
+            if page.get("module") == "OKR Management"
+        }
+        self.assertEqual(no_role_pages, set())
+
+        frappe.set_user(self.users["okr_user"])
         user_pages = {
             page.get("name")
             for page in get_workspace_sidebar_items().get("pages", [])
@@ -171,7 +189,7 @@ class TestOKRPermissionIntegration(FrappeTestCase):
             {"OKR Workspace", "OKR Objective Execution", "OKR Key Result Execution", "Action Item", "Check-In"},
         )
 
-        frappe.set_user("Administrator")
+        frappe.set_user(self.users["okr_admin"])
         admin_pages = {
             page.get("name")
             for page in get_workspace_sidebar_items().get("pages", [])
@@ -179,13 +197,38 @@ class TestOKRPermissionIntegration(FrappeTestCase):
         }
         self.assertEqual(admin_pages, {"Admin Workspace", "OKR Plan Planning"})
 
-    def test_authenticated_employee_can_create_objective(self):
-        frappe.set_user(self.users["plain"])
-        candidate = frappe.new_doc("OKR Objective")
-        candidate.parent_plan = self.plan.name
-        self.assertTrue(
-            frappe.has_permission("OKR Objective", "create", doc=candidate, user=self.users["plain"])
+        frappe.set_user(self.users["dual_role"])
+        dual_role_pages = {
+            page.get("name")
+            for page in get_workspace_sidebar_items().get("pages", [])
+            if page.get("module") == "OKR Management"
+        }
+        self.assertEqual(
+            dual_role_pages,
+            {
+                "Admin Workspace", "OKR Plan Planning", "OKR Workspace",
+                "OKR Objective Execution", "OKR Key Result Execution", "Action Item", "Check-In",
+            },
         )
+
+    def test_dual_role_workspace_includes_full_hierarchy(self):
+        from okr_management.okr_management.page.okr_workspace.okr_workspace import get_workspace_data
+
+        frappe.set_user(self.users["dual_role"])
+        data = get_workspace_data(year=self.fiscal_year, owner="me")
+        objectives = data.get("objectives", [])
+        self.assertIn(self.objective.name, {row.name for row in objectives})
+        key_results = [kr for objective in objectives for kr in objective.get("key_results", [])]
+        self.assertIn(self.kr.name, {row.name for row in key_results})
+        action_items = [item for kr in key_results for item in kr.get("action_items", [])]
+        self.assertIn(self.action.name, {row.name for row in action_items})
+
+    def test_all_desk_users_can_create_objectives_but_guest_cannot(self):
+        for user in (self.users["okr_user"], self.users["plain"], self.users["outsider"]):
+            frappe.set_user(user)
+            self.assertTrue(frappe.has_permission("OKR Objective", "create"), user)
+        frappe.set_user("Guest")
+        self.assertFalse(frappe.has_permission("OKR Objective", "create"))
 
     def test_active_kr_rejected_under_draft_parent(self):
         frappe.set_user("Administrator")

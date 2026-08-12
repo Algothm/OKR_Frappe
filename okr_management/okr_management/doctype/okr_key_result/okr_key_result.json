@@ -12,17 +12,6 @@
          "report" : 1
       },
       {
-         "export" : 1,
-         "report" : 1,
-         "create" : 1,
-         "role" : "OKR Manager",
-         "email" : 1,
-         "write" : 1,
-         "read" : 1,
-         "delete" : 0,
-         "print" : 1
-      },
-      {
          "role" : "Team Lead",
          "create" : 1,
          "report" : 0,
@@ -51,7 +40,7 @@
          "delete" : 0,
          "print" : 0,
          "create" : 1,
-         "role" : "All",
+         "role" : "OKR User",
          "export" : 0,
          "report" : 0
       },
@@ -153,6 +142,7 @@
          "options" : "Company",
          "label" : "Organization",
          "fieldname" : "company",
+         "ignore_user_permissions" : 1,
          "fieldtype" : "Link"
       },
       {
@@ -162,6 +152,7 @@
          "fieldname" : "financial_year",
          "label" : "Financial Year",
          "fieldtype" : "Link",
+         "ignore_user_permissions" : 1,
          "options" : "Fiscal Year"
       },
       {
@@ -170,6 +161,7 @@
          "options" : "Department",
          "label" : "Department",
          "fieldtype" : "Link",
+         "ignore_user_permissions" : 1,
          "fieldname" : "department"
       },
       {
@@ -214,6 +206,13 @@
          "label" : "Start Date",
          "fieldname" : "start_date",
          "hidden" : 1
+      },
+      {
+         "fieldname" : "target_period",
+         "fieldtype" : "Select",
+         "label" : "Target Period",
+         "reqd" : 1,
+         "in_list_view" : 1
       },
       {
          "in_list_view" : 0,
@@ -453,6 +452,7 @@
       "description",
       "parent_plan",
       "assignee",
+      "target_period",
       "end_date",
       "priority",
       "status",

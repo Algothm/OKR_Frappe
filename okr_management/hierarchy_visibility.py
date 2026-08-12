@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import frappe
 
+from okr_management.permissions import is_okr_admin
+
 
 EDITABLE_PLAN_TEAM_ROLES = {"Admin", "Contributor"}
-CHECKIN_OVERRIDE_ROLES = {"System Manager", "OKR Admin"}
 
 
 def _plan_team_plans(user, roles=None):
@@ -16,8 +17,8 @@ def _plan_team_plans(user, roles=None):
 
 def get_hierarchy_visibility_scope(user=None):
     user = user or frappe.session.user
-    is_administrator = user == "Administrator"
-    if is_administrator:
+    admin_user = is_okr_admin(user)
+    if admin_user:
         return {
             "visible_objectives": set(),
             "visible_key_results": set(),
@@ -28,26 +29,34 @@ def get_hierarchy_visibility_scope(user=None):
             "direct_action_items": set(),
             "full_plan_names": set(),
             "editable_plan_names": set(),
-            "checkin_override": True,
+            "checkin_override": False,
             "read_all": True,
         }
 
-    employees = set(frappe.get_all("Employee", filters={"user_id": user, "status": "Active"}, pluck="name"))
+    employee_rows = frappe.get_all(
+        "Employee",
+        filters={"user_id": user, "status": "Active"},
+        fields=["name", "department"],
+    )
+    employees = {row.name for row in employee_rows}
+    user_departments = {row.department for row in employee_rows if row.department}
     full_plan_names = _plan_team_plans(user)
     editable_plan_names = _plan_team_plans(user, EDITABLE_PLAN_TEAM_ROLES)
-    checkin_override = bool(CHECKIN_OVERRIDE_ROLES & set(frappe.get_roles(user)))
-    full_plan_objectives = set()
-    if full_plan_names:
-        full_plan_objectives.update(
-            frappe.get_all("OKR Objective", filters={"parent_plan": ["in", list(full_plan_names)]}, pluck="name")
+    department_objectives = set()
+    if user_departments and "Department Head" in frappe.get_roles(user):
+        department_objectives.update(
+            frappe.get_all(
+                "OKR Objective",
+                filters={"department": ["in", list(user_departments)]},
+                pluck="name",
+            )
         )
-
     owned_objectives = set(frappe.get_all("OKR Objective", filters={"owner_user": user}, pluck="name"))
     owned_objectives.update(frappe.get_all("OKR Objective", filters={"owner": user}, pluck="name"))
     owned_krs = set(frappe.get_all("OKR Key Result", filters={"assignee": user}, pluck="name"))
     owned_krs.update(frappe.get_all("OKR Key Result", filters={"owner_user": user}, pluck="name"))
 
-    authority_objectives = owned_objectives | full_plan_objectives
+    authority_objectives = owned_objectives | department_objectives
     authority_krs = set(owned_krs)
     if authority_objectives:
         authority_krs.update(
@@ -102,7 +111,7 @@ def get_hierarchy_visibility_scope(user=None):
         "direct_action_items": direct_actions,
         "full_plan_names": full_plan_names,
         "editable_plan_names": editable_plan_names,
-        "checkin_override": checkin_override,
+        "checkin_override": False,
         "read_all": False,
     }
 
@@ -190,8 +199,17 @@ def action_item_permission(doc, user=None, ptype=None):
 def checkin_permission(doc, user=None, ptype=None):
     user = user or frappe.session.user
     scope = get_hierarchy_visibility_scope(user)
-    if scope["read_all"] or scope["checkin_override"]:
-        return None
+    # Frappe checks ``write`` on a blank, unsaved document before uploading an
+    # attachment. The Action Item is not present on that temporary document,
+    # so defer to the DocType's role permissions for this one upload check.
+    # Normal create/validate checks still require an Action Item assigned to
+    # the logged-in employee before the Check-In can be inserted.
+    if ptype == "write" and doc.is_new():
+        return user not in {"Guest", ""} and bool(
+            frappe.db.exists("Employee", {"user_id": user, "status": "Active"})
+        )
     if ptype in {"create", "write", "delete", "submit", "cancel", "amend"}:
         return bool(doc.action_item) and doc.action_item in scope["direct_action_items"]
+    if scope["read_all"]:
+        return None
     return doc.action_item in scope["visible_action_items"]

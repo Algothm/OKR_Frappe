@@ -36,8 +36,8 @@
  "name": "OKR Plan Planning",
  "number_cards": [],
  "owner": "Administrator",
- "parent_page": "Admin Workspace",
- "public": 0,
+ "parent_page": "OKR Admin Workspace",
+ "public": 1,
  "quick_lists": [],
  "roles": [],
  "sequence_id": 2.1,
@@ -49,5 +49,5 @@
    "type": "DocType"
   }
  ],
- "title": "OKR Plan"
+ "title": "Plan"
 }

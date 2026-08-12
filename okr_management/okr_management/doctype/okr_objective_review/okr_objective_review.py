@@ -7,7 +7,7 @@ from frappe.utils import getdate
 from okr_management.utils.okr_validations import ensure_required_link
 
 
-REVIEWER_ROLES = {"System Manager", "OKR Admin", "OKR Manager", "Team Lead"}
+REVIEWER_ROLES = {"System Manager", "OKR Admin", "Team Lead"}
 
 
 def user_can_update_manager_review() -> bool:
@@ -41,7 +41,7 @@ class OKRObjectiveReview(Document):
 		if not user_can_update_manager_review():
 			manager_fields = ("manager_rating", "manager_feedback", "rating", "decision", "review_status", "next_actions")
 			if any(review_value_changed(self, fieldname) for fieldname in manager_fields):
-				frappe.throw("Only an OKR Manager, Team Lead, OKR Admin, or System Manager can update Manager Decision fields.")
+				frappe.throw("Only a Team Lead, OKR Admin, or System Manager can update Manager Decision fields.")
 
 		if self.review_status in {"Approved", "Modified"} and not self.manager_rating:
 			frappe.throw("Manager Rating is required when the review is approved or modified.")

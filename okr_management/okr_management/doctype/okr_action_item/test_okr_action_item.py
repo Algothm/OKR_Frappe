@@ -28,9 +28,13 @@ class TestOKRActionItem(FrappeTestCase):
     def test_due_date_must_stay_inside_key_result(self):
         self.assertRaises(frappe.ValidationError,self.make_action,due_date=add_days(self.kr.end_date,1))
 
-    def test_due_date_is_editable(self):
-        due=add_days(self.kr.start_date,10)
+    def test_due_date_is_editable_inside_target_period(self):
+        due=add_days(self.kr.end_date,-2)
         self.assertEqual(getdate(self.make_action(due_date=due).due_date),getdate(due))
+
+    def test_due_date_cannot_be_outside_target_period(self):
+        due=add_days(self.kr.start_date,10)
+        self.assertRaises(frappe.ValidationError,self.make_action,due_date=due)
 
     def test_context_and_assignment_are_inherited(self):
         action=self.make_action()
@@ -40,3 +44,4 @@ class TestOKRActionItem(FrappeTestCase):
     def test_completion_date_updates(self):
         action=self.make_action(); action.status="Completed"; action.save(ignore_permissions=True)
         self.assertIsNotNone(action.completion_date)
+

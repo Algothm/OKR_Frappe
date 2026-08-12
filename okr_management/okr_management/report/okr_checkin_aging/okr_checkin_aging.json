@@ -11,3 +11,4 @@
   "report_type": "Query Report",
   "query": "select name, key_result, objective, parent_plan as plan, reported_by, checkin_date, progress_percent, round(self_rating * 5) as 'Employee Rating', round(manager_rating * 5) as 'Manager Rating', review_status, status from `tabOKR Check In` order by checkin_date desc"
 }
+

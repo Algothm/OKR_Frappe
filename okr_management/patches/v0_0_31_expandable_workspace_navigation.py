@@ -20,3 +20,4 @@ def execute() -> None:
                 update_modified=False,
             )
     frappe.clear_cache()
+
