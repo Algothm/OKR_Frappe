@@ -1,6 +1,7 @@
 frappe.pages['admin-workspace'].on_page_load = function(wrapper) {
-        new OKRAdminWorkspace(wrapper);
+        wrapper.okr_admin_workspace = new OKRAdminWorkspace(wrapper);
 };
+frappe.pages['admin-workspace'].on_page_show = wrapper => wrapper.okr_admin_workspace?.load();
 
 class OKRAdminWorkspace {
         constructor(wrapper) {
@@ -20,6 +21,7 @@ class OKRAdminWorkspace {
 
                 this.init_shell();
                 this.bind_events();
+                this.bind_live_refresh();
                 this.load_options();
         }
 
@@ -114,6 +116,29 @@ class OKRAdminWorkspace {
                         const count = $(e.currentTarget).data('count') || 3;
                         $(e.currentTarget).html(`${isOpen ? '▾' : '▸'} ${count} check-ins — ${isOpen ? 'hide trail' : 'view trail'}`);
                 });
+        }
+
+        bind_live_refresh() {
+                this._schedule_refresh = () => {
+                        clearTimeout(this._refresh_timer);
+                        this._refresh_timer = setTimeout(() => {
+                                if (!document.hidden && frappe.get_route_str() === 'admin-workspace') this.load();
+                        }, 400);
+                };
+
+                $(window)
+                        .off('focus.okr-admin-workspace')
+                        .on('focus.okr-admin-workspace', this._schedule_refresh);
+
+                if (frappe.realtime) {
+                        this._realtime_refresh = data => {
+                                const doctype = data && (data.doctype || data.doc && data.doc.doctype);
+                                if (['OKR Check In', 'OKR Action Item', 'OKR Key Result', 'OKR Objective', 'OKR Plan'].includes(doctype)) {
+                                        this._schedule_refresh();
+                                }
+                        };
+                        frappe.realtime.on('doc_update', this._realtime_refresh);
+                }
         }
 
         _handle_summary_card_click(card_type) {
@@ -345,7 +370,6 @@ class OKRAdminWorkspace {
                                         <h2 class="okr-section-title" style="margin: 0;">Summary</h2>
                                         <button class="btn btn-xs btn-default okr-clear-card-filter" style="display: none; padding: 2px 8px; font-size: 11px; font-weight: 500;">Clear Card Filter</button>
                                 </div>
-                                ${this.render_progress_legend()}
                         </div>
                         <section class="okr-health-strip">
                           <button class="okr-health-strip__metric-col" data-summary-card="needs_attention" title="Click to scroll to Needs Attention">
@@ -361,7 +385,9 @@ class OKRAdminWorkspace {
                                 <span class="okr-metric-label">Objectives</span>
                           </button>
                           <button class="okr-health-strip__metric-col" data-summary-card="overall_progress" title="Overall progress">
-                                <span class="okr-metric-num okr-metric-num--${this.progress_severity(m.company_progress)}">${this.percent(m.company_progress)}</span>
+                                <span class="okr-admin-progress-ring okr-metric-num--${this.progress_severity(m.company_progress)}" style="--okr-progress: ${this.progress_width(m.company_progress)};">
+                                        <span>${this.percent(m.company_progress)}</span>
+                                </span>
                                 <span class="okr-metric-label">Overall Progress</span>
                           </button>
                           <button class="okr-health-strip__metric-col" data-summary-card="blocked" title="Click to filter blocked objectives">
@@ -411,13 +437,8 @@ class OKRAdminWorkspace {
                 const active = this.filters.plan === row.name;
                 const blocked = cint(row.blocked_objectives || row.blocked || 0);
 
-                // New simplified color logic: Red if blocked, Yellow if 0-50%, Green if >50%
-                let progress_class = 'good';
-                if (blocked > 0) {
-                        progress_class = 'critical';
-                } else if (flt(row.progress) <= 50) {
-                        progress_class = 'warning';
-                }
+                // Progress tone depends only on percentage; blocked state remains a separate status.
+                const progress_class = this.progress_severity(row.progress);
 
                 const freq = this.e(row.sprint_frequency || '');
                 const obj_count = cint(row.objectives || 0);
@@ -588,7 +609,6 @@ class OKRAdminWorkspace {
                                 </div>
                         </section>
 
-                        ${this.render_progress_legend()}
 
                         <!-- Key Results Heading -->
                         <h2 style="font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--ink); margin: 24px 0 12px 2px;">Key results</h2>
@@ -786,8 +806,8 @@ class OKRAdminWorkspace {
 
         progress_severity(val) {
                 const v = flt(val || 0);
-                if (v < 50) return 'critical';
-                if (v <= 75) return 'warning';
+                if (v < 30) return 'critical';
+                if (v <= 70) return 'warning';
                 return 'good';
         }
 
