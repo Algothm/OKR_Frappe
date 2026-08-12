@@ -23,8 +23,8 @@ SETUP_LOCKED_STATUSES = {"Active", "On Hold", "Completed", "Closed"}
 ACTIVE_LOCKED_STATUSES = {"Active", "On Hold", "Completed", "Closed"}
 PLAN_ACTIVE_REQUIRED_STATUSES = {"Active", "On Hold", "Completed", "Closed"}
 COMPLETED_KR_STATUSES = {"Achieved", "Completed", "Closed"}
-GOVERNANCE_ROLES = {"OKR Admin", "OKR Manager"}
-MANAGER_ROLES = {"OKR Admin", "OKR Manager", "Department Head"}
+GOVERNANCE_ROLES = {"OKR Admin"}
+MANAGER_ROLES = {"OKR Admin", "Department Head"}
 
 SETUP_LOCKED_FIELDS = {
     "parent_plan",

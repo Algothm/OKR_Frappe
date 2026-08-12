@@ -1,7 +1,9 @@
 frappe.ui.form.on('OKR Key Result', {
 	onload_post_render(frm) {
-		if (frm.doc.objective) populate_objective_context(frm);
-		else render_key_result_context_preview(frm, {});
+		if (frm.doc.objective) {
+			populate_objective_context(frm);
+			load_target_periods(frm);
+		} else render_key_result_context_preview(frm, {});
 		match_description_heights(frm);
 		hide_section_headers(frm);
 		setup_realtime_inputs(frm);
@@ -21,6 +23,10 @@ frappe.ui.form.on('OKR Key Result', {
 	},
 	objective(frm) {
 		populate_objective_context(frm);
+		load_target_periods(frm);
+	},
+	target_period(frm) {
+		apply_target_period(frm);
 	},
 	assignee(frm) {
 		sync_key_result_owner(frm);
@@ -30,6 +36,9 @@ frappe.ui.form.on('OKR Key Result', {
 	},
 	metric_type(frm) {
 		handle_metric_type_change(frm);
+		apply_key_result_ui(frm);
+	},
+	currency(frm) {
 		apply_key_result_ui(frm);
 	},
 	metric_direction(frm) {
@@ -45,6 +54,35 @@ frappe.ui.form.on('OKR Key Result', {
 		calculate_target_progress(frm);
 	}
 });
+
+function load_target_periods(frm) {
+	if (!frm.doc.objective) return;
+	frappe.call({
+		method: 'okr_management.okr_management.doctype.okr_key_result.okr_key_result.get_target_period_options',
+		args: { objective: frm.doc.objective },
+		callback(r) {
+			frm.__target_periods = r.message || [];
+			frm.set_df_property('target_period', 'options', [''].concat(
+				frm.__target_periods.map(row => row.label)
+			).join('\n'));
+			frm.refresh_field('target_period');
+		}
+	});
+}
+
+function apply_target_period(frm) {
+	const period = (frm.__target_periods || []).find(row => row.label === frm.doc.target_period);
+	if (!period) return;
+	frm.set_df_property('end_date', 'description', __(
+		'Choose a Target Date between {0} and {1}. Action Item Due Dates must be on or before it.',
+		[frappe.datetime.str_to_user(period.start_date), frappe.datetime.str_to_user(period.end_date)]
+	));
+	if (!frm.doc.end_date
+		|| moment(frm.doc.end_date).isBefore(period.start_date)
+		|| moment(frm.doc.end_date).isAfter(period.end_date)) {
+		frm.set_value('end_date', period.end_date);
+	}
+}
 
 function sync_key_result_owner(frm) {
 	if (frm.doc.assignee && frm.doc.owner_user !== frm.doc.assignee) {
@@ -159,26 +197,34 @@ function apply_key_result_ui(frm) {
 
 	let baseline_label = __('Starting Value (Current)');
 	let target_label = __('Target to Achieve');
+	let current_label = __('Current Value');
 
 	if (metric_type === 'Percentage') {
 		baseline_label = __('Starting Percentage (%)');
 		target_label = __('Target Percentage (%)');
+		current_label = __('Current Percentage (%)');
 		if (frm.doc.unit_of_measure != '%') {
 			frm.set_value('unit_of_measure', '%');
 		}
 	} else if (metric_type === 'Number') {
 		baseline_label = __('Starting Value');
 		target_label = __('Target Value');
+		current_label = __('Current Value');
 		if (frm.doc.unit_of_measure === '%') {
 			frm.set_value('unit_of_measure', '');
 		}
 	} else if (metric_type === 'Currency') {
 		baseline_label = __('Starting Amount');
-		target_label = __('Target Amount');
+		const currency = frm.doc.currency || frappe.defaults.get_default('currency') || '';
+		baseline_label = currency ? __('Starting Amount ({0})', [currency]) : __('Starting Amount');
+		target_label = currency ? __('Target Amount ({0})', [currency]) : __('Target Amount');
+		current_label = currency ? __('Current Amount ({0})', [currency]) : __('Current Amount');
 	}
 
 	frm.set_df_property('baseline_value', 'label', baseline_label);
 	frm.set_df_property('target_value', 'label', target_label);
+	frm.set_df_property('current_value', 'label', current_label);
+	frm.set_df_property('current_value', 'description', __('Enter the actual measured value. The system converts it to a completion percentage using Starting Value, Target Value, and Goal Direction.'));
 
 	if (window.okr_management && window.okr_management.ui && window.okr_management.ui.apply_context_panel_style) {
 		window.okr_management.ui.apply_context_panel_style(frm);

@@ -45,11 +45,11 @@ class TestOKRKeyResult(FrappeTestCase):
         self.assertEqual(self.make_kr(current_value=40).target_progress,40)
         self.assertEqual(self.make_kr(baseline_value=10,current_value=6,target_value=2,metric_direction="Decrease").target_progress,50)
 
-    def test_actions_roll_up_without_overwriting_metric_value(self):
+    def test_manual_metric_value_remains_authoritative_with_actions(self):
         kr=self.make_kr(current_value=25)
         self.make_action(kr,20); self.make_action(kr,80)
         recalculate_key_result_progress(kr.name); kr.reload()
-        self.assertEqual(kr.target_progress,50)
+        self.assertEqual(kr.target_progress,25)
         self.assertEqual(kr.current_value,25)
 
     def test_assignee_is_canonical_owner(self):

@@ -5,6 +5,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt, getdate, today
 
+from okr_management.okr_management.doctype.okr_plan.okr_plan import get_derived_periods
 from okr_management.utils.okr_validations import ensure_percentage, ensure_required_link
 
 
@@ -101,7 +102,10 @@ class OKRActionItem(Document):
         if not self.parent_key_result:
             return
         parent_dates = frappe.db.get_value(
-            "OKR Key Result", self.parent_key_result, ["start_date", "end_date"], as_dict=True
+            "OKR Key Result",
+            self.parent_key_result,
+            ["start_date", "end_date", "parent_plan", "target_period"],
+            as_dict=True,
         )
         if not parent_dates:
             return
@@ -109,6 +113,22 @@ class OKRActionItem(Document):
             frappe.throw(_("Due Date cannot be before the Parent Key Result's timeline."))
         if parent_dates.end_date and getdate(self.due_date) > getdate(parent_dates.end_date):
             frappe.throw(_("Due Date cannot be after the Parent Key Result's Target Date."))
+        if parent_dates.parent_plan and parent_dates.target_period:
+            period = next(
+                (
+                    row for row in get_derived_periods(parent_dates.parent_plan)
+                    if row["label"] == parent_dates.target_period
+                ),
+                None,
+            )
+            if period and not (
+                getdate(period["start_date"]) <= getdate(self.due_date) <= getdate(period["end_date"])
+            ):
+                frappe.throw(
+                    _("Due Date must be inside the Key Result's Target Period {0}.").format(
+                        parent_dates.target_period
+                    )
+                )
 
     def validate_lifecycle(self) -> None:
         # Handle completion_date

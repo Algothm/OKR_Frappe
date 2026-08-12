@@ -5,6 +5,8 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import getdate, today
 
+from okr_management.okr_management.doctype.okr_plan.okr_plan import get_derived_periods
+
 
 VALID_PRIORITIES = {"Low", "Medium", "High"}
 VALID_STATUSES = {"Draft", "Planned", "Active", "On Hold", "Completed", "Closed", "Archived"}
@@ -85,6 +87,7 @@ class OKRKeyResult(Document):
         self.validate_measurement()
         self.validate_duplicate_title_in_objective()
         self.validate_dates_inside_objective()
+        self.validate_target_period()
         self.validate_child_due_dates()
         self.validate_lifecycle()
         self.validate_inherited_fields_locked()
@@ -113,6 +116,33 @@ class OKRKeyResult(Document):
         if self.end_date and getdate(self.end_date) > getdate(objective_dates.end_date):
             frappe.throw(_("Target Date cannot be after the Parent Objective's End Date."))
 
+    def validate_target_period(self) -> None:
+        if not self.parent_plan or not self.end_date:
+            return
+        periods = get_derived_periods(self.parent_plan)
+        target_period = self.get("target_period")
+        selected = next((row for row in periods if row["label"] == target_period), None)
+        if not selected and not target_period:
+            selected = next(
+                (
+                    row for row in periods
+                    if getdate(row["start_date"]) <= getdate(self.end_date) <= getdate(row["end_date"])
+                ),
+                None,
+            )
+            if selected:
+                self.target_period = selected["label"]
+        if not selected:
+            frappe.throw(_("Select a valid Target Period for this Plan."))
+        period_start = getdate(selected["start_date"])
+        period_end = getdate(selected["end_date"])
+        target_date = getdate(self.end_date)
+        if not period_start <= target_date <= period_end:
+            frappe.throw(
+                _("Target Date must be inside {0} ({1} to {2}).").format(
+                    self.target_period, period_start, period_end
+                )
+            )
     def validate_child_due_dates(self) -> None:
         if not self.name or not self.end_date:
             return
@@ -280,3 +310,18 @@ class OKRKeyResult(Document):
         recalculate_objective_progress(self.objective)
 
     # Placeholder validation removed
+
+
+@frappe.whitelist()
+def get_target_period_options(objective: str) -> list[dict]:
+    if not frappe.has_permission("OKR Objective", "read", doc=objective):
+        frappe.throw(_("You do not have access to this Objective."), frappe.PermissionError)
+    plan_name = frappe.db.get_value("OKR Objective", objective, "parent_plan")
+    return [
+        {
+            "label": row["label"],
+            "start_date": str(row["start_date"]),
+            "end_date": str(row["end_date"]),
+        }
+        for row in get_derived_periods(plan_name)
+    ]
