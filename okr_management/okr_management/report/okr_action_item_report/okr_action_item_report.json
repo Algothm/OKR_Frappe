@@ -16,7 +16,6 @@
  "roles": [
   {"role": "System Manager"},
   {"role": "OKR Admin"},
-  {"role": "OKR Manager"},
   {"role": "Team Lead"},
   {"role": "Executive Viewer"}
  ]
