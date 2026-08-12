@@ -11,7 +11,8 @@ class OKRWorkspace {
                 this.wrapper = wrapper;
                 this.page = frappe.ui.make_app_page({ parent: wrapper, single_column: true });
                 this.$body = $('<div class="okr-workspace-page"></div>').appendTo(this.page.main);
-                this.filters = Object.assign({ year: '', plan: '', level: 'Department', owner: 'me' }, frappe.session.okr_workspace_filters || {});
+                this.filters = Object.assign({ plan: '', level: 'Department', owner: 'me' }, frappe.session.okr_workspace_filters || {});
+                delete this.filters.year;
                 this.state = { objectives: {}, key_results: {}, action_history: {}, action_checkin: null, selected_objective: null };
                 this.attachment = '';
                 this.saving_checkin = false;
@@ -36,7 +37,6 @@ class OKRWorkspace {
                                         <div class="okr-filter-popover" data-filter-popover style="display:none;">
                                                 <div class="okr-pop-head"><strong>${__('Filter Context')}</strong><button data-close-filter>${frappe.utils.icon('close', 'sm')}</button></div>
                                                 <div class=okr-pop-content>
-                                                <div class="okr-filter-group"><label>${__('Financial Year')}</label><div data-year-pills class="okr-pill-row"></div></div>
                                                 <div class="okr-filter-group"><label>${__('Plan')}</label><div data-plan-pills class="okr-pill-row okr-pill-row-wrap"></div></div>
                                                 <div class="okr-filter-group"><label>${__('Level')}</label><div data-level-pills class="okr-pill-row"></div></div>
                                                 <div class="okr-filter-group"><label>${__('Owner')}</label><div data-owner-pills class="okr-pill-row"></div></div>
@@ -146,7 +146,10 @@ class OKRWorkspace {
                         method: 'okr_management.okr_management.page.okr_workspace.okr_workspace.get_filter_options',
                         callback: (r) => {
                                 this.options = r.message || {};
-                                if (!this.filters.year && (this.options.years || []).length) this.filters.year = this.options.years[0].name;
+                                const availablePlans = new Set((this.options.plans || []).map(plan => plan.name));
+                                if (!this.filters.plan || !availablePlans.has(this.filters.plan)) {
+                                        this.filters.plan = this.options.default_plan || '';
+                                }
                                 this.render_filter_pills();
                                 this.load();
                         }
@@ -160,8 +163,7 @@ class OKRWorkspace {
 
                         frappe.db.get_value('OKR Objective', target_obj, ['parent_plan', 'financial_year', 'level']).then(r => {
                                 const val = r.message || {};
-                                this.filters.year = val.financial_year || '';
-                                this.filters.plan = val.parent_plan || '';
+                                this.filters.plan = val.parent_plan || this.options.default_plan || '';
                                 this.filters.level = val.level || '';
                                 this.filters.owner = 'all';
                                 this.state.selected_objective = target_obj;
@@ -198,10 +200,12 @@ class OKRWorkspace {
 
         render_filter_pills() {
                 if (!this.options) return;
-                this.render_pill_group('year', (this.options.years || []).slice(0, 4).map(y => ({ label: y.name, value: y.name })));
-                this.render_pill_group('plan', [{ label: __('All'), value: '' }].concat((this.options.plans || []).slice(0, 5).map(s => ({ label: s.plan_name || s.name, value: s.name }))));
+                this.render_pill_group('plan', (this.options.plans || []).map(plan => ({
+                        label: (plan.plan_name || plan.name) + (plan.status === 'Archived' ? ` (${__('Archived')})` : ''),
+                        value: plan.name,
+                })));
                 this.render_pill_group('level', (this.options.levels || []).map(l => ({ label: __(l), value: l })));
-                this.render_pill_group('owner', [{ label: __('Assigned to Me'), value: 'me' }, { label: __('All'), value: 'all' }]);
+                this.render_pill_group('owner', [{ label: __('My OKRs'), value: 'me' }, { label: __('Team OKRs'), value: 'all' }]);
         }
 
         render_pill_group(field, items) {
@@ -212,13 +216,13 @@ class OKRWorkspace {
         }
 
         render_active_filters() {
-                const labels = [this.filters.year, this.plan_label(), this.filters.level || __('All Levels'), this.filters.owner === 'me' ? __('Me') : __('All')];
+                const labels = [this.plan_label(), this.filters.level || __('All Levels'), this.filters.owner === 'me' ? __('My OKRs') : __('Team OKRs')];
                 this.$body.find('[data-active-filters]').html(labels.filter(Boolean).map(v => `<span>${frappe.utils.escape_html(v)}</span>`).join(''));
         }
 
         plan_label() {
                 const plan = (this.options.plans || []).find(row => row.name === this.filters.plan);
-                return plan ? (plan.plan_name || plan.name) : __('All Plans');
+                return plan ? (plan.plan_name || plan.name) : __('Plan');
         }
 
         render_content() {
@@ -301,7 +305,6 @@ class OKRWorkspace {
                                                                 </svg>
                                                                 <div class="okr-donut-number">${progress}%</div>
                                                         </div>
-                                                        <span class="okr-summary-card-target">${__('Target: 100%')}</span>
                                                 </div>
                                         </div>
                                         ${(obj.key_results || []).map(kr => this.kr_card(kr)).join('')}
@@ -319,7 +322,7 @@ class OKRWorkspace {
                 const progress = flt(kr.target_progress || 0, 2);
                 const statusClass = progress >= 80 ? 'good' : progress >= 45 ? 'warn' : 'risk';
                 const progressDisplay = this.kr_progress_display(kr);
-                const assigneeEmail = kr.assignee || '';
+                const assigneeName = kr.assignee_full_name || kr.assignee || '';
                 return `
                         <div class="okr-kr-card">
                                 <div class="okr-kr-head" data-toggle-kr="${kr.name}">
@@ -327,8 +330,8 @@ class OKRWorkspace {
                                                 <span class="okr-kr-chevron ${open ? 'expanded' : 'collapsed'}"></span>
                                                 <span class="okr-kr-icon">KR</span>
                                                 <div style="display: flex; flex-direction: column;">
-                                                        <div class="okr-title-with-period"><strong>${frappe.utils.escape_html(kr.key_result_title || kr.name)}</strong>${this.period_badge(kr.period_label)}</div>
-                                                        ${assigneeEmail ? `<span style="font-size: 11px; color: #64748b; font-weight: 500; margin-top: 2px;">Assignee: ${frappe.utils.escape_html(assigneeEmail)}</span>` : ''}
+                                                        <div class="okr-title-with-period"><strong title="${frappe.utils.escape_html(kr.key_result_title || kr.name)}">${frappe.utils.escape_html(kr.key_result_title || kr.name)}</strong>${this.period_badge(kr.period_label)}</div>
+                                                        ${assigneeName ? `<span style="font-size: 11px; color: #64748b; font-weight: 500; margin-top: 2px;">${frappe.utils.escape_html(assigneeName)}</span>` : ''}
                                                 </div>
                                         </div>
                                         <div class="okr-kr-meta">
@@ -345,7 +348,8 @@ class OKRWorkspace {
                 const historyOpen = this.state.action_history[ai.name];
                 const checkinOpen = this.state.action_checkin === ai.name;
                 const historyCount = (ai.history || []).length;
-                const ownerEmail = ai.owner_user || '';
+                const ownerName = ai.owner_full_name || ai.owner_user || '';
+                const progressDisplay = this.action_progress_display(ai, kr);
                 return `
                         <div class="okr-action-block">
                                 <div class="okr-action-row" data-toggle-history="${ai.name}">
@@ -353,8 +357,8 @@ class OKRWorkspace {
                                                 <span class="okr-ai-chevron ${historyOpen ? 'expanded' : 'collapsed'}"></span>
                                                 <span class="okr-ai-icon">AI</span>
                                                 <div style="display: flex; flex-direction: column;">
-                                                        <div class="okr-title-with-period"><strong>${frappe.utils.escape_html(ai.action_item_title || ai.name)}</strong>${this.period_badge(ai.period_label)}</div>
-                                                        ${ownerEmail ? `<span style="font-size: 11px; color: #64748b; font-weight: 500; margin-top: 2px;">Assignee: ${frappe.utils.escape_html(ownerEmail)}</span>` : ''}
+                                                        <div class="okr-title-with-period"><strong title="${frappe.utils.escape_html(ai.action_item_title || ai.name)}">${frappe.utils.escape_html(ai.action_item_title || ai.name)}</strong>${this.period_badge(ai.period_label)}</div>
+                                                        ${ownerName ? `<span style="font-size: 11px; color: #64748b; font-weight: 500; margin-top: 2px;">${frappe.utils.escape_html(ownerName)}</span>` : ''}
                                                 </div>
                                         </div>
                                         <div class="okr-action-meta-col">
@@ -365,26 +369,34 @@ class OKRWorkspace {
                                                 </button>
                                         </div>
                                         <span class="okr-status ${frappe.scrub(ai.status || '')}">${frappe.utils.escape_html(ai.status || '')}</span>
-                                        <div class="okr-action-progress"><div class="okr-bar"><i style="width:${Math.min(100, progress)}%"></i></div><strong>${progress}%</strong></div>
+                                        <div class="okr-action-progress"><div class="okr-bar"><i style="width:${Math.min(100, progress)}%"></i></div><strong>${progressDisplay}</strong></div>
                                         ${ai.can_checkin ? `<button class="btn btn-sm btn-primary-light" data-open-checkin="${ai.name}">${__('+ Check-In')}</button>` : ''}
                                         <a class="okr-open-link" href="/app/okr-action-item/${encodeURIComponent(ai.name)}">${frappe.utils.icon('external-link', 'sm')}</a>
                                 </div>
                                 ${checkinOpen ? this.checkin_panel(ai, kr) : ''}
-                                <div class="okr-history-collapse ${historyOpen ? 'open' : ''}" style="${historyOpen ? 'display: block;' : 'display: none;'}">${this.history_timeline(ai)}</div>
+                                <div class="okr-history-collapse ${historyOpen ? 'open' : ''}" style="${historyOpen ? 'display: block;' : 'display: none;'}">${this.history_timeline(ai, kr)}</div>
                         </div>
                 `;
         }
 
         checkin_panel(ai, kr) {
                 const currentStatus = ai.status || 'In Progress';
+                const metricType = kr.metric_type || 'Percentage';
+                const baseline = flt(kr.baseline_value || 0, 2);
+                const target = flt(kr.target_value || 0, 2);
+                const minimum = Math.min(baseline, target);
+                const maximum = Math.max(baseline, target);
+                const actual = flt(kr.current_value || baseline, 2);
+                const valueLabel = metricType === 'Currency' ? __('Current Amount ({0})', [kr.currency || '']) : (metricType === 'Number' ? __('Current Value') : __('Current Percentage (%)'));
+                const actualDisplay = metricType === 'Currency' ? this.format_kr_currency(actual, kr.currency) : (metricType === 'Percentage' ? `${this.format_kr_number(actual)}%` : this.format_kr_number(actual));
                 return `
                         <div class="okr-inline-checkin">
                                 <div class="okr-inline-context">
-                                        ${this.context(__('Key Result'), kr.key_result_title || kr.name)}${this.context(__('Objective'), kr.objective)}${this.context(__('Reported By'), frappe.session.user)}${this.context(__('Current Progress'), `${flt(ai.progress || 0, 2)}%`)}
+                                        ${this.context(__('Key Result'), kr.key_result_title || kr.name)}${this.context(__('Objective'), kr.objective)}${this.context(__('Reported By'), frappe.session.user)}${this.context(__('Current Value'), actualDisplay)}${this.context(__('Completion'), `${flt(kr.target_progress || 0, 2)}%`)}
                                 </div>
                                 <div class="okr-inline-fields okr-quick-checkin-form">
                                         <div class="okr-checkin-row">
-                                                <label>${__('Progress %')} <input class="form-control" type="number" min="0" max="100" step="0.01" data-ws-progress value="${flt(ai.progress || 0, 2)}"></label>
+                                                <label>${valueLabel} <input class="form-control" type="number" min="${minimum}" max="${maximum}" step="0.01" data-ws-progress value="${actual}"><small class="text-muted">${__('Allowed range: {0} to {1}', [minimum, maximum])}</small></label>
                                                 <label>${__('Status')}
                                                         <select class="form-control" data-ws-status>
                                                                 <option value="In Progress" ${currentStatus === 'In Progress' ? 'selected' : ''}>${__('In Progress')}</option>
@@ -404,12 +416,39 @@ class OKRWorkspace {
                 `;
         }
 
-        history_timeline(ai) {
+        history_timeline(ai, kr) {
                 const rows = ai.history || [];
                 if (!rows.length) return `<div class="okr-history-empty">${__('No check-ins yet this sprint')}</div>`;
                 return `<div class="okr-history"><div class="okr-history-title">${__('Check-In History')}</div>${rows.map(row => `
-                        <div class="okr-history-row"><div><span>${frappe.datetime.str_to_user(row.checkin_date)}</span><strong>${flt(row.progress || 0, 2)}%</strong></div><p>${frappe.utils.escape_html(row.achievements || '')}${row.blockers ? `<br><b>${__('Blocker')}:</b> ${frappe.utils.escape_html(row.blockers)}` : ''}${row.attachment ? `<br><button type="button" class="btn btn-xs btn-default" data-preview-attachment="${frappe.utils.escape_html(row.attachment)}">${__('View Attachment')}</button>` : ''}</p></div>
+                        <div class="okr-history-row">
+                                <div class="okr-history-date"><span>${frappe.datetime.str_to_user(row.checkin_date)}</span></div>
+                                <p>
+                                        <span class="okr-history-details">${frappe.utils.escape_html(row.achievements || '')}${row.blockers ? `<br><b>${__('Blocker')}:</b> ${frappe.utils.escape_html(row.blockers)}` : ''}</span>
+                                        <span class="okr-history-meta">
+                                                ${row.attachment ? `<button type="button" class="okr-history-attachment" data-preview-attachment="${frappe.utils.escape_html(row.attachment)}" title="${__('View Attachment')}" aria-label="${__('View Attachment')}">${frappe.utils.icon('attachment', 'sm')}</button>` : ''}
+                                                <strong class="${row.action_status === 'Blocked' ? 'is-blocked' : ''}">${this.format_checkin_value(row, kr)}</strong>
+                                        </span>
+                                </p>
+                        </div>
                 `).join('')}</div>`;
+        }
+
+        action_progress_display(ai, kr) {
+                const metricType = (kr.metric_type || 'Percentage').toLowerCase();
+                if (metricType === 'percentage') return `${this.format_kr_number(ai.progress || 0)}%`;
+                const latest = (ai.history || [])[0];
+                const value = latest ? latest.current_value : kr.current_value;
+                if (metricType === 'currency') return this.format_kr_currency(value, kr.currency);
+                const unit = (kr.unit_of_measure || '').trim();
+                const display = this.format_kr_number(value);
+                return unit && unit !== '%' ? `${display} ${frappe.utils.escape_html(unit)}` : display;
+        }
+
+        format_checkin_value(row, kr) {
+                const metricType = (kr.metric_type || 'Percentage').toLowerCase();
+                if (metricType === 'currency') return this.format_kr_currency(row.current_value, kr.currency);
+                if (metricType === 'percentage') return `${this.format_kr_number(row.current_value)}%`;
+                return this.format_kr_number(row.current_value);
         }
 
         kr_progress_display(kr) {
@@ -513,11 +552,14 @@ class OKRWorkspace {
                 const action = this.state.action_checkin;
                 const $panel = this.$body.find('.okr-inline-checkin');
                 const $button = $panel.find('[data-save-checkin]');
-                const progress = flt($panel.find('[data-ws-progress]').val(), 2);
+                const $value = $panel.find('[data-ws-progress]');
+                const currentValue = flt($value.val(), 2);
+                const minimum = flt($value.attr('min'), 2);
+                const maximum = flt($value.attr('max'), 2);
                 const update = ($panel.find('[data-ws-update]').val() || '').trim();
                 const args = {
                         action_item: action,
-                        progress,
+                        current_value: currentValue,
                         status: ($panel.find('[data-ws-status]').val() || '').trim(),
                         update,
                         blocker: '',
@@ -526,7 +568,7 @@ class OKRWorkspace {
                 };
 
                 if (!action) return frappe.msgprint(__('Please select an Action Item.'));
-                if (isNaN(progress) || progress < 0 || progress > 100) return frappe.msgprint(__('Progress must be between 0 and 100.'));
+                if (isNaN(currentValue) || currentValue < minimum || currentValue > maximum) return frappe.msgprint(__('Current value must be between {0} and {1}.', [minimum, maximum]));
                 if (!update) return frappe.msgprint(__('Description / Update is required.'));
 
                 this.saving_checkin = true;
