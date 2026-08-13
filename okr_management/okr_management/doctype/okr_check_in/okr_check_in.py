@@ -6,13 +6,15 @@ from frappe.model.document import Document
 from frappe.utils import date_diff, flt, formatdate, nowdate
 
 from okr_management.utils.okr_validations import ensure_percentage, ensure_required_link
+from okr_management.permissions import is_okr_admin
 
 
-ACTIVE_ACTION_STATUSES = ("Open", "In Progress", "Blocked")
+ACTIVE_ACTION_STATUSES = ("Open", "In Progress", "On Hold", "Blocked")
 ACTION_STATUS_MAP = {
     "In Progress": "In Progress",
+    "On Hold": "On Hold",
     "Blocked": "Blocked",
-    "Archived": "Cancelled",
+    "Archived": "Archived",
 }
 
 
@@ -103,7 +105,8 @@ class OKRCheckIn(Document):
         self.company = plan.company
         self.department = getattr(action, "department", None)
 
-        self.action_status = "In Progress" if action.status == "Open" else action.status
+        if not self.action_status:
+            self.action_status = "In Progress" if action.status == "Open" else action.status
 
         self.action_item_title_context = action.action_item_title
         metric_unit = key_result.currency if key_result.metric_type == "Currency" else key_result.unit_of_measure
@@ -137,9 +140,10 @@ class OKRCheckIn(Document):
         action = action or frappe.get_doc("OKR Action Item", self.action_item)
         if self.is_new() and action.status not in ACTIVE_ACTION_STATUSES:
             frappe.throw(_("Check-Ins can only be created for active Action Items."))
+        if is_okr_admin():
+            return
 
         employee = get_logged_in_employee(required=True)
-
         if action.assigned_to != employee:
             frappe.throw(_("You can only create Check-Ins for Action Items assigned to you."))
 
@@ -149,11 +153,16 @@ class OKRCheckIn(Document):
 
     def on_update(self) -> None:
         if self.action_item and frappe.db.exists("OKR Action Item", self.action_item):
-            action = frappe.get_doc("OKR Action Item", self.action_item)
-            action.progress = self.progress
-            action.status = ACTION_STATUS_MAP[self.action_status]
-            action.flags.ignore_permissions = True
-            action.save()
+            action_status = ACTION_STATUS_MAP[self.action_status]
+            frappe.db.set_value(
+                "OKR Action Item",
+                self.action_item,
+                {
+                    "progress": self.progress,
+                    "status": action_status,
+                    "completion_date": nowdate() if action_status == "Completed" else None,
+                },
+            )
 
 
         if self.key_result:
@@ -223,9 +232,11 @@ def get_logged_in_employee(required: bool = True) -> str | None:
 @frappe.validate_and_sanitize_search_inputs
 def get_assigned_action_items(doctype, txt, searchfield, start, page_len, filters):
     employee = get_logged_in_employee(required=False)
-
-    if not employee:
+    admin_access = is_okr_admin()
+    if not employee and not admin_access:
         return []
+
+    assignment_condition = "" if admin_access else "and ai.assigned_to = %(employee)s"
 
     return frappe.db.sql(
         f"""
@@ -234,7 +245,7 @@ def get_assigned_action_items(doctype, txt, searchfield, start, page_len, filter
         inner join `tabOKR Plan` plan on plan.name = ai.parent_plan
         where ai.status in ('Open', 'In Progress', 'Blocked')
           and plan.status = 'Active'
-          and ai.assigned_to = %(employee)s
+          {assignment_condition}
           and (ai.name like %(txt)s or ai.action_item_title like %(txt)s)
         order by ai.modified desc
         limit %(start)s, %(page_len)s

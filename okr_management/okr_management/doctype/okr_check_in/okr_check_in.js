@@ -101,6 +101,10 @@ function load_action_item_context(frm) {
                     updates[fieldname] = context[fieldname] ?? '';
                 }
             });
+            const financial_year = updates.financial_year || '';
+            delete updates.financial_year;
+            frm.doc.financial_year = financial_year;
+            frm.refresh_field('financial_year');
             frm.set_value(updates).then(() => {
                 render_context_preview(frm);
             });

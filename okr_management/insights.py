@@ -474,7 +474,7 @@ def get_action_item_signals(limit: int = 20) -> dict[str, Any]:
 	rows = frappe.get_all(
 		"OKR Action Item",
 		fields=["name", "action_item_title", "parent_key_result", "parent_objective", "parent_plan", "assigned_to", "department", "status", "priority", "start_date", "due_date", "notes", "modified"],
-		filters={"status": ["not in", ["Completed", "Cancelled"]]},
+		filters={"status": ["not in", ["Completed", "Archived"]]},
 		order_by="due_date asc, modified desc",
 		limit_page_length=1000,
 	)
