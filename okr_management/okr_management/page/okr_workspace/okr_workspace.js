@@ -13,7 +13,8 @@ class OKRWorkspace {
                 this.$body = $('<div class="okr-workspace-page"></div>').appendTo(this.page.main);
                 this.filters = Object.assign({ plan: '', level: 'Department', owner: 'me' }, frappe.session.okr_workspace_filters || {});
                 delete this.filters.year;
-                this.state = { objectives: {}, key_results: {}, action_history: {}, action_checkin: null, selected_objective: null };
+                if (this.filters.owner === 'all') this.filters.owner = 'team';
+                this.state = { objectives: {}, key_results: {}, action_history: {}, action_history_all: {}, action_checkin: null, selected_objective: null };
                 this.attachment = '';
                 this.saving_checkin = false;
                 this.render_shell();
@@ -108,13 +109,20 @@ class OKRWorkspace {
                         const actionName = $(e.currentTarget).data('toggle-history');
                         const $block = $(e.currentTarget).closest('.okr-action-block');
                         const $collapse = $block.find('> .okr-history-collapse');
-                        const $chevron = $(e.currentTarget).find('.okr-history-chevron, .okr-ai-chevron');
+                        const $chevron = $block.find('.okr-ai-chevron, .okr-history-chevron');
 
                         this.state.action_history[actionName] = !this.state.action_history[actionName];
                         $collapse.stop(true, true).slideToggle(180);
                         $chevron.toggleClass('expanded', this.state.action_history[actionName]);
                         $chevron.toggleClass('collapsed', !this.state.action_history[actionName]);
                         $(e.currentTarget).find('.okr-history-toggle').attr('aria-expanded', this.state.action_history[actionName] ? 'true' : 'false');
+                });
+                this.$body.on('click', '[data-toggle-all-history]', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const actionName = $(e.currentTarget).data('toggle-all-history');
+                        this.state.action_history_all[actionName] = !this.state.action_history_all[actionName];
+                        this.render_content();
                 });
                 this.$body.on('click', '[data-open-checkin]', (e) => {
                         e.stopPropagation();
@@ -165,7 +173,7 @@ class OKRWorkspace {
                                 const val = r.message || {};
                                 this.filters.plan = val.parent_plan || this.options.default_plan || '';
                                 this.filters.level = val.level || '';
-                                this.filters.owner = 'all';
+                                this.filters.owner = 'team';
                                 this.state.selected_objective = target_obj;
                                 this.render_filter_pills();
                                 this.load();
@@ -205,7 +213,7 @@ class OKRWorkspace {
                         value: plan.name,
                 })));
                 this.render_pill_group('level', (this.options.levels || []).map(l => ({ label: __(l), value: l })));
-                this.render_pill_group('owner', [{ label: __('My OKRs'), value: 'me' }, { label: __('Team OKRs'), value: 'all' }]);
+                this.render_pill_group('owner', [{ label: __('My OKRs'), value: 'me' }, { label: __('My Team OKRs'), value: 'team' }]);
         }
 
         render_pill_group(field, items) {
@@ -216,7 +224,8 @@ class OKRWorkspace {
         }
 
         render_active_filters() {
-                const labels = [this.plan_label(), this.filters.level || __('All Levels'), this.filters.owner === 'me' ? __('My OKRs') : __('Team OKRs')];
+                const ownerLabels = { me: __('My OKRs'), team: __('My Team OKRs') };
+                const labels = [this.plan_label(), this.filters.level || __('All Levels'), ownerLabels[this.filters.owner] || ownerLabels.me];
                 this.$body.find('[data-active-filters]').html(labels.filter(Boolean).map(v => `<span>${frappe.utils.escape_html(v)}</span>`).join(''));
         }
 
@@ -250,6 +259,8 @@ class OKRWorkspace {
         objective_card(obj) {
                 const open = this.state.objectives[obj.name];
                 const progress = cint(obj.progress || 0);
+                const completionClass = progress >= 70 ? 'good' : 'warn';
+                const completionColor = progress >= 70 ? '#16a34a' : '#eab308';
 
                 // Summary cards calculation
                 const key_results = obj.key_results || [];
@@ -289,8 +300,8 @@ class OKRWorkspace {
                                                         <strong class="okr-summary-card-value text-success">${on_track_count}</strong>
                                                 </div>
                                                 <div class="okr-summary-card">
-                                                        <span class="okr-summary-card-label">${__('At Risk')}</span>
-                                                        <strong class="okr-summary-card-value text-warning">${at_risk_count}</strong>
+                                                        <span class="okr-summary-card-label">${__('Need Attention')}</span>
+                                                        <strong class="okr-summary-card-value text-danger">${at_risk_count}</strong>
                                                 </div>
                                                 <div class="okr-summary-card">
                                                         <span class="okr-summary-card-label">${__('Blocked')}</span>
@@ -301,9 +312,9 @@ class OKRWorkspace {
                                                         <div class="okr-donut-chart">
                                                                 <svg class="okr-donut-svg" viewBox="0 0 36 36">
                                                                         <path class="okr-donut-ring" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e2e8f0" stroke-width="3"></path>
-                                                                        <path class="okr-donut-segment" stroke="#2563eb" stroke-width="3" stroke-dasharray="${progress}, 100" stroke-linecap="round" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none"></path>
+                                                                        <path class="okr-donut-segment" stroke="${completionColor}" stroke-width="3" stroke-dasharray="${progress}, 100" stroke-linecap="round" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none"></path>
                                                                 </svg>
-                                                                <div class="okr-donut-number">${progress}%</div>
+                                                                <div class="okr-donut-number ${completionClass}">${progress}%</div>
                                                         </div>
                                                 </div>
                                         </div>
@@ -348,8 +359,13 @@ class OKRWorkspace {
                 const historyOpen = this.state.action_history[ai.name];
                 const checkinOpen = this.state.action_checkin === ai.name;
                 const historyCount = (ai.history || []).length;
+                const actionProgressTone = (ai.status || "").toLowerCase() === "blocked" ? "blocked" : (progress >= 70 ? "good" : "warn");
                 const ownerName = ai.owner_full_name || ai.owner_user || '';
                 const progressDisplay = this.action_progress_display(ai, kr);
+                const latestCheckin = (ai.history || [])[0];
+                const latestCheckinDate = latestCheckin && latestCheckin.checkin_date
+                        ? frappe.datetime.str_to_user(latestCheckin.checkin_date)
+                        : '-';
                 return `
                         <div class="okr-action-block">
                                 <div class="okr-action-row" data-toggle-history="${ai.name}">
@@ -357,21 +373,19 @@ class OKRWorkspace {
                                                 <span class="okr-ai-chevron ${historyOpen ? 'expanded' : 'collapsed'}"></span>
                                                 <span class="okr-ai-icon">AI</span>
                                                 <div style="display: flex; flex-direction: column;">
-                                                        <div class="okr-title-with-period"><strong title="${frappe.utils.escape_html(ai.action_item_title || ai.name)}">${frappe.utils.escape_html(ai.action_item_title || ai.name)}</strong>${this.period_badge(ai.period_label)}</div>
+                                                        <div class="okr-title-with-period"><strong title="${frappe.utils.escape_html(ai.action_item_title || ai.name)}">${frappe.utils.escape_html(ai.action_item_title || ai.name)}</strong></div>
                                                         ${ownerName ? `<span style="font-size: 11px; color: #64748b; font-weight: 500; margin-top: 2px;">${frappe.utils.escape_html(ownerName)}</span>` : ''}
                                                 </div>
                                         </div>
-                                        <div class="okr-action-meta-col">
-                                                <div class="okr-action-due-date">${ai.due_date ? frappe.datetime.str_to_user(ai.due_date) : '-'}</div>
-                                                <button type="button" class="okr-history-toggle" aria-expanded="${historyOpen ? 'true' : 'false'}">
-                                                        <span class="okr-history-chevron ${historyOpen ? 'expanded' : 'collapsed'}"></span>
-                                                        ${historyCount} ${__('Check-ins')}
-                                                </button>
-                                        </div>
                                         <span class="okr-status ${frappe.scrub(ai.status || '')}">${frappe.utils.escape_html(ai.status || '')}</span>
-                                        <div class="okr-action-progress"><div class="okr-bar"><i style="width:${Math.min(100, progress)}%"></i></div><strong>${progressDisplay}</strong></div>
-                                        ${ai.can_checkin ? `<button class="btn btn-sm btn-primary-light" data-open-checkin="${ai.name}">${__('+ Check-In')}</button>` : ''}
-                                        <a class="okr-open-link" href="/app/okr-action-item/${encodeURIComponent(ai.name)}">${frappe.utils.icon('external-link', 'sm')}</a>
+                                        <div class="okr-action-progress ${actionProgressTone}"><div class="okr-bar"><i style="width:${Math.min(100, progress)}%"></i></div><strong>${progressDisplay}</strong></div>
+                                        <div class="okr-action-meta-col">
+                                                <button type="button" class="okr-history-toggle" aria-expanded="${historyOpen ? 'true' : 'false'}">
+                                                        ${historyCount} ${__('Check-ins')}
+                                                        <span class="okr-history-chevron ${historyOpen ? 'expanded' : 'collapsed'}"></span>
+                                                </button>
+                                                <div class="okr-action-last-checkin">${latestCheckinDate}</div>
+                                        </div>
                                 </div>
                                 ${checkinOpen ? this.checkin_panel(ai, kr) : ''}
                                 <div class="okr-history-collapse ${historyOpen ? 'open' : ''}" style="${historyOpen ? 'display: block;' : 'display: none;'}">${this.history_timeline(ai, kr)}</div>
@@ -400,9 +414,10 @@ class OKRWorkspace {
                                                 <label>${__('Status')}
                                                         <select class="form-control" data-ws-status>
                                                                 <option value="In Progress" ${currentStatus === 'In Progress' ? 'selected' : ''}>${__('In Progress')}</option>
-                                                                <option value="Blocked" ${currentStatus === 'Blocked' ? 'selected' : ''}>${__('Blocked')}</option>
                                                                 <option value="On Hold" ${currentStatus === 'On Hold' ? 'selected' : ''}>${__('On Hold')}</option>
-                                                                <option value="Open" ${currentStatus === 'Open' ? 'selected' : ''}>${__('Open')}</option>
+                                                                <option value="Blocked" ${currentStatus === 'Blocked' ? 'selected' : ''}>${__('Blocked')}</option>
+                                                                <option value="Archived" ${currentStatus === 'Archived' ? 'selected' : ''}>${__('Archived')}</option>
+
                                                         </select>
                                                 </label>
                                         </div>
@@ -418,8 +433,17 @@ class OKRWorkspace {
 
         history_timeline(ai, kr) {
                 const rows = ai.history || [];
-                if (!rows.length) return `<div class="okr-history-empty">${__('No check-ins yet this sprint')}</div>`;
-                return `<div class="okr-history"><div class="okr-history-title">${__('Check-In History')}</div>${rows.map(row => `
+                const checkinButton = ai.can_checkin
+                        ? `<button type="button" class="btn btn-sm btn-primary-light okr-history-checkin" data-open-checkin="${ai.name}">${__('+ Check-In')}</button>`
+                        : '';
+                const historyHeader = `<div class="okr-history-head"><div class="okr-history-title">${__('Check-In History')}</div>${checkinButton}</div>`;
+                if (!rows.length) return `<div class="okr-history">${historyHeader}<div class="okr-history-empty">${__('No check-ins yet this sprint')}</div></div>`;
+                const showAll = Boolean(this.state.action_history_all[ai.name]);
+                const visibleRows = showAll ? rows : rows.slice(0, 3);
+                const historyToggle = rows.length > 3
+                        ? `<button type="button" class="okr-history-more" data-toggle-all-history="${ai.name}">${showAll ? __('Show Less') : __('View More ({0})', [rows.length - 3])}</button>`
+                        : '';
+                return `<div class="okr-history">${historyHeader}${visibleRows.map(row => `
                         <div class="okr-history-row">
                                 <div class="okr-history-date"><span>${frappe.datetime.str_to_user(row.checkin_date)}</span></div>
                                 <p>
@@ -430,9 +454,8 @@ class OKRWorkspace {
                                         </span>
                                 </p>
                         </div>
-                `).join('')}</div>`;
+                `).join('')}${historyToggle}</div>`;
         }
-
         action_progress_display(ai, kr) {
                 const metricType = (kr.metric_type || 'Percentage').toLowerCase();
                 if (metricType === 'percentage') return `${this.format_kr_number(ai.progress || 0)}%`;
@@ -513,7 +536,7 @@ class OKRWorkspace {
                         if (ai.due_date) {
                                 const due = moment(ai.due_date);
                                 const isOverdue = due.isBefore(today, 'day');
-                                const isCompleted = ai.status === 'Completed' || ai.status === 'Cancelled' || flt(ai.progress || 0) >= 100;
+                                const isCompleted = ai.status === 'Completed' || ai.status === 'Archived' || flt(ai.progress || 0) >= 100;
                                 if (isOverdue && !isCompleted) return true;
 
                                 const diffDays = due.diff(today, 'days');

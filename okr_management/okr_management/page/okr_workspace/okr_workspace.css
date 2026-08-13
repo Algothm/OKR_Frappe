@@ -53,10 +53,10 @@
 .okr-kr-card > .okr-bar { margin:0 14px 10px; }
 .okr-bar i { display:block; height:100%; background:#2563eb; border-radius:inherit; }
 .okr-action-block { border-top:1px solid #eef2f7; }
-.okr-action-row { display:grid; width:100%; min-width:0; box-sizing:border-box; grid-template-columns:minmax(0,1fr) max-content max-content 165px max-content 38px; column-gap:20px; align-items:center; padding:12px 16px 12px 54px; }
+.okr-action-row { display:grid; width:100%; min-width:0; box-sizing:border-box; grid-template-columns:minmax(320px,1fr) 110px minmax(150px,185px) 130px; column-gap:18px; align-items:start; padding:12px 22px 12px 54px; }
 .okr-action-assignee { padding: 0 14px 12px 54px; font-size: 11.5px; color: #64748b; font-weight: 500; margin-top: -4px; margin-bottom: 4px; }
-.okr-action-meta-col { display:flex; flex-direction:column; align-items:flex-end; text-align:right; gap:4px; color:#64748b; font-size:12px; }
-.okr-action-due-date { color:#64748b; font-weight:500; }
+.okr-action-meta-col { display:flex; flex-direction:column; align-items:flex-start; text-align:left; gap:5px; color:#64748b; font-size:12px; padding-top:2px; }
+.okr-action-due-date, .okr-action-last-checkin { color:#64748b; font-weight:500; white-space:nowrap; }
 .okr-action-title { display:flex; gap:9px; align-items:flex-start; min-width:0; padding-right:12px; }
 .okr-action-title > div { min-width:0; flex:1 1 auto; }
 .okr-action-title strong { display:block; font-weight:800; line-height:1.3; }
@@ -66,13 +66,12 @@
 .okr-owner span { width:24px; height:24px; border-radius:999px; background:#f3e8ff; color:#7c3aed; display:inline-flex; align-items:center; justify-content:center; font-weight:800; }
 .okr-status { display:inline-flex; align-items:center; width:max-content; padding:3px 8px; border-radius:7px; background:#dbeafe; color:#0758d8; font-weight:800; font-size:11px; line-height:1.25; }
 .okr-status.completed { background:#dcfce7; color:#166534; }
+.okr-status.archived { background:#e2e8f0; color:#475569; }
 .okr-status.blocked, .okr-status.on-hold { background:#fee2e2; color:#b91c1c; }
-.okr-action-progress { display:grid; gap:5px; }
+.okr-action-progress { display:grid; gap:5px; padding-top:5px; }
 .okr-action-progress strong { text-align:right; font-size:12px; }
-.okr-open-link { justify-self:center; margin-right:2px; }
 .btn-primary-light { border:1px solid #c7d2fe; background:#eef2ff; color:#4f46e5; border-radius:999px; font-weight:800; }
-.okr-action-row .btn-primary-light { min-height:30px; height:30px; padding:4px 10px; font-size:12px; line-height:1.2; }
-.okr-open-link { width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; border-radius:8px; color:#64748b; }
+.okr-action-row .btn-primary-light { min-height:30px; height:30px; padding:4px 10px; font-size:12px; line-height:1.2; margin-top:0; }
 .okr-inline-checkin { margin:0 14px 14px 72px; border-left:3px solid #8b5cf6; background:#fbfcff; border-radius:0 10px 10px 0; padding:14px; }
 .okr-inline-context { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px; }
 .okr-inline-context span { display:block; color:#94a3b8; font-size:11px; font-weight:800; text-transform:uppercase; }
@@ -322,3 +321,30 @@
 		grid-template-areas: "completion" "risk" "results" "track" "blocked";
 	}
 }
+
+/* Objective completion health follows the admin-side traffic-light convention. */
+.okr-donut-number.good { color:#16a34a; }
+.okr-donut-number.warn { color:#ea580c; }
+.okr-donut-number.risk { color:#dc2626; }
+
+/* Align the latest date under the Check-In count text, not its disclosure icon. */
+.okr-action-last-checkin { padding-left:18px; }
+.okr-checkin-spacer { display:block; width:1px; min-height:30px; }
+.okr-history-more { display:flex; align-items:center; justify-content:center; margin:10px auto 2px; padding:6px 14px; border:1px solid #c7d2fe; border-radius:999px; background:#eef2ff; color:#4f46e5; font-size:12px; font-weight:800; cursor:pointer; }
+.okr-history-more:hover { background:#e0e7ff; border-color:#a5b4fc; }
+.okr-history-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:8px; }
+.okr-history-head .okr-history-title { margin-bottom:0; }
+.okr-history-checkin { flex:0 0 auto; margin-right:2px; }
+.okr-action-row .okr-action-meta-col { justify-self:end; align-items:flex-end; text-align:right; }
+.okr-action-row .okr-history-toggle { justify-content:flex-end; }
+.okr-action-row .okr-action-last-checkin { padding-left:0; padding-right:18px; }
+.okr-action-progress.good .okr-bar i { background:#16a34a; }
+.okr-action-progress.good strong { color:#16a34a; }
+.okr-action-progress.warn .okr-bar i { background:#eab308; }
+.okr-action-progress.warn strong { color:#b77900; }
+.okr-action-progress.blocked .okr-bar i { background:#dc2626; }
+.okr-action-progress.blocked strong { color:#dc2626; }
+.okr-donut-number.warn { color:#b77900; }
+
+.okr-summary-card:nth-child(3) { background:#fef2f2; border-color:#fecaca; }
+.okr-summary-card:nth-child(3) .okr-summary-card-label { color:#991b1b; }
