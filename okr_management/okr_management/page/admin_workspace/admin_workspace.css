@@ -1749,8 +1749,8 @@
 
 /* Plan hierarchy layout guard: override the legacy full-height plan card rule. */
 .okr-plan-grid {
-  align-items: start;
-  grid-auto-rows: max-content;
+  align-items: stretch;
+  grid-auto-rows: auto;
 }
 
 .okr-plan-tree-card.expanded {
@@ -1761,14 +1761,14 @@
 .okr-plan-tree-card {
   position: relative;
   min-width: 0;
-  height: auto;
-  align-self: start;
+  height: 100%;
+  align-self: stretch;
   overflow: visible;
 }
 
 .okr-plan-tree-card > .okr-plan-card {
   position: relative;
-  height: auto;
+  height: 100%;
   min-height: 0;
 }
 
@@ -1883,3 +1883,8 @@
 	line-height: 1;
 	color: currentColor;
 }
+
+.okr-plan-tree-card:not(.expanded) > .okr-plan-card { height: 100%; }
+.okr-plan-tree-card:not(.expanded) .okr-plan-progress { margin-top: auto; }
+.okr-plan-tree-card.expanded { height: auto; align-self: start; }
+.okr-plan-tree-card.expanded > .okr-plan-card { height: auto; }

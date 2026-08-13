@@ -57,6 +57,43 @@ def get_workspace_data(year: str | None = None, plan: str | None = None, level: 
     if level:
         filters["level"] = level
 
+    owner = "team" if owner == "all" else owner
+    owner = owner if owner in {"me", "team"} else "me"
+    if owner == "me" and not scope["read_all"]:
+        my_objectives = set(scope["owned_objectives"])
+        my_key_results = set(scope["owned_key_results"])
+        direct_action_items = set(scope["direct_action_items"])
+        if scope["read_all"]:
+            my_objectives.update(frappe.get_all("OKR Objective", filters={"owner_user": frappe.session.user}, pluck="name"))
+            my_objectives.update(frappe.get_all("OKR Objective", filters={"owner": frappe.session.user}, pluck="name"))
+            my_key_results.update(frappe.get_all("OKR Key Result", filters={"assignee": frappe.session.user}, pluck="name"))
+            my_key_results.update(frappe.get_all("OKR Key Result", filters={"owner_user": frappe.session.user}, pluck="name"))
+            employees = frappe.get_all("Employee", filters={"user_id": frappe.session.user, "status": "Active"}, pluck="name")
+            if employees:
+                direct_action_items.update(frappe.get_all(
+                    "OKR Action Item",
+                    filters={"assigned_to": ["in", employees]},
+                    pluck="name",
+                ))
+        if my_key_results:
+            my_objectives.update(filter(None, frappe.get_all(
+                "OKR Key Result",
+                filters={"name": ["in", list(my_key_results)]},
+                pluck="objective",
+            )))
+        if direct_action_items:
+            direct_krs = set(filter(None, frappe.get_all(
+                "OKR Action Item",
+                filters={"name": ["in", list(direct_action_items)]},
+                pluck="parent_key_result",
+            )))
+            if direct_krs:
+                my_objectives.update(filter(None, frappe.get_all(
+                    "OKR Key Result",
+                    filters={"name": ["in", list(direct_krs)]},
+                    pluck="objective",
+                )))
+        filters["name"] = ["in", list(my_objectives)] if my_objectives else ["in", []]
     objectives = frappe.get_all(
         "OKR Objective",
         filters=filters,
@@ -84,6 +121,7 @@ def get_workspace_data(year: str | None = None, plan: str | None = None, level: 
         action["can_checkin"] = (
             action.parent_plan in active_plan_names
             and action.name in scope["direct_action_items"]
+            and action.status in {"Open", "In Progress", "On Hold", "Blocked"}
         )
         actions_by_kr.setdefault(action.parent_key_result, []).append(action)
 
@@ -282,7 +320,7 @@ def get_action_items(kr_names: list[str]) -> list:
         return []
     rows = frappe.get_all(
         "OKR Action Item",
-        filters={"parent_key_result": ["in", kr_names], "status": ["!=", "Cancelled"]},
+        filters={"parent_key_result": ["in", kr_names], "status": ["!=", "Archived"]},
         fields=["name", "action_item_title", "parent_key_result", "parent_plan", "owner_user", "status", "priority", "progress", "due_date"],
         order_by="due_date asc, modified desc",
         limit_page_length=800,

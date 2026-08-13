@@ -186,7 +186,7 @@
   {
    "fieldname": "progress",
    "fieldtype": "Percent",
-   "label": "Calculated Completion (%)",
+   "label": "Progress",
    "read_only": 1,
    "default": 0,
    "reqd": 0,
@@ -429,7 +429,7 @@
    "fieldname": "action_status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "In Progress\nBlocked\nArchived",
+   "options": "In Progress\nOn Hold\nBlocked\nArchived",
    "default": "In Progress",
    "reqd": 1
   },

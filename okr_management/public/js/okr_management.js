@@ -4,6 +4,75 @@ frappe.listview_settings["OKR Objective"] = {
     onload(listview) {
         $(listview.page.wrapper).addClass("okr-objective-list");
 
+        // Frappe always promotes title_field to the first (subject) column.
+        // Build this list with name as its subject, then restore DocType metadata.
+        const setup_columns = listview.setup_columns.bind(listview);
+        listview.setup_columns = function () {
+            const title_field = this.meta.title_field;
+            this.meta.title_field = null;
+            setup_columns();
+            this.meta.title_field = title_field;
+        };
+        listview.setup_columns();
+
+        // Frappe counts the hidden tag column toward its responsive limit.
+        // Build all meaningful columns before applying the final order.
+        if (Number(listview.list_view_settings.total_fields || 0) < 5) {
+            listview.list_view_settings.total_fields = 5;
+            listview.setup_columns();
+        }
+
+        const preferred_order = ["name", "objective_title", "level", "priority"];
+        const columns_by_field = new Map(
+            listview.columns
+                .filter((column) => column.df?.fieldname)
+                .map((column) => [column.df.fieldname, column])
+        );
+        const preferred_columns = preferred_order
+            .map((fieldname) => {
+                if (columns_by_field.has(fieldname)) return columns_by_field.get(fieldname);
+                const df = frappe.meta.get_docfield(listview.doctype, fieldname);
+                return df ? { type: "Field", df } : null;
+            })
+            .filter(Boolean);
+        const id_column = preferred_columns.find((column) => column.df?.fieldname === "name");
+        const title_column = preferred_columns.find(
+            (column) => column.df?.fieldname === "objective_title"
+        );
+        if (id_column) id_column.type = "Subject";
+        if (title_column) title_column.type = "Field";
+
+        const fixed_columns = listview.columns.filter((column) => !column.df?.fieldname);
+        const remaining_columns = listview.columns.filter(
+            (column) => column.df?.fieldname && !preferred_order.includes(column.df.fieldname)
+        );
+        listview.columns = [...preferred_columns, ...fixed_columns, ...remaining_columns];
+        listview.render_header(true);
+
+        // Frappe can rebuild the default columns after metadata refreshes.
+        // Reapply the requested order immediately before every row render.
+        const original_before_render = listview.before_render.bind(listview);
+        listview.before_render = function () {
+            const current_by_field = new Map(
+                this.columns
+                    .filter((column) => column.df?.fieldname)
+                    .map((column) => [column.df.fieldname, column])
+            );
+            const ordered = preferred_order
+                .map((fieldname) => current_by_field.get(fieldname))
+                .filter(Boolean);
+            const current_id = ordered.find((column) => column.df?.fieldname === "name");
+            const current_title = ordered.find(
+                (column) => column.df?.fieldname === "objective_title"
+            );
+            if (current_id) current_id.type = "Subject";
+            if (current_title) current_title.type = "Field";
+            const non_fields = this.columns.filter((column) => !column.df?.fieldname);
+            this.columns = [...ordered, ...non_fields];
+            this.render_header(true);
+            return original_before_render();
+        };
+
         if (!document.getElementById("okr-objective-list-layout")) {
             $("<style>", { id: "okr-objective-list-layout" })
                 .text(`
@@ -11,7 +80,7 @@ frappe.listview_settings["OKR Objective"] = {
                         min-width: 0;
                         flex: 1 1 auto;
                     }
-                    .okr-objective-list .list-row-col.list-subject {
+                    .okr-objective-list .list-row-col:nth-of-type(2) {
                         flex: 0 0 230px !important;
                         min-width: 230px;
                     }
@@ -31,14 +100,6 @@ frappe.listview_settings["OKR Objective"] = {
                 .appendTo(document.head);
         }
 
-        // Frappe counts the hidden tag column toward its responsive limit.
-        // Keep all four meaningful Objective columns visible at desktop sizes.
-        if (Number(listview.list_view_settings.total_fields || 0) < 5) {
-            listview.list_view_settings.total_fields = 5;
-            listview.setup_columns();
-            listview.render_header(true);
-            listview.refresh(true);
-        }
     },
 };
 

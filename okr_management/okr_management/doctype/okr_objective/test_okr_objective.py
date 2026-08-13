@@ -26,8 +26,8 @@ class TestOKRObjectivePlanContext(FrappeTestCase):
         return frappe.get_doc({
             "doctype": "Fiscal Year",
             "year": f"Objective Plan FY {current.year}",
-            "year_start_date": f"{current.year}-01-01",
-            "year_end_date": f"{current.year}-12-31",
+            "year_start_date": f"{current.year}-04-01",
+            "year_end_date": f"{current.year + 1}-03-31",
         }).insert(ignore_permissions=True).name
 
     def make_plan(self, status="Draft"):

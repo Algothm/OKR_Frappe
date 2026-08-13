@@ -22,7 +22,7 @@
    "fieldname": "role",
    "fieldtype": "Select",
    "label": "Role",
-   "options": "Admin",
+   "options": "Plan Coordinator",
    "reqd": 1,
    "in_list_view": 1,
    "columns": 4

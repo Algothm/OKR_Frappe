@@ -25,8 +25,8 @@ frappe.ui.form.on('OKR Key Result', {
 		populate_objective_context(frm);
 		load_target_periods(frm);
 	},
-	target_period(frm) {
-		apply_target_period(frm);
+tend_date(frm) {
+		sync_target_period_from_date(frm);
 	},
 	assignee(frm) {
 		sync_key_result_owner(frm);
@@ -62,26 +62,25 @@ function load_target_periods(frm) {
 		args: { objective: frm.doc.objective },
 		callback(r) {
 			frm.__target_periods = r.message || [];
-			frm.set_df_property('target_period', 'options', [''].concat(
-				frm.__target_periods.map(row => row.label)
-			).join('\n'));
-			frm.refresh_field('target_period');
+			sync_target_period_from_date(frm);
 		}
 	});
 }
 
-function apply_target_period(frm) {
-	const period = (frm.__target_periods || []).find(row => row.label === frm.doc.target_period);
-	if (!period) return;
-	frm.set_df_property('end_date', 'description', __(
-		'Choose a Target Date between {0} and {1}. Action Item Due Dates must be on or before it.',
-		[frappe.datetime.str_to_user(period.start_date), frappe.datetime.str_to_user(period.end_date)]
-	));
-	if (!frm.doc.end_date
-		|| moment(frm.doc.end_date).isBefore(period.start_date)
-		|| moment(frm.doc.end_date).isAfter(period.end_date)) {
-		frm.set_value('end_date', period.end_date);
+function sync_target_period_from_date(frm) {
+	if (!frm.doc.end_date || !(frm.__target_periods || []).length) {
+		frm.set_df_property('end_date', 'description', __('Select a Target Date. Its period is calculated automatically from the Plan frequency.'));
+		return;
 	}
+	const period = frm.__target_periods.find(row =>
+		!moment(frm.doc.end_date).isBefore(row.start_date) && !moment(frm.doc.end_date).isAfter(row.end_date)
+	);
+	if (!period) return;
+	if (frm.doc.target_period !== period.label) frm.set_value('target_period', period.label);
+	frm.set_df_property('end_date', 'description', __(
+		'Automatically assigned to {0} ({1} to {2}). Action Item Due Dates cannot be after this Target Date.',
+		[period.label, frappe.datetime.str_to_user(period.start_date), frappe.datetime.str_to_user(period.end_date)]
+	));
 }
 
 function sync_key_result_owner(frm) {
@@ -122,20 +121,35 @@ function populate_objective_context(frm) {
 		'end_date'
 	]).then(r => {
 		const objective = r.message || {};
-		frm.set_value({
-			parent_plan: objective.parent_plan || '',
-			objective_title: objective.objective_title || '',
-			company: objective.company || '',
-			financial_year: objective.financial_year || '',
-			department: objective.department || '',
-			plan_owner: objective.plan_owner || '',
-			objective_owner: objective.owner_user || '',
-			objective_level: objective.level || '',
-			start_date: objective.start_date || ''
+		if (!objective.parent_plan) return objective;
+		return frappe.call({
+			method: 'okr_management.okr_management.doctype.okr_plan.okr_plan.get_plan_context',
+			args: { plan_name: objective.parent_plan }
+		}).then(plan_response => {
+			const plan = plan_response.message || {};
+			const fiscal_start = plan.start_date || objective.start_date || '';
+			const fiscal_end = plan.end_date || objective.end_date || '';
+			const values = {
+				parent_plan: objective.parent_plan || '',
+				objective_title: objective.objective_title || '',
+				company: objective.company || '',
+				department: objective.department || '',
+				plan_owner: objective.plan_owner || '',
+				objective_owner: objective.owner_user || '',
+				objective_level: objective.level || '',
+				start_date: fiscal_start
+			};
+			frm.doc.financial_year = plan.financial_year || objective.financial_year || '';
+			frm.refresh_field('financial_year');
+			frm.set_value(values);
+			update_objective_date_range(frm, fiscal_start, fiscal_end);
+			fetch_and_cache_parent_plan_title(frm);
+			render_key_result_context_preview(frm, {
+				...objective,
+				start_date: fiscal_start,
+				end_date: fiscal_end
+			});
 		});
-		update_objective_date_range(frm, objective.start_date, objective.end_date);
-		fetch_and_cache_parent_plan_title(frm);
-		render_key_result_context_preview(frm, objective);
 	});
 }
 

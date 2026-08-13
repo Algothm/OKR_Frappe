@@ -63,7 +63,7 @@
   {
    "fieldtype": "Select",
    "in_list_view": 1,
-   "options": "Open\nIn Progress\nBlocked\nCompleted\nCancelled",
+   "options": "Open\nIn Progress\nOn Hold\nBlocked\nCompleted\nArchived",
    "label": "Status",
    "fieldname": "status",
    "reqd": 1,

@@ -115,7 +115,7 @@ class TestOKRPermissionIntegration(FrappeTestCase):
         self.assertNotIn(self.kr.name, action_scope["owned_key_results"])
 
     def test_plan_membership_does_not_grant_every_objective_branch(self):
-        self.plan.append("members", {"member_user": self.users["okr_user"], "role": "Admin"})
+        self.plan.append("members", {"member_user": self.users["okr_user"], "role": "Plan Coordinator"})
         self.plan.save(ignore_permissions=True)
         member_scope = get_hierarchy_visibility_scope(self.users["okr_user"])
         self.assertIn(self.plan.name, member_scope["full_plan_names"])

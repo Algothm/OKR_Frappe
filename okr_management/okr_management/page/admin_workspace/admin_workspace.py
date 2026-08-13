@@ -147,6 +147,10 @@ def get_plans(filters: dict, plan_names: list[str] | None) -> list[dict]:
     if filters.get("owner"):
         doc_filters["owner_user"] = filters["owner"]
     apply_names_filter(doc_filters, "name", plan_names)
+    # Archived plans stay out of the operational dashboard unless explicitly requested.
+    if not filters.get("plan") and filters.get("status") != "Archived":
+        doc_filters["status"] = ["!=", "Archived"]
+
     return frappe.get_all(
         "OKR Plan", filters=doc_filters,
         fields=["name", "plan_name", "financial_year", "sprint_frequency",
@@ -182,7 +186,7 @@ def get_key_results(filters: dict, plan_names: list[str] | None, objective_names
 
 
 def get_action_items(filters: dict, plan_names: list[str] | None, objective_names: list[str], kr_names: list[str]) -> list[dict]:
-    doc_filters = {"status": ["!=", "Cancelled"]}
+    doc_filters = {"status": ["!=", "Archived"]}
     add_common_filters(doc_filters, {**filters, "owner": ""})
     if filters.get("owner"):
         employee_names = frappe.get_all("Employee", filters={"user_id": filters["owner"]}, pluck="name")
@@ -480,7 +484,7 @@ def is_active_objective(row) -> bool:
 
 
 def is_overdue(row) -> bool:
-    return bool(row.due_date and getdate(row.due_date) < getdate(today()) and row.status not in {"Completed", "Cancelled"})
+    return bool(row.due_date and getdate(row.due_date) < getdate(today()) and row.status not in {"Completed", "Archived"})
 
 
 def department_status(progress: float, blocked_items: int = 0) -> str:

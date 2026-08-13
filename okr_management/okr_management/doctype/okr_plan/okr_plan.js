@@ -10,7 +10,7 @@ frappe.ui.form.on('OKR Plan', {
 		if (frm.doc.owner_user && (!frm.doc.members || frm.doc.members.length === 0)) {
 			frm.add_child('members', {
 				member_user: frm.doc.owner_user,
-				role: 'Admin'
+				role: 'Plan Coordinator'
 			});
 			frm.refresh_field('members');
 		}
@@ -110,7 +110,7 @@ function style_add_member_button(frm) {
 function open_add_member_dialog(frm) {
 	const role_options = (
 		frappe.meta.get_docfield('OKR Plan Team Member', 'role', frm.doc.name).options
-		|| 'Admin'
+		|| 'Plan Coordinator'
 	).split('\n');
 	const dialog = new frappe.ui.Dialog({
 		title: __('Add Member'),
@@ -161,7 +161,7 @@ function customize_row_editor(frm, cdt, cdn) {
 		if ($row_editor.length > 0) {
 			// Hide unnecessary buttons in the top toolbar
 			$row_editor.find('.grid-insert-row-below, .grid-insert-row, .grid-duplicate-row, .grid-move-row, .grid-collapse-row').hide();
-			
+
 			// Customize bottom-right button
 			let $bottom_btn = $row_editor.find('.grid-append-row');
 			if ($bottom_btn.length > 0) {
@@ -244,7 +244,7 @@ function fix_okr_plan_layout(frm) {
 			form_page[0].style.setProperty('gap', '16px 20px', 'important');
 			form_page[0].style.setProperty('align-items', 'flex-start', 'important');
 			form_page[0].style.setProperty('width', '100%', 'important');
-			
+
 			// 4. Force specific sections (like plan_team_section and technical_section) to span full width
 			let plan_team_section = frm.wrapper.find('.form-section[data-fieldname="plan_team_section"]');
 			if (plan_team_section.length) {

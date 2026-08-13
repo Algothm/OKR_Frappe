@@ -30,6 +30,9 @@ frappe.ui.form.on('OKR Action Item', {
     parent_key_result(frm) {
         fetch_parent_key_result_context(frm);
     },
+    due_date(frm) {
+        validate_due_date_against_target(frm);
+    },
     validate(frm) {
         if (!frm.doc.assigned_to) {
             frappe.throw(__('Assigned To is required.'));
@@ -49,7 +52,6 @@ frappe.ui.form.on('OKR Action Item', {
                 parent_plan: frm.doc.parent_plan,
                 company: frm.doc.company,
                 department: frm.doc.department,
-                financial_year: frm.doc.financial_year,
                 reported_by: frappe.session.user
             });
         }
@@ -71,7 +73,12 @@ function apply_route_context(frm) {
     Object.keys(route_options).forEach((key) => {
         const value = route_options[key];
         if (value !== undefined && value !== null && value !== '' && frm.fields_dict[key]) {
-            frm.set_value(key, value);
+            if (key === 'financial_year') {
+                frm.doc.financial_year = value;
+                frm.refresh_field('financial_year');
+            } else {
+                frm.set_value(key, value);
+            }
         }
     });
     if (route_options.parent_key_result) {
@@ -130,6 +137,25 @@ function clear_context(frm) {
     render_context_preview(frm);
 }
 
+function set_due_date_target_guidance(frm, target_date) {
+    const message = target_date
+        ? __('Key Result Target Date: {0}. Due Date must be on or before this date and inside the same target period.', [frappe.datetime.str_to_user(target_date)])
+        : __('Select a Key Result to load its Target Date.');
+    frm.set_df_property('due_date', 'description', message);
+}
+
+function validate_due_date_against_target(frm) {
+    if (!frm.doc.due_date || !frm.doc.context_end_date) return;
+    if (moment(frm.doc.due_date).isAfter(frm.doc.context_end_date)) {
+        frappe.msgprint({
+            title: __('Invalid Due Date'),
+            message: __('Due Date cannot be after the Key Result Target Date {0}.', [frappe.datetime.str_to_user(frm.doc.context_end_date)]),
+            indicator: 'red'
+        });
+        frm.set_value('due_date', '');
+    }
+}
+
 function fetch_parent_key_result_context(frm) {
     if (!frm.doc.parent_key_result) {
         clear_context(frm);
@@ -142,6 +168,7 @@ function fetch_parent_key_result_context(frm) {
     ]).then((response) => {
         if (frm.doc.parent_key_result !== selected_key_result) return;
         const kr = response.message || {};
+        set_due_date_target_guidance(frm, kr.end_date);
         frappe.utils.add_link_title('OKR Key Result', selected_key_result, kr.key_result_title || selected_key_result);
         const values = {
             parent_objective: kr.objective || '',
@@ -149,12 +176,13 @@ function fetch_parent_key_result_context(frm) {
             parent_plan: kr.parent_plan || '',
             company: kr.company || '',
             department: kr.department || '',
-            financial_year: kr.financial_year || '',
             context_start_date: kr.start_date || '',
             context_end_date: kr.end_date || '',
             key_result_title: kr.key_result_title || ''
         };
         if (!frm.doc.reviewer) values.reviewer = kr.reviewer || '';
+        frm.doc.financial_year = kr.financial_year || '';
+        frm.refresh_field('financial_year');
         frm.set_value(values);
         load_plan_context(frm, kr.parent_plan, kr);
     });
@@ -170,18 +198,27 @@ function load_plan_context(frm, plan_name, kr) {
         render_context_preview(frm, { kr });
         return;
     }
-    frappe.db.get_value('OKR Plan', plan_name, ['plan_name', 'description', 'sprint_frequency'])
-        .then((response) => {
-            if (frm.doc.parent_plan !== plan_name) return;
-            const plan = response.message || {};
-            if (plan.plan_name) frappe.utils.add_link_title('OKR Plan', plan_name, plan.plan_name);
-            frm.set_value({
-                plan_title: plan.plan_name || '',
-                plan_description: plan.description || '',
-                sprint_frequency: plan.sprint_frequency || '',
-            });
-            render_context_preview(frm, { kr, plan });
+    frappe.call({
+        method: 'okr_management.okr_management.doctype.okr_plan.okr_plan.get_plan_context',
+        args: { plan_name }
+    }).then((response) => {
+        if (frm.doc.parent_plan !== plan_name) return;
+        const plan = response.message || {};
+        const fiscal_start = plan.start_date || '';
+        const fiscal_end = plan.end_date || '';
+        if (plan.plan_name) frappe.utils.add_link_title('OKR Plan', plan_name, plan.plan_name);
+        frm.doc.financial_year = plan.financial_year || frm.doc.financial_year || '';
+        frm.refresh_field('financial_year');
+        frm.set_value({
+            plan_title: plan.plan_name || '',
+            plan_description: plan.description || '',
+            sprint_frequency: plan.sprint_frequency || '',
         });
+        render_context_preview(frm, {
+            kr: { ...kr, start_date: fiscal_start, end_date: fiscal_end },
+            plan
+        });
+    });
 }
 
 function render_context_preview(frm, context) {

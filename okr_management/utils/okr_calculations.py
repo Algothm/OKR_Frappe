@@ -102,7 +102,7 @@ def get_key_result_progress(key_result_name: str, key_result: Any) -> float:
 	# Automatic KRs use the average of their Action Item progress.
 	action_items = frappe.get_all(
 		'OKR Action Item',
-		filters={'parent_key_result': key_result_name, 'status': ['!=', 'Cancelled']},
+		filters={'parent_key_result': key_result_name, 'status': ['!=', 'Archived']},
 		fields=['progress'],
 	)
 	if action_items:

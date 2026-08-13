@@ -70,6 +70,7 @@ class OKRObjective(Document):
         if values:
             frappe.db.set_value(self.doctype, self.name, values, update_modified=False)
         recalculate_plan_progress(self.parent_plan)
+        archive_plan_when_all_objectives_are_terminal(self.parent_plan)
 
     def on_trash(self) -> None:
         if self.has_key_results():
@@ -91,6 +92,7 @@ class OKRObjective(Document):
             self.department = None
         elif self.level == "Individual":
             self.level_details = self.level_details or frappe.session.user
+            self.owner_user = self.level_details
             self.department = None
         elif self.level == "Department":
             self.level_details = self.level_details or self.department
@@ -343,3 +345,50 @@ def search_available_plans(doctype, txt, searchfield, start, page_len, filters):
         page_length=page_len,
     )
     return [[row.name, row.plan_name or row.name] for row in rows]
+def archive_plan_when_all_objectives_are_terminal(plan_name: str | None) -> None:
+    """Archive a plan after its final objective is completed or closed."""
+    if not plan_name or frappe.db.get_value("OKR Plan", plan_name, "status") == "Archived":
+        return
+
+    statuses = frappe.get_all(
+        "OKR Objective",
+        filters={"parent_plan": plan_name},
+        pluck="status",
+        limit_page_length=10000,
+    )
+    if statuses and all(status in {"Completed", "Closed"} for status in statuses):
+        frappe.db.set_value("OKR Plan", plan_name, "status", "Archived")
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def search_plan_departments(doctype, txt, searchfield, start, page_len, filters):
+    """Return Departments only for the selected Plan's company."""
+    from okr_management.permissions import is_okr_admin, is_okr_user
+
+    if not (is_okr_admin() or is_okr_user()):
+        frappe.throw(_("Only an OKR User or OKR Admin can select a Department."), frappe.PermissionError)
+
+    parent_plan = (filters or {}).get("parent_plan") if isinstance(filters, dict) else None
+    if not parent_plan:
+        return []
+
+    plan = frappe.db.get_value(
+        "OKR Plan",
+        {"name": parent_plan, "status": ["in", ["Draft", "Active"]]},
+        ["name", "company"],
+        as_dict=True,
+    )
+    if not plan or not plan.company:
+        return []
+
+    rows = frappe.get_all(
+        "Department",
+        filters={"company": plan.company},
+        or_filters={"name": ["like", f"%{txt}%"], "department_name": ["like", f"%{txt}%"]},
+        fields=["name", "department_name"],
+        order_by="department_name asc",
+        start=start,
+        page_length=page_len,
+    )
+    return [[row.name, row.department_name or row.name] for row in rows]

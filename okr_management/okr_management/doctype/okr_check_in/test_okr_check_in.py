@@ -39,6 +39,31 @@ class TestOKRCheckIn(FrappeTestCase):
         self.assertEqual(first.is_latest,0)
         self.assertEqual(second.is_latest,1)
 
+    def test_selected_status_is_preserved_and_updates_action_item(self):
+        self.activate()
+
+        frappe.set_user(self.employee_user)
+        on_hold = frappe.get_doc({
+            "doctype": "OKR Check In",
+            "action_item": self.action.name,
+            "current_value": 50,
+            "achievements": "Paused for a dependency",
+            "action_status": "On Hold",
+        }).insert(ignore_permissions=True)
+        self.action.reload()
+        self.assertEqual(on_hold.action_status, "On Hold")
+        self.assertEqual(self.action.status, "On Hold")
+
+        resumed = frappe.get_doc({
+            "doctype": "OKR Check In",
+            "action_item": self.action.name,
+            "current_value": 60,
+            "achievements": "Dependency cleared",
+            "action_status": "In Progress",
+        }).insert(ignore_permissions=True)
+        self.action.reload()
+        self.assertEqual(resumed.action_status, "In Progress")
+        self.assertEqual(self.action.status, "In Progress")
     def test_submitted_checkin_is_read_only(self):
         self.activate(); checkin=self.checkin(); checkin.achievements="Changed"
         self.assertRaises(frappe.ValidationError,checkin.save)

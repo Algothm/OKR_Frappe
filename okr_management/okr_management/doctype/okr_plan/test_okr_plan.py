@@ -33,8 +33,8 @@ class TestOKRPlanPhase1(FrappeTestCase):
         return frappe.get_doc({
             "doctype": "Fiscal Year",
             "year": "FY-" + str(current_date.year),
-            "year_start_date": f"{current_date.year}-01-01",
-            "year_end_date": f"{current_date.year}-12-31",
+            "year_start_date": f"{current_date.year}-04-01",
+            "year_end_date": f"{current_date.year + 1}-03-31",
         }).insert(ignore_permissions=True).name
 
     def make_plan(self, status="Draft", **overrides):
@@ -210,7 +210,7 @@ class TestOKRPlanPhase1(FrappeTestCase):
         plan = self.make_plan()
         self.assertTrue(len(plan.members) > 0)
         self.assertEqual(plan.members[0].member_user, "Administrator")
-        self.assertEqual(plan.members[0].role, "Admin")
+        self.assertEqual(plan.members[0].role, "Plan Coordinator")
 
     def test_plan_team_multiple_members(self):
         for email in ("test_user1@example.com", "test_user2@example.com"):
@@ -225,11 +225,11 @@ class TestOKRPlanPhase1(FrappeTestCase):
         plan = self.make_plan()
         plan.append("members", {
             "member_user": "test_user1@example.com",
-            "role": "Admin"
+            "role": "Plan Coordinator"
         })
         plan.append("members", {
             "member_user": "test_user2@example.com",
-            "role": "Admin"
+            "role": "Plan Coordinator"
         })
         plan.save(ignore_permissions=True)
         plan.reload()
@@ -237,10 +237,10 @@ class TestOKRPlanPhase1(FrappeTestCase):
 
     def test_plan_team_admin_role_is_valid(self):
         plan = self.make_plan()
-        plan.members[0].role = "Admin"
+        plan.members[0].role = "Plan Coordinator"
         plan.save(ignore_permissions=True)
         plan.reload()
-        self.assertEqual(plan.members[0].role, "Admin")
+        self.assertEqual(plan.members[0].role, "Plan Coordinator")
 
 
     def test_period_label_is_derived_from_full_fiscal_year(self):
@@ -277,6 +277,6 @@ class TestOKRPlanPhase1(FrappeTestCase):
         plan = self.make_plan()
         plan.append("members", {
             "member_user": "Administrator",
-            "role": "Admin"
+            "role": "Plan Coordinator"
         })
         self.assertRaises(frappe.ValidationError, plan.save)

@@ -95,6 +95,12 @@ class OKRAdminWorkspace {
                                 this.open_objective_detail(row);
                         }
                 });
+                this.body.on('click', '[data-achieved-row]', (e) => {
+                        const index = $(e.currentTarget).data('achieved-index');
+                        const row = (this.data.achieved_objectives || [])[index];
+                        if (row) this.open_objective_detail(row);
+                });
+
 
                 this.body.on('click', '.okr-clear-card-filter', (e) => {
                         e.preventDefault();
@@ -168,7 +174,9 @@ class OKRAdminWorkspace {
                         this.body.find('.okr-plan-grid').hide();
                         // Show Needs Attention list and show all attention rows
                         this.body.find('#okr-needs-attention-section').show();
-                        this.body.find('.okr-attention-card').show();
+                        this.body.find('#okr-needs-attention-card').show();
+                        this.body.find('#okr-achieved-section').hide();
+                        this.body.find('#okr-achieved-card').hide();
                         this.body.find('.okr-attention-row').show();
                         scroll_to('#okr-needs-attention-section');
 
@@ -176,9 +184,10 @@ class OKRAdminWorkspace {
                         // Show everything, scroll to plans section
                         this.body.find('#okr-plans-section').show();
                         this.body.find('.okr-plan-grid').show();
-                        this.body.find('#okr-needs-attention-section').show();
-                        this.body.find('.okr-attention-card').show();
-                        this.body.find('.okr-attention-row').show();
+                        this.body.find('#okr-needs-attention-section').hide();
+                        this.body.find('#okr-needs-attention-card').hide();
+                        this.body.find('#okr-achieved-section').hide();
+                        this.body.find('#okr-achieved-card').hide();
                         this.body.find('.okr-plan-card').show();
                         scroll_to('#okr-plans-section');
 
@@ -188,7 +197,9 @@ class OKRAdminWorkspace {
                         this.body.find('.okr-plan-grid').show();
                         // Show Needs Attention section
                         this.body.find('#okr-needs-attention-section').show();
-                        this.body.find('.okr-attention-card').show();
+                        this.body.find('#okr-needs-attention-card').show();
+                        this.body.find('#okr-achieved-section').hide();
+                        this.body.find('#okr-achieved-card').hide();
 
                         // Filter attention rows: show only rows where reason contains 'Blocked'
                         const attn_rows = this.body.find('.okr-attention-row');
@@ -209,24 +220,15 @@ class OKRAdminWorkspace {
                         frappe.show_alert({ message: __('Showing only Blocked items'), indicator: 'orange' });
 
                 } else if (card_type === 'achieved') {
-                        // Show plans section
-                        this.body.find('#okr-plans-section').show();
-                        this.body.find('.okr-plan-grid').show();
-                        // Filter attention rows: hide — achieved items won't be in attention list
+                        this.body.find('#okr-plans-section').hide();
+                        this.body.find('.okr-plan-grid').hide();
                         this.body.find('#okr-needs-attention-section').hide();
                         this.body.find('.okr-attention-card').hide();
-                        this.body.find('.okr-attention-row').hide();
-                        // Filter plan cards: show only plans with progress >= 100 or status Completed
-                        const all_plans = this.data.plan_summaries || [];
-                        this.body.find('.okr-plan-card').each((i, el) => {
-                                const plan_name = $(el).data('plan-name');
-                                const plan = all_plans.find(p => p.name === plan_name);
-                                const progress = plan ? flt(plan.progress || 0) : 0;
-                                const status = plan ? (plan.status || '') : '';
-                                $(el).toggle(progress >= 100 || status === 'Completed');
-                        });
-                        scroll_to('#okr-plans-section');
-                        frappe.show_alert({ message: __('Showing only Achieved plans'), indicator: 'green' });
+                        this.body.find('#okr-achieved-section').show();
+                        this.body.find('#okr-achieved-card').show();
+                        this.body.find('#okr-achieved-card .okr-attention-row').show();
+                        scroll_to('#okr-achieved-section');
+                        frappe.show_alert({ message: __('Showing only Achieved objectives'), indicator: 'green' });
                 }
         }
 
@@ -236,10 +238,11 @@ class OKRAdminWorkspace {
                 this.body.find('.okr-clear-card-filter').hide();
                 this.body.find('#okr-plans-section').show();
                 this.body.find('.okr-plan-grid').show();
-                this.body.find('#okr-needs-attention-section').show();
-                this.body.find('.okr-attention-card').show();
-                this.body.find('.okr-attention-row').show();
                 this.body.find('.okr-plan-card').show();
+                this.body.find('#okr-needs-attention-section').hide();
+                this.body.find('#okr-needs-attention-card').hide();
+                this.body.find('#okr-achieved-section').hide();
+                this.body.find('#okr-achieved-card').hide();
         }
 
         load_options() {
@@ -275,66 +278,16 @@ class OKRAdminWorkspace {
 
                 if (this.current_view === 'detail' && this.selected_objective) {
                         container.html(this.render_detail_html(this.selected_objective));
-                } else {
-                        container.html(this.render_dashboard_html());
-                        this.render_filters();
-                        this.render_filter_summary();
+                        return;
+                }
 
-                        if (this._active_card_filter) {
-                                const card_type = this._active_card_filter;
-                                this.body.find('[data-summary-card]').removeClass('okr-card-active');
-                                this.body.find(`[data-summary-card="${card_type}"]`).addClass('okr-card-active');
-                                this.body.find('.okr-clear-card-filter').show();
-
-                                if (card_type === 'needs_attention') {
-                                        this.body.find('#okr-plans-section').hide();
-                                        this.body.find('.okr-plan-grid').hide();
-                                        this.body.find('#okr-needs-attention-section').show();
-                                        this.body.find('.okr-attention-card').show();
-                                        this.body.find('.okr-attention-row').show();
-                                } else if (card_type === 'blocked') {
-                                        this.body.find('#okr-plans-section').show();
-                                        this.body.find('.okr-plan-grid').show();
-                                        this.body.find('#okr-needs-attention-section').show();
-                                        this.body.find('.okr-attention-card').show();
-
-                                        const attn_rows = this.body.find('.okr-attention-row');
-                                        attn_rows.each((i, el) => {
-                                                const pill = $(el).find('.okr-status-pill').text().trim().toLowerCase();
-                                                const title = $(el).find('.okr-attention-row__title strong').text().trim().toLowerCase();
-                                                $(el).toggle(pill.includes('block') || title.includes('block'));
-                                        });
-                                        const all_plans = this.data.plan_summaries || [];
-                                        this.body.find('.okr-plan-card').each((i, el) => {
-                                                const plan_name = $(el).data('plan-name');
-                                                const plan = all_plans.find(p => p.name === plan_name);
-                                                const blocked = plan ? cint(plan.blocked_objectives || plan.blocked || 0) : 0;
-                                                $(el).toggle(blocked > 0);
-                                        });
-                                } else if (card_type === 'achieved') {
-                                        this.body.find('#okr-plans-section').show();
-                                        this.body.find('.okr-plan-grid').show();
-                                        this.body.find('#okr-needs-attention-section').hide();
-                                        this.body.find('.okr-attention-card').hide();
-                                        this.body.find('.okr-attention-row').hide();
-
-                                        const all_plans = this.data.plan_summaries || [];
-                                        this.body.find('.okr-plan-card').each((i, el) => {
-                                                const plan_name = $(el).data('plan-name');
-                                                const plan = all_plans.find(p => p.name === plan_name);
-                                                const progress = plan ? flt(plan.progress || 0) : 0;
-                                                const status = plan ? (plan.status || '') : '';
-                                                $(el).toggle(progress >= 100 || status === 'Completed');
-                                        });
-                                } else {
-                                        this.body.find('#okr-plans-section').show();
-                                        this.body.find('.okr-plan-grid').show();
-                                        this.body.find('#okr-needs-attention-section').show();
-                                        this.body.find('.okr-attention-card').show();
-                                        this.body.find('.okr-attention-row').show();
-                                        this.body.find('.okr-plan-card').show();
-                                }
-                        }
+                const active_card = this._active_card_filter;
+                container.html(this.render_dashboard_html());
+                this.render_filters();
+                this.render_filter_summary();
+                if (active_card) {
+                        this._active_card_filter = null;
+                        this._handle_summary_card_click(active_card);
                 }
         }
 
@@ -354,6 +307,7 @@ class OKRAdminWorkspace {
                 const m = this.data.metrics || {};
                 const updated = this.format_admin_datetime(this.data.updated_at || new Date());
                 const rows = this.data.attention_required || [];
+                const achieved = this.data.achieved_objectives || [];
                 const plans = this.data.plan_summaries || [];
                 const objectives = plans.reduce((n, row) => n + cint(row.objectives || 0), 0);
                 return `
@@ -400,8 +354,12 @@ class OKRAdminWorkspace {
                           </button>
                         </section>
                         ${this.render_plan_section(plans)}
-                        <div class="okr-section-head" id="okr-needs-attention-section"><h2 class="okr-section-title">Needs Attention</h2><span class="okr-section-hint">Blocked, on hold, missing check-in, or low progress</span></div>
-                        <section class="okr-attention-card">
+                        <div class="okr-section-head" id="okr-achieved-section" style="display:none"><h2 class="okr-section-title">Achieved Objectives</h2><span class="okr-section-hint">completed or closed</span></div>
+                        <section class="okr-attention-card" id="okr-achieved-card" style="display:none">
+                          ${achieved.length ? achieved.map((row,idx)=>`<button class="okr-attention-row" data-achieved-row data-achieved-index="${idx}"><span class="okr-dept-tag">${this.e(row.department||'GENERAL')}</span><div class="okr-attention-row__title"><strong>${this.e(row.objective_title||row.name)}</strong><span>${this.e(row.owner_user||'unassigned')}</span></div><span class="okr-status-pill okr-status-pill--completed">${this.e(row.status||'Completed')}</span><span class="okr-row-arrow">&gt;</span></button>`).join('') : `<div style="padding:32px;text-align:center;color:var(--muted)">No achieved objectives found.</div>`}
+                        </section>
+                        <div class="okr-section-head" id="okr-needs-attention-section" style="display:none"><h2 class="okr-section-title">Needs Attention</h2><span class="okr-section-hint">Blocked, on hold, missing check-in, or low progress</span></div>
+                        <section class="okr-attention-card" id="okr-needs-attention-card" style="display:none">
                           ${rows.length ? rows.map((row,idx)=>`<button class="okr-attention-row" data-objective-row data-objective-index="${idx}"><span class="okr-dept-tag">${this.e(row.department||'GENERAL')}</span><div class="okr-attention-row__title"><strong>${this.e(row.objective)}</strong><span>${this.e(row.owner||'unassigned')}</span></div><div class="okr-progress-bar"><div class="okr-progress-bar__fill okr-progress-bar__fill--${this.progress_severity(row.progress)}" style="width:${this.progress_width(row.progress)}%"></div></div><span class="okr-attention-row__pct">${this.percent(row.progress)}</span><span class="okr-status-pill okr-status-pill--${this.status_slug(row.reason)}">${this.e(row.reason||'Needs attention')}</span><span class="okr-row-arrow">&gt;</span></button>`).join('') : `<div style="padding:32px;text-align:center;color:var(--muted)">No items need attention right now.</div>`}
                         </section>
                 `;
