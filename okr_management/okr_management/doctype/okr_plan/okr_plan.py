@@ -23,12 +23,12 @@ class OKRPlan(Document):
 	def before_validate(self) -> None:
 		if not self.owner_user:
 			self.owner_user = frappe.session.user
-		
-		# Automatically add the current Plan Admin as the first Admin row if table is empty
+
+		# Automatically add the current Plan Coordinator as the first coordinator row if table is empty
 		if self.owner_user and not self.get("members"):
 			self.append("members", {
 				"member_user": self.owner_user,
-				"role": "Admin"
+				"role": "Plan Coordinator"
 			})
 
 		self.preserve_system_calculated_progress()
@@ -63,7 +63,7 @@ class OKRPlan(Document):
 
 	def validate_team_members(self) -> None:
 		members = self.get("members") or []
-		
+
 		# Ensure unique users in the team
 		seen_users = set()
 		for member in members:
@@ -72,13 +72,13 @@ class OKRPlan(Document):
 			if member.member_user in seen_users:
 				frappe.throw(_("User {0} is added more than once in the Plan Team.").format(member.member_user))
 			seen_users.add(member.member_user)
-			
-		# Filter roles that are Admin
-		owners = [m for m in members if m.role == "Admin"]
+
+		# Filter Plan Coordinator roles
+		owners = [m for m in members if m.role == "Plan Coordinator"]
 		if not owners:
-			frappe.throw(_("At least one Admin must always exist in the Plan Team."))
-			
-		# Keep owner_user in sync with the first Admin in the table
+			frappe.throw(_("At least one Plan Coordinator must always exist in the Plan Team."))
+
+		# Keep owner_user in sync with the first Plan Coordinator in the table
 		self.owner_user = owners[0].member_user
 
 	def on_update(self) -> None:
@@ -116,7 +116,7 @@ class OKRPlan(Document):
 		ensure_required_link(self.financial_year, "Financial Year")
 		ensure_required_link(self.plan_name, "Plan Name")
 		ensure_required_link(self.company, "Organization")
-		ensure_required_link(self.owner_user, "Plan Admin")
+		ensure_required_link(self.owner_user, "Plan Coordinator")
 
 	def validate_locked_fields(self) -> None:
 		if self.is_new():
@@ -242,7 +242,7 @@ def get_plan_context(plan_name: str) -> dict:
 		{
 			"user": row.member_user,
 			"full_name": frappe.db.get_value("User", row.member_user, "full_name") or row.member_user,
-			"role": row.role,
+			"role": "Plan Coordinator" if row.role == "Admin" else row.role,
 		}
 		for row in (plan.members or [])
 	]

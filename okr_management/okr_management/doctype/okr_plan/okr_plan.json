@@ -67,7 +67,7 @@
   {
    "fieldname": "owner_user",
    "fieldtype": "Link",
-   "label": "Plan Admin",
+   "label": "Plan Coordinator",
    "options": "User",
    "reqd": 0,
    "hidden": 1,
