@@ -9,8 +9,20 @@ frappe.ui.form.on('OKR Objective', {
             query: 'okr_management.okr_management.doctype.okr_objective.okr_objective.search_available_plans',
             filters: { status: ['in', ['Draft', 'Active']] },
         }));
-        frm.set_query('level_details', () => frm.doc.level === 'Department' && frm.doc.company
-            ? { filters: { company: frm.doc.company } } : {});
+        frm.set_query('level_details', () => {
+            if (frm.doc.level === 'Department' && frm.doc.parent_plan) {
+                return {
+                    query: 'okr_management.okr_management.doctype.okr_objective.okr_objective.search_plan_departments',
+                    filters: { parent_plan: frm.doc.parent_plan },
+                };
+            }
+            if (frm.doc.level === 'Individual') {
+                return {
+                    query: 'okr_management.okr_management.doctype.okr_objective.okr_objective.get_team_options',
+                };
+            }
+            return {};
+        });
     },
     onload(frm) {
         sync_level_details(frm);
@@ -136,8 +148,8 @@ function configure_level_details(frm, clear_value) {
     }
     frm.set_value('level_details_doctype', doctypes[frm.doc.level] || '');
     frm.set_df_property('level_details', 'label', labels[frm.doc.level] || '');
-    frm.toggle_display('level_details', frm.doc.level === 'Department');
-    frm.set_df_property('level_details', 'reqd', frm.doc.level === 'Department');
+    frm.toggle_display('level_details', ['Department', 'Individual'].includes(frm.doc.level));
+    frm.set_df_property('level_details', 'reqd', ['Department', 'Individual'].includes(frm.doc.level));
     frm.set_df_property('level_details', 'read_only', false);
     frm.toggle_display('teams', is_team);
 
@@ -191,11 +203,15 @@ function load_plan_context(frm) {
             plan_name: context.plan_name || '',
             plan_description: context.description || '',
             company: context.company || '',
-            financial_year: context.financial_year || '',
             plan_owner: context.plan_owner || '',
             start_date: context.start_date || '',
             end_date: context.end_date || ''
         };
+        // Financial Year is derived from the selected Plan and populated again
+        // server-side during validation. Avoid client Link permission validation for
+        // this hidden context field; OKR Users do not need Fiscal Year access.
+        frm.doc.financial_year = context.financial_year || '';
+        frm.refresh_field('financial_year');
         frm.set_value(values);
         render_plan_context_preview(frm, context);
         match_description_heights(frm);
@@ -229,7 +245,7 @@ function render_plan_context_preview(frm, context) {
 
     const team_rows = (ctx.members || []).map((member) => {
         const name = frappe.utils.escape_html(member.full_name || member.user || '');
-        const role = frappe.utils.escape_html(member.role || '');
+        const role = frappe.utils.escape_html(member.role === 'Admin' ? __('Plan Coordinator') : (member.role || ''));
         return '<li style="margin:0 0 6px;">' + name
             + (role ? ' <span style="color:var(--text-muted); font-size:11px;">(' + role + ')</span>' : '')
             + '</li>';

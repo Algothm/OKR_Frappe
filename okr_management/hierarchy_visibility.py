@@ -5,7 +5,7 @@ import frappe
 from okr_management.permissions import is_okr_admin
 
 
-EDITABLE_PLAN_TEAM_ROLES = {"Admin", "Contributor"}
+EDITABLE_PLAN_TEAM_ROLES = {"Plan Coordinator", "Contributor"}
 
 
 def _plan_team_plans(user, roles=None):
@@ -36,12 +36,38 @@ def get_hierarchy_visibility_scope(user=None):
     employee_rows = frappe.get_all(
         "Employee",
         filters={"user_id": user, "status": "Active"},
-        fields=["name", "department"],
+        fields=["name", "department", "company"],
     )
     employees = {row.name for row in employee_rows}
     user_departments = {row.department for row in employee_rows if row.department}
     full_plan_names = _plan_team_plans(user)
     editable_plan_names = _plan_team_plans(user, EDITABLE_PLAN_TEAM_ROLES)
+    organization_objectives = set()
+    user_companies = {row.company for row in employee_rows if row.get("company")}
+    if user_companies:
+        organization_objectives.update(
+            frappe.get_all(
+                "OKR Objective",
+                filters={"level": "Organization", "company": ["in", list(user_companies)]},
+                pluck="name",
+            )
+        )
+
+    individual_objectives = set(
+        frappe.get_all(
+            "OKR Objective",
+            filters={"level": "Individual", "level_details": user},
+            pluck="name",
+        )
+    )
+    team_objectives = set(
+        frappe.get_all(
+            "OKR Objective Team",
+            filters={"team": user, "parenttype": "OKR Objective"},
+            pluck="parent",
+        )
+    )
+
     department_objectives = set()
     if user_departments and "Department Head" in frappe.get_roles(user):
         department_objectives.update(
@@ -56,7 +82,13 @@ def get_hierarchy_visibility_scope(user=None):
     owned_krs = set(frappe.get_all("OKR Key Result", filters={"assignee": user}, pluck="name"))
     owned_krs.update(frappe.get_all("OKR Key Result", filters={"owner_user": user}, pluck="name"))
 
-    authority_objectives = owned_objectives | department_objectives
+    authority_objectives = (
+        owned_objectives
+        | department_objectives
+        | organization_objectives
+        | individual_objectives
+        | team_objectives
+    )
     authority_krs = set(owned_krs)
     if authority_objectives:
         authority_krs.update(
