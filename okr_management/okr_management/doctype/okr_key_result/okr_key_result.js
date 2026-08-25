@@ -181,8 +181,8 @@ function update_objective_date_range(frm, start_date, end_date) {
 function apply_key_result_ui(frm) {
 	frm.set_df_property('naming_series', 'hidden', 1);
 	frm.set_df_property('kr_details_section', 'label', '');
-	frm.set_df_property('kr_details_col_break', 'label', __('Context Preview'));
-	frm.set_df_property('context_preview_html', 'label', '');
+	frm.set_df_property('kr_details_col_break', 'label', '');
+	frm.set_df_property('context_preview_html', 'label', __('Context and Preview of Plan and Objective'));
 	frm.toggle_display('context_preview_html', 1);
 
 	INHERITED_FIELDS.forEach(fieldname => {
@@ -323,14 +323,12 @@ function render_key_result_context_preview(frm, context) {
 	], __('Select an Objective to preview its context.'));
 }
 
-function render_preview_cards(field, cards, empty_message) {
-    if (window.okr_management && window.okr_management.ui && window.okr_management.ui.render_preview_cards) {
-        window.okr_management.ui.render_preview_cards(field, cards, empty_message);
-        return;
-    }
+function render_preview_cards(field, cards, empty_message, title) {
     if (!field || !field.$wrapper) return;
     const visible_cards = cards || [];
     const escape_html = (val) => frappe.utils.escape_html(String(val ?? "—"));
+    const header_title = title || __("Context and Preview of Plan and Objective");
+
     const card_html = visible_cards.length
         ? visible_cards.map((card) => {
             if (!card) return "";
@@ -358,11 +356,33 @@ function render_preview_cards(field, cards, empty_message) {
             + escape_html(empty_message || __("No context available."))
             + '</div>';
 
-    const wrapper_html = '<div style="display:flex;flex-wrap:wrap;gap:12px;">' + card_html + '</div>';
-    if (typeof field.set_value === 'function') {
-        field.set_value(wrapper_html);
-    } else {
-        field.$wrapper.html(wrapper_html);
+    const title_html = '<div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:10px;">'
+        + escape_html(header_title)
+        + '</div>';
+
+    const cards_box_html = '<div style="border:1.5px solid #cbd5e0;border-radius:10px;background:#fafbff;padding:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,0.06);display:flex;flex-wrap:wrap;gap:12px;">'
+        + card_html
+        + '</div>';
+
+    field.$wrapper.prev('.okr-context-heading').remove();
+    $(title_html).addClass('okr-context-heading').insertBefore(field.$wrapper);
+    const full_html = cards_box_html;
+
+    if (field.$wrapper && field.$wrapper[0]) {
+        field.$wrapper[0].innerHTML = full_html;
+    } else if (typeof field.set_value === 'function') {
+        field.set_value(full_html);
+    }
+
+    if (field.$wrapper) {
+        field.$wrapper.css({
+            'border': 'none',
+            'border-radius': '0',
+            'background': 'transparent',
+            'padding': '0',
+            'box-shadow': 'none',
+            'display': 'block'
+        });
     }
 }
 

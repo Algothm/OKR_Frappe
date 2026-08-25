@@ -285,7 +285,7 @@
   {
    "fieldtype": "HTML",
    "fieldname": "context_preview_html",
-   "label": "Context Preview",
+   "label": "Context and Preview of Plan, Objective and Key Result",
    "hidden": 0
   },
   {

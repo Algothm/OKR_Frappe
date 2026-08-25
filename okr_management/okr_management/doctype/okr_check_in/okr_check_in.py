@@ -122,9 +122,29 @@ class OKRCheckIn(Document):
         self.plan_description_context = plan.description
         self.organization_context = plan.company
         self.financial_year_context = plan.financial_year
-        self.timeline_preview_context = _("{0} to {1} ({2} Days)").format(
-            formatdate(start_date), formatdate(end_date), day_count
-        )
+        timeline_parts = []
+        if objective.start_date and objective.end_date:
+            timeline_parts.append(
+                _("Objective: {0} to {1}").format(
+                    formatdate(objective.start_date), formatdate(objective.end_date)
+                )
+            )
+        if key_result.start_date and key_result.end_date:
+            timeline_parts.append(
+                _("Key Result: {0} to {1}").format(
+                    formatdate(key_result.start_date), formatdate(key_result.end_date)
+                )
+            )
+        if action.due_date:
+            timeline_parts.append(
+                _("Action Item Due: {0}").format(formatdate(action.due_date))
+            )
+        if not timeline_parts:
+            timeline_parts.append(
+                _("Plan: {0} to {1} ({2} Days)").format(
+                    formatdate(start_date), formatdate(end_date), day_count
+                )
+            )
         self.assigned_to_context = (
             frappe.db.get_value("Employee", action.assigned_to, "employee_name")
             or action.assigned_to
@@ -133,19 +153,26 @@ class OKRCheckIn(Document):
     def validate_parent_plan_active(self, action=None) -> None:
         action = action or frappe.get_doc("OKR Action Item", self.action_item)
         plan_name = action.parent_plan or frappe.db.get_value("OKR Key Result", action.parent_key_result, "parent_plan")
-        if not plan_name or frappe.db.get_value("OKR Plan", plan_name, "status") != "Active":
-            frappe.throw(_("Check-Ins are disabled until the parent OKR Plan is Active."))
+        if not plan_name:
+            return
+        plan_status = frappe.db.get_value("OKR Plan", plan_name, "status")
+        if plan_status != "Active":
+            frappe.throw(
+                _("Check-Ins are available only when the parent OKR Plan is Active.")
+            )
 
     def validate_action_item_assignment(self, action=None) -> None:
         action = action or frappe.get_doc("OKR Action Item", self.action_item)
         if self.is_new() and action.status not in ACTIVE_ACTION_STATUSES:
             frappe.throw(_("Check-Ins can only be created for active Action Items."))
-        if is_okr_admin():
+        user = frappe.session.user
+        roles = frappe.get_roles(user)
+        if user == "Administrator" or "OKR Admin" in roles or "System Manager" in roles:
             return
-
-        employee = get_logged_in_employee(required=True)
-        if action.assigned_to != employee:
-            frappe.throw(_("You can only create Check-Ins for Action Items assigned to you."))
+        employees = get_logged_in_employees(required=False)
+        if action.assigned_to in employees or action.owner_user == user or action.owner == user:
+            return
+        frappe.throw(_("You can only create Check-Ins for Action Items assigned to you."))
 
     def on_trash(self) -> None:
         if self.status == "Submitted":
@@ -217,47 +244,58 @@ def rebuild_all_checkin_latest_flags() -> None:
 		sync_checkin_latest_flags(action_item)
 
 
-def get_logged_in_employee(required: bool = True) -> str | None:
-    employee = frappe.db.get_value(
-        "Employee",
-        {"user_id": frappe.session.user, "status": "Active"},
-        "name",
+def get_logged_in_employees(required: bool = True) -> set[str]:
+    employees = set(
+        frappe.get_all(
+            "Employee",
+            filters={"user_id": frappe.session.user, "status": "Active"},
+            pluck="name",
+        )
     )
-    if not employee and required:
+    if not employees and required:
         frappe.throw(_("Your user account is not linked to an active Employee."))
-    return employee
+    return employees
+
+
+def get_logged_in_employee(required: bool = True) -> str | None:
+    employees = sorted(get_logged_in_employees(required=required))
+    return employees[0] if employees else None
 
 
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
 def get_assigned_action_items(doctype, txt, searchfield, start, page_len, filters):
-    employee = get_logged_in_employee(required=False)
-    admin_access = is_okr_admin()
-    if not employee and not admin_access:
-        return []
-
-    assignment_condition = "" if admin_access else "and ai.assigned_to = %(employee)s"
-
-    return frappe.db.sql(
-        f"""
-        select ai.name, ai.action_item_title
-        from `tabOKR Action Item` ai
-        inner join `tabOKR Plan` plan on plan.name = ai.parent_plan
-        where ai.status in ('Open', 'In Progress', 'Blocked')
-          and plan.status = 'Active'
-          {assignment_condition}
-          and (ai.name like %(txt)s or ai.action_item_title like %(txt)s)
-        order by ai.modified desc
-        limit %(start)s, %(page_len)s
-        """,
-        {
-            "employee": employee,
-            "txt": f"%{txt}%",
-            "start": start,
-            "page_len": page_len,
-        },
+    user = frappe.session.user
+    employees = get_logged_in_employees(required=False)
+    roles = frappe.get_roles(user)
+    has_broad_access = user == "Administrator" or "OKR Admin" in roles or "System Manager" in roles
+    params = {
+        "txt": f"%{txt}%",
+        "start": start,
+        "page_len": page_len,
+    }
+    if has_broad_access:
+        assignment_condition = ""
+    else:
+        conds = ["ai.owner_user = %(user)s", "ai.owner = %(user)s"]
+        params["user"] = user
+        if employees:
+            conds.append("ai.assigned_to in %(employees)s")
+            params["employees"] = tuple(sorted(employees))
+        assignment_condition = "and (" + " or ".join(conds) + ")"
+    query = (
+        "select ai.name, ai.action_item_title "
+        "from `tabOKR Action Item` ai "
+        "left join `tabOKR Key Result` kr on kr.name = ai.parent_key_result "
+        "left join `tabOKR Plan` plan on plan.name = coalesce(ai.parent_plan, kr.parent_plan) "
+        "where ai.status in ('Open', 'In Progress', 'On Hold', 'Blocked') "
+        "  and (plan.status in ('Active', 'Draft') or plan.name is null) "
+        + assignment_condition + " "
+        "  and (ai.name like %(txt)s or ai.action_item_title like %(txt)s) "
+        "order by ai.modified desc "
+        "limit %(start)s, %(page_len)s"
     )
-
+    return frappe.db.sql(query, params)
 @frappe.whitelist()
 def get_action_item_context(action_item: str) -> dict:
     doc = frappe.new_doc("OKR Check In")

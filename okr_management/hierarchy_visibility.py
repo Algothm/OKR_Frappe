@@ -133,6 +133,38 @@ def get_hierarchy_visibility_scope(user=None):
             )
         )
 
+    # Plan Team membership grants read visibility to the complete execution
+    # tree of that Plan. Ownership/assignment sets stay unchanged.
+    if full_plan_names:
+        plan_objectives = set(
+            frappe.get_all(
+                "OKR Objective",
+                filters={"parent_plan": ["in", list(full_plan_names)]},
+                pluck="name",
+            )
+        )
+        plan_key_results = set()
+        if plan_objectives:
+            plan_key_results.update(
+                frappe.get_all(
+                    "OKR Key Result",
+                    filters={"objective": ["in", list(plan_objectives)]},
+                    pluck="name",
+                )
+            )
+        plan_action_items = set()
+        if plan_key_results:
+            plan_action_items.update(
+                frappe.get_all(
+                    "OKR Action Item",
+                    filters={"parent_key_result": ["in", list(plan_key_results)]},
+                    pluck="name",
+                )
+            )
+        objectives.update(plan_objectives)
+        krs.update(plan_key_results)
+        actions.update(plan_action_items)
+
     return {
         "visible_objectives": objectives,
         "visible_key_results": krs,

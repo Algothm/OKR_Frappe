@@ -526,3 +526,34 @@
 [data-fieldname="context_preview_heading"] {
 	display: none !important;
 }
+
+/* Total linked-record count is already shown inside the document badge. */
+.page-container[data-page-route*="okr-plan" i] .form-dashboard .open-notification,
+.page-container[data-page-route*="okr-objective" i] .form-dashboard .open-notification,
+.page-container[data-page-route*="okr-key-result" i] .form-dashboard .open-notification,
+.page-container[data-page-route*="okr-action-item" i] .form-dashboard .open-notification,
+.page-container[data-page-route*="okr-check-in" i] .form-dashboard .open-notification {
+	display: none !important;
+}
+
+/* The preview renderer supplies the single heading above its bordered card. */
+.frappe-control[data-fieldname="context_preview_html"] .control-label {
+	display: none !important;
+}
+
+/* Keep the preview heading outside the only bordered container (the cards box). */
+.frappe-control[data-fieldname="context_preview_html"],
+.frappe-control[data-fieldname="context_preview_html"] > .form-group,
+.frappe-control[data-fieldname="context_preview_html"] .control-input-wrapper,
+.frappe-control[data-fieldname="context_preview_html"] .control-input,
+.frappe-control[data-fieldname="context_preview_html"] .control-value {
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	padding: 0 !important;
+	box-shadow: none !important;
+}
+
+.frappe-control[data-fieldname="context_preview_html"] {
+	overflow: visible !important;
+}

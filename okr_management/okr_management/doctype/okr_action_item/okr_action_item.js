@@ -32,6 +32,7 @@ frappe.ui.form.on('OKR Action Item', {
     },
     due_date(frm) {
         validate_due_date_against_target(frm);
+        render_context_preview(frm);
     },
     validate(frm) {
         if (!frm.doc.assigned_to) {
@@ -95,7 +96,7 @@ function apply_action_item_ui(frm) {
         'parent_objective', 'objective_title', 'key_result_title'
     ].forEach((fieldname) => frm.set_df_property(fieldname, 'read_only', 1));
 
-	frm.set_df_property('context_preview_html', 'label', __('Context and Preview'));
+	frm.set_df_property('context_preview_html', 'label', __('Context and Preview of Plan, Objective and Key Result'));
 	frm.toggle_display('context_preview_html', 1);
 
     [
@@ -214,10 +215,7 @@ function load_plan_context(frm, plan_name, kr) {
             plan_description: plan.description || '',
             sprint_frequency: plan.sprint_frequency || '',
         });
-        render_context_preview(frm, {
-            kr: { ...kr, start_date: fiscal_start, end_date: fiscal_end },
-            plan
-        });
+        render_context_preview(frm, { kr, plan });
     });
 }
 
@@ -257,21 +255,20 @@ function render_context_preview(frm, context) {
         { icon: icons.plan,     label: __('Plan'),             value: plan.plan_name || frm.doc.plan_title },
         { icon: icons.building, label: __('Organization'),     value: kr.company || frm.doc.company },
         { icon: icons.calendar, label: __('Financial Year'),   value: kr.financial_year || frm.doc.financial_year },
-        { icon: icons.clock,    label: __('Timeline'),         value: timeline_text + (timeline_detail ? ' • ' + timeline_detail : '') },
+        { icon: icons.clock,    label: __('Key Result Timeline'), value: timeline_text + (timeline_detail ? ' • ' + timeline_detail : '') },
+        { icon: icons.calendar, label: __('Action Item Due Date'), value: frm.doc.due_date ? frappe.datetime.str_to_user(frm.doc.due_date) : __('Not set') },
         { icon: icons.notes,    label: __('Plan Description'), value: plan.description || frm.doc.plan_description, wide: true },
     ];
 
     render_preview_cards(field, cards, __('Select a Key Result to preview its context.'));
 }
 
-function render_preview_cards(field, cards, empty_message) {
-    if (window.okr_management && window.okr_management.ui && window.okr_management.ui.render_preview_cards) {
-        window.okr_management.ui.render_preview_cards(field, cards, empty_message);
-        return;
-    }
+function render_preview_cards(field, cards, empty_message, title) {
     if (!field || !field.$wrapper) return;
     const visible_cards = cards || [];
     const escape_html = (val) => frappe.utils.escape_html(String(val ?? "—"));
+    const header_title = title || __("Context and Preview of Plan, Objective and Key Result");
+
     const card_html = visible_cards.length
         ? visible_cards.map((card) => {
             if (!card) return "";
@@ -299,10 +296,32 @@ function render_preview_cards(field, cards, empty_message) {
             + escape_html(empty_message || __("No context available."))
             + '</div>';
 
-    const wrapper_html = '<div style="display:flex;flex-wrap:wrap;gap:12px;">' + card_html + '</div>';
-    if (typeof field.set_value === 'function') {
-        field.set_value(wrapper_html);
-    } else {
-        field.$wrapper.html(wrapper_html);
+    const title_html = '<div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:10px;">'
+        + escape_html(header_title)
+        + '</div>';
+
+    const cards_box_html = '<div style="border:1.5px solid #cbd5e0;border-radius:10px;background:#fafbff;padding:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,0.06);display:flex;flex-wrap:wrap;gap:12px;">'
+        + card_html
+        + '</div>';
+
+    field.$wrapper.prev('.okr-context-heading').remove();
+    $(title_html).addClass('okr-context-heading').insertBefore(field.$wrapper);
+    const full_html = cards_box_html;
+
+    if (field.$wrapper && field.$wrapper[0]) {
+        field.$wrapper[0].innerHTML = full_html;
+    } else if (typeof field.set_value === 'function') {
+        field.set_value(full_html);
+    }
+
+    if (field.$wrapper) {
+        field.$wrapper.css({
+            'border': 'none',
+            'border-radius': '0',
+            'background': 'transparent',
+            'padding': '0',
+            'box-shadow': 'none',
+            'display': 'block'
+        });
     }
 }

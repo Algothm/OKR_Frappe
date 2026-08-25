@@ -141,6 +141,11 @@ okr_management.preview_attachment = function (file_url) {
 };
 
 (() => {
+    const user_roles = new Set(frappe.user_roles || []);
+    const admin_user = frappe.session.user === "Administrator" || user_roles.has("OKR Admin");
+    const okr_user = user_roles.has("OKR User");
+    const is_admin_ui_user = () => admin_user;
+    const is_okr_ui_user = () => okr_user;
     const USER_OKR_LIST_SLUGS = new Set([
         "okr-objective",
         "okr-key-result",
@@ -168,259 +173,85 @@ okr_management.preview_attachment = function (file_url) {
     frappe.re_route["check-in"] = "okr-check-in";
     localStorage.removeItem("_page:admin-workspace");
 
+    function enforce_okr_route_access() {
+        const first = window.location.pathname.replace(/^\/app\//, "").split("/")[0];
+        if (USER_OKR_LIST_SLUGS.has(first) && !okr_user) {
+            frappe.set_route(fallback_route);
+            return;
+        }
+        if (first === "admin-workspace" && !admin_user) {
+            frappe.set_route(fallback_route);
+        }
+    }
+
+    $(document).on("page-change", enforce_okr_route_access);
+
     function escape_html(value) {
         return frappe.utils.escape_html(String(value ?? "—"));
     }
 
-    function render_preview_cards(field, cards, empty_message) {
-        if (!field || !field.$wrapper) return;
+    function render_preview_cards(field, cards, empty_message, title) {
+    if (!field || !field.$wrapper) return;
+    const visible_cards = cards || [];
+    const escape_html = (val) => frappe.utils.escape_html(String(val ?? "—"));
+    const header_title = title || __("Context and Preview");
 
-        const visible_cards = cards || [];
+    const card_html = visible_cards.length
+        ? visible_cards.map((card) => {
+            if (!card) return "";
+            const wide = Boolean(card.wide);
+            let val = "—";
+            if (card.value !== undefined && card.value !== null && String(card.value).trim() !== "") {
+                val = String(card.value);
+            }
+            const content = card.html
+                || '<div style="font-size:13px;font-weight:' + (wide ? '500' : '600') + ';color:#1e293b;line-height:' + (wide ? '1.5' : '1.4') + ';word-break:break-word;white-space:pre-wrap;">'
+                    + escape_html(val)
+                    + '</div>';
+            return '<div style="' + (wide ? 'width:100%;' : 'flex:1 1 45%;min-width:180px;')
+                + 'display:flex;align-items:' + (wide ? 'flex-start' : 'center')
+                + ';gap:10px;background:#f8f9fc;border:1px solid #e3e8ef;border-radius:10px;padding:10px 14px;">'
+                + '<span style="font-size:18px;flex-shrink:0;margin-top:' + (wide ? '2px' : '0') + ';color:#5b6b8a;display:flex;align-items:center;">'
+                + (card.icon || "📌") + '</span>'
+                + '<div style="min-width:0;">'
+                + '<div style="font-size:10px;font-weight:600;color:#8d99ae;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;">'
+                + escape_html(__(card.label || "")) + '</div>'
+                + content
+                + '</div></div>';
+        }).join('')
+        : '<div style="width:100%;padding:12px 14px;border:1px dashed #d6dbe6;border-radius:10px;color:var(--text-muted);background:#fbfcfe;">'
+            + escape_html(empty_message || __("No context available."))
+            + '</div>';
 
-        const card_html = visible_cards.length
-            ? visible_cards.map((card) => {
-                if (!card) return "";
-                const wide = Boolean(card.wide);
+    const title_html = '<div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:10px;">'
+        + escape_html(header_title)
+        + '</div>';
 
-                let val = "—";
-                if (card.value !== undefined && card.value !== null && String(card.value).trim() !== "") {
-                    val = String(card.value);
-                }
+    const cards_box_html = '<div style="border:1.5px solid #cbd5e0;border-radius:10px;background:#fafbff;padding:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,0.06);display:flex;flex-wrap:wrap;gap:12px;">'
+        + card_html
+        + '</div>';
 
-                const content = card.html
-                    || '<div style="font-size:13px;font-weight:' + (wide ? '500' : '600') + ';color:#1e293b;line-height:' + (wide ? '1.5' : '1.4') + ';word-break:break-word;white-space:pre-wrap;">'
-                        + escape_html(val)
-                        + '</div>';
+    field.$wrapper.prev('.okr-context-heading').remove();
+    $(title_html).addClass('okr-context-heading').insertBefore(field.$wrapper);
+    const full_html = cards_box_html;
 
-                return '<div style="' + (wide ? 'width:100%;' : 'flex:1 1 45%;min-width:180px;')
-                    + 'display:flex;align-items:' + (wide ? 'flex-start' : 'center')
-                    + ';gap:10px;background:#f8f9fc;border:1px solid #e3e8ef;border-radius:10px;padding:10px 14px;">'
-                    + '<span style="font-size:18px;flex-shrink:0;margin-top:' + (wide ? '2px' : '0') + ';color:#5b6b8a;display:flex;align-items:center;">'
-                    + (card.icon || "📌") + '</span>'
-                    + '<div style="min-width:0;">'
-                    + '<div style="font-size:10px;font-weight:600;color:#8d99ae;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;">'
-                    + escape_html(__(card.label || "")) + '</div>'
-                    + content
-                    + '</div></div>';
-            }).join('')
-            : '<div style="width:100%;padding:12px 14px;border:1px dashed #d6dbe6;border-radius:10px;color:var(--text-muted);background:#fbfcfe;">'
-                + escape_html(empty_message || __("No context available."))
-                + '</div>';
-
-        // Title + cards as a single HTML block
-        const full_html =
-            '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;'
-            + 'letter-spacing:0.08em;margin-bottom:12px;padding-bottom:8px;'
-            + 'border-bottom:1px solid #e2e8f0;">'
-            + __('Context and Preview')
-            + '</div>'
-            + '<div style="display:flex;flex-wrap:wrap;gap:12px;">' + card_html + '</div>';
-
-        // Set content directly on the DOM node (most reliable for HTML fields)
+    if (field.$wrapper && field.$wrapper[0]) {
         field.$wrapper[0].innerHTML = full_html;
+    } else if (typeof field.set_value === 'function') {
+        field.set_value(full_html);
+    }
 
-        // Style field.$wrapper (.frappe-control div) as the outer bordered container
-        // This is the REAL structural parent of all cards in the DOM
+    if (field.$wrapper) {
         field.$wrapper.css({
-            'border': '1.5px solid #cbd5e0',
-            'border-radius': '10px',
-            'background': '#fafbff',
-            'padding': '16px 18px',
-            'box-shadow': '0 1px 6px rgba(0,0,0,0.06)',
+            'border': 'none',
+            'border-radius': '0',
+            'background': 'transparent',
+            'padding': '0',
+            'box-shadow': 'none',
             'display': 'block'
         });
     }
-
-    function render_timeline_preview_card(field, title, value, detail, is_error = false) {
-        if (!field || !field.$wrapper) return;
-
-        const main_color = is_error ? 'var(--red-600)' : 'var(--text-color)';
-        const detail_color = is_error ? 'var(--red-600)' : 'var(--text-muted)';
-        const secondary = detail
-            ? '<span style="color:var(--text-muted);"> &bull; </span><span style="font-weight:500;color:' + detail_color + ';">'
-                + escape_html(detail)
-                + '</span>'
-            : '';
-
-        const wrapper_html = '<div class="form-group">'
-            + '<div class="control-label">' + escape_html(title) + '</div>'
-            + '<div class="like-disabled-input" style="height:var(--input-height);min-height:var(--input-height);padding:6px 12px;display:flex;align-items:center;border-radius:var(--border-radius);overflow:hidden;">'
-            + '<div style="font-size:13px;font-weight:600;color:' + main_color + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
-            + escape_html(value || '') + secondary
-            + '</div></div></div>';
-        if (typeof field.set_value === 'function') {
-            field.set_value(wrapper_html);
-        } else {
-            field.$wrapper.html(wrapper_html);
-        }
     }
-
-    okr_management.ui = Object.assign({}, okr_management.ui, {
-        render_preview_cards,
-        render_timeline_preview_card,
-        apply_context_panel_style,
-    });
-
-    function apply_context_panel_style(frm) {
-        // Safety-net: re-apply border to field.$wrapper in case render_preview_cards
-        // hasn't been called yet (e.g., when action item is not yet selected)
-        function do_apply() {
-            const anchor = frm.fields_dict.context_preview_html;
-            if (!anchor || !anchor.$wrapper) return;
-            anchor.$wrapper.css({
-                'border': '1.5px solid #cbd5e0',
-                'border-radius': '10px',
-                'background': '#fafbff',
-                'padding': '16px 18px',
-                'box-shadow': '0 1px 6px rgba(0,0,0,0.06)',
-                'display': 'block'
-            });
-        }
-        setTimeout(do_apply, 200);
-        setTimeout(do_apply, 700);
-    }
-
-
-    function selector(name, parent) {
-        return '.sidebar-item-container[item-name="' + CSS.escape(name) + '"][item-parent="' + CSS.escape(parent) + '"]';
-    }
-
-    function get_item(name, parent) {
-        return jQuery(selector(name, parent)).first();
-    }
-
-    function find_custom_route(target) {
-        const anchor = target.closest && target.closest(".desk-sidebar-item > .item-anchor");
-        if (!anchor) return null;
-
-        const item = anchor.closest(".sidebar-item-container");
-        if (!item) return null;
-
-        return CUSTOM_PAGE_ROUTES.find(
-            ({ name, parent }) =>
-                item.getAttribute("item-name") === name && item.getAttribute("item-parent") === parent
-        );
-    }
-
-    function is_admin_ui_user() {
-        return frappe.session.user === "Administrator" || frappe.user.has_role("OKR Admin");
-    }
-
-    function is_okr_ui_user() {
-        return frappe.user.has_role("OKR User");
-    }
-
-    function separated_route(route_parts) {
-        const parts = Array.isArray(route_parts) ? route_parts : [];
-        const first = String(parts[0] || "").toLowerCase();
-        const admin_user = is_admin_ui_user();
-        const okr_user = is_okr_ui_user();
-        const admin_only = admin_user && !okr_user;
-
-        if (parts.length === 1 && first === "okr-management") {
-            return [admin_user ? "admin-workspace" : "okr-workspace"];
-        }
-
-        if (parts.length === 1 && first === "okr-plan" && !admin_user) {
-            return [okr_user ? "okr-workspace" : "home"];
-        }
-        if (parts.length === 1 && USER_OKR_LIST_SLUGS.has(first) && !okr_user) {
-            return [admin_user ? "admin-workspace" : "home"];
-        }
-        if (parts.length === 1 && first === "okr-workspace" && !okr_user) {
-            return [admin_user ? "admin-workspace" : "home"];
-        }
-        if (parts.length === 1 && first === "admin-workspace" && !admin_user) {
-            return [okr_user ? "okr-workspace" : "home"];
-        }
-        return parts;
-    }
-
-    okr_management.navigation = Object.assign({}, okr_management.navigation, {
-        is_admin_ui_user,
-        resolve_route: separated_route,
-    });
-
-    function patch_router() {
-        if (!frappe.router || frappe.router._okrCustomPageRoutePatch) return false;
-
-        const convert_to_standard_route = frappe.router.convert_to_standard_route.bind(frappe.router);
-        frappe.router.convert_to_standard_route = async function (route) {
-            const route_parts = separated_route(
-                Array.isArray(route) ? route : this.get_sub_path_string(route).split("/")
-            );
-            if (CUSTOM_PAGE_SLUGS.has(route_parts[0])) {
-                return route_parts;
-            }
-
-            return convert_to_standard_route(route);
-        };
-        frappe.router._okrCustomPageRoutePatch = true;
-        return true;
-    }
-
-    function update_custom_page_links() {
-        CUSTOM_PAGE_ROUTES.forEach(({ name, parent, path }) => {
-            const destination = typeof path === "function" ? path() : path;
-            get_item(name, parent).find("> .desk-sidebar-item > .item-anchor").attr("href", destination);
-        });
-    }
-
-    function enforce_sidebar_separation() {
-        const admin_user = is_admin_ui_user();
-        const okr_user = is_okr_ui_user();
-        const admin_names = ["Admin Workspace", "OKR Plan Planning", "OKR Sprint Planning"];
-        const user_names = ["OKR Workspace", "OKR Objective Execution", "OKR Key Result Execution", "OKR Action Item Execution", "Action Item", "Check-In"];
-        const hidden_names = admin_user && okr_user
-            ? []
-            : admin_user
-                ? user_names
-                : okr_user ? admin_names : [...admin_names, ...user_names];
-
-        hidden_names.forEach((name) => {
-            jQuery('.sidebar-item-container[item-name="' + CSS.escape(name) + '"]').remove();
-        });
-    }
-
-    function bind_okr_sidebar() {
-        patch_router();
-        update_custom_page_links();
-        enforce_sidebar_separation();
-    }
-
-    function schedule_bind() {
-        setTimeout(bind_okr_sidebar, 100);
-        setTimeout(bind_okr_sidebar, 500);
-    }
-
-    const router_patch_interval = setInterval(() => {
-        if (patch_router()) {
-            clearInterval(router_patch_interval);
-        }
-    }, 50);
-
-    patch_router();
-    document.addEventListener(
-        "click",
-        (event) => {
-            const route = find_custom_route(event.target);
-            if (!route) return;
-
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            window.location.assign(typeof route.path === "function" ? route.path() : route.path);
-        },
-        true
-    );
-
-    jQuery(document).on("page-change route-change", schedule_bind);
-    frappe.after_ajax(schedule_bind);
-
-    jQuery(document).ready(() => {
-        patch_router();
-        new MutationObserver(schedule_bind).observe(document.body, { childList: true, subtree: true });
-        schedule_bind();
-    });
 })();
 
 
@@ -480,4 +311,52 @@ okr_management.preview_attachment = function (file_url) {
             if (install_okr_breadcrumb_override()) clearInterval(installer);
         }, 50);
     }
+})();
+
+// Keep Connections closed by default on every OKR form.
+(() => {
+    const OKR_DOCTYPES = new Set([
+        "OKR Plan",
+        "OKR Objective",
+        "OKR Key Result",
+        "OKR Action Item",
+        "OKR Check In",
+    ]);
+
+    function collapse_okr_connections() {
+        const route = frappe.get_route ? (frappe.get_route() || []) : [];
+        if (route[0] !== "Form" || !OKR_DOCTYPES.has(route[1])) return;
+
+        localStorage.setItem("form-links-closed", "1");
+        const links_area = window.cur_frm?.dashboard?.links_area;
+        if (links_area && !links_area.is_collapsed()) {
+            links_area.collapse(true);
+        }
+    }
+
+    $(document).on("page-change route-change", () => {
+        setTimeout(collapse_okr_connections, 0);
+        setTimeout(collapse_okr_connections, 100);
+    });
+})();
+
+// The document badge already contains the linked-record count.
+// Suppress Frappe's separate open-record count after every dashboard refresh.
+(() => {
+    [
+        "OKR Plan",
+        "OKR Objective",
+        "OKR Key Result",
+        "OKR Action Item",
+        "OKR Check In",
+    ].forEach((doctype) => {
+        frappe.ui.form.on(doctype, {
+            dashboard_update(frm) {
+                frm.$wrapper
+                    .find(".form-dashboard .open-notification")
+                    .addClass("hidden")
+                    .hide();
+            },
+        });
+    });
 })();

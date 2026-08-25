@@ -529,7 +529,8 @@
   },
   {
    "fieldname": "context_preview_html",
-   "fieldtype": "HTML"
+   "fieldtype": "HTML",
+   "label": "Context and Preview"
   },
   {
    "fieldname": "is_latest",

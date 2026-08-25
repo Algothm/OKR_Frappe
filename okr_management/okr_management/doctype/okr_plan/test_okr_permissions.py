@@ -110,17 +110,21 @@ class TestOKRPermissionIntegration(FrappeTestCase):
         action_scope = get_hierarchy_visibility_scope(self.users["action"])
         self.assertIn(self.action.name, action_scope["direct_action_items"])
         self.assertIn(self.action.name, action_scope["visible_action_items"])
+        self.assertIn(self.kr.name, action_scope["visible_key_results"])
+        self.assertIn(self.objective.name, action_scope["visible_objectives"])
         self.assertNotIn(self.other_action.name, action_scope["direct_action_items"])
         self.assertNotIn(self.other_action.name, action_scope["visible_action_items"])
         self.assertNotIn(self.kr.name, action_scope["owned_key_results"])
 
-    def test_plan_membership_does_not_grant_every_objective_branch(self):
+    def test_plan_membership_grants_complete_plan_tree_read_visibility(self):
         self.plan.append("members", {"member_user": self.users["okr_user"], "role": "Plan Coordinator"})
         self.plan.save(ignore_permissions=True)
         member_scope = get_hierarchy_visibility_scope(self.users["okr_user"])
         self.assertIn(self.plan.name, member_scope["full_plan_names"])
-        self.assertNotIn(self.objective.name, member_scope["visible_objectives"])
-        self.assertNotIn(self.action.name, member_scope["visible_action_items"])
+        self.assertIn(self.objective.name, member_scope["visible_objectives"])
+        self.assertIn(self.kr.name, member_scope["visible_key_results"])
+        self.assertIn(self.action.name, member_scope["visible_action_items"])
+        self.assertFalse(member_scope["direct_action_items"])
 
     def test_only_action_item_assignee_can_checkin(self):
         probe = frappe._dict(action_item=self.action.name)
@@ -129,8 +133,36 @@ class TestOKRPermissionIntegration(FrappeTestCase):
         self.assertFalse(checkin_permission(probe, self.users["outsider"], "create"))
         self.assertTrue(checkin_permission(probe, self.users["action"], "create"))
 
-    def test_workspace_save_allows_assignee_and_denies_overrides(self):
-        from okr_management.okr_management.page.okr_workspace.okr_workspace import save_workspace_checkin
+    def test_action_assignee_workspace_dropdown_and_save_flow(self):
+        from okr_management.okr_management.doctype.okr_check_in.okr_check_in import (
+            get_assigned_action_items,
+        )
+        from okr_management.okr_management.page.okr_workspace.okr_workspace import (
+            get_workspace_data,
+            save_workspace_checkin,
+        )
+
+        frappe.set_user(self.users["action"])
+        data = get_workspace_data(plan=self.plan.name, level="", owner="me")
+        objectives = data.get("objectives", [])
+        self.assertIn(self.objective.name, {row.name for row in objectives})
+        key_results = [
+            kr for objective in objectives for kr in objective.get("key_results", [])
+        ]
+        self.assertIn(self.kr.name, {row.name for row in key_results})
+        action_items = [
+            item for kr in key_results for item in kr.get("action_items", [])
+        ]
+        self.assertIn(self.action.name, {row.name for row in action_items})
+        self.assertNotIn(self.other_action.name, {row.name for row in action_items})
+
+        dropdown = get_assigned_action_items(
+            "OKR Action Item", "", "name", 0, 20, {}
+        )
+        dropdown_names = {row[0] for row in dropdown}
+        self.assertIn(self.action.name, dropdown_names)
+        self.assertNotIn(self.other_action.name, dropdown_names)
+
 
         frappe.set_user(self.users["action"])
         proof = frappe.get_doc({

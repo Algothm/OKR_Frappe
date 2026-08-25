@@ -104,7 +104,7 @@
    "label": "Planned Activation Date",
    "description": "The Draft Plan activates automatically on this date.",
    "mandatory_depends_on": "eval:doc.status=='Draft'",
-   "in_list_view": 1,
+   "in_list_view": 0,
    "in_standard_filter": 1
   },
   {
@@ -225,7 +225,7 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "track_changes": 1,
- "title_field": "plan_name",
+ "title_field": "",
  "search_fields": "plan_name,name,financial_year,company,status",
- "show_title_field_in_link": 1
+ "show_title_field_in_link": 0
 }

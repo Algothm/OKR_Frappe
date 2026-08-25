@@ -54,12 +54,11 @@ function configure_form(frm) {
     frm.set_df_property('action_status', 'reqd', 1);
     frm.set_df_property('achievements', 'reqd', 1);
     frm.set_df_property('checkin_update_heading', 'hidden', 1);
-    frm.set_df_property('context_preview_html', 'label', '');
+    frm.set_df_property('context_preview_html', 'label', __('Context and Preview'));
     frm.toggle_display('context_preview_html', 1);
 
     const field = frm.fields_dict.action_item;
     if (field) {
-        field.df.only_select = 1;
         field.df.show_title_field_in_link = 1;
     }
 
@@ -165,18 +164,17 @@ function render_context_preview(frm) {
         { icon: icons.plan,     label: __('Plan'),                     value: frm.doc.plan_name_context },
         { icon: icons.building, label: __('Organization'),             value: frm.doc.organization_context },
         { icon: icons.notes,    label: __('Plan Description'),         value: frm.doc.plan_description_context, wide: true },
-        { icon: icons.calendar, label: __('Financial Year'),           value: frm.doc.financial_year_context }
+        { icon: icons.calendar, label: __('Financial Year'),           value: frm.doc.financial_year_context },
+        { icon: icons.calendar, label: __('Timeline'),                  value: frm.doc.timeline_preview_context, wide: true }
     ], __('No context available.'));
 }
 
-function render_preview_cards(field, cards, empty_message) {
-    if (window.okr_management && window.okr_management.ui && window.okr_management.ui.render_preview_cards) {
-        window.okr_management.ui.render_preview_cards(field, cards, empty_message);
-        return;
-    }
+function render_preview_cards(field, cards, empty_message, title) {
     if (!field || !field.$wrapper) return;
     const visible_cards = cards || [];
     const escape_html = (val) => frappe.utils.escape_html(String(val ?? "—"));
+    const header_title = title || __("Context and Preview");
+
     const card_html = visible_cards.length
         ? visible_cards.map((card) => {
             if (!card) return "";
@@ -204,25 +202,34 @@ function render_preview_cards(field, cards, empty_message) {
             + escape_html(empty_message || __("No context available."))
             + '</div>';
 
-    const full_html =
-        '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;'
-        + 'letter-spacing:0.08em;margin-bottom:12px;padding-bottom:8px;'
-        + 'border-bottom:1px solid #e2e8f0;">'
-        + __('Context and Preview')
-        + '</div>'
-        + '<div style="display:flex;flex-wrap:wrap;gap:12px;">' + card_html + '</div>';
+    const title_html = '<div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:10px;">'
+        + escape_html(header_title)
+        + '</div>';
 
-    field.$wrapper[0].innerHTML = full_html;
-    if (field.df) field.df.options = full_html;
+    const cards_box_html = '<div style="border:1.5px solid #cbd5e0;border-radius:10px;background:#fafbff;padding:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,0.06);display:flex;flex-wrap:wrap;gap:12px;">'
+        + card_html
+        + '</div>';
 
-    field.$wrapper.css({
-        'border': '1.5px solid #cbd5e0',
-        'border-radius': '10px',
-        'background': '#fafbff',
-        'padding': '16px 18px',
-        'box-shadow': '0 1px 6px rgba(0,0,0,0.06)',
-        'display': 'block'
-    });
+    field.$wrapper.prev('.okr-context-heading').remove();
+    $(title_html).addClass('okr-context-heading').insertBefore(field.$wrapper);
+    const full_html = cards_box_html;
+
+    if (field.$wrapper && field.$wrapper[0]) {
+        field.$wrapper[0].innerHTML = full_html;
+    } else if (typeof field.set_value === 'function') {
+        field.set_value(full_html);
+    }
+
+    if (field.$wrapper) {
+        field.$wrapper.css({
+            'border': 'none',
+            'border-radius': '0',
+            'background': 'transparent',
+            'padding': '0',
+            'box-shadow': 'none',
+            'display': 'block'
+        });
+    }
 }
 
 

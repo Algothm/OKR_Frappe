@@ -87,19 +87,20 @@
          "in_list_view" : 0
       },
       {
-         "label" : "Context Preview",
+         "label" : "",
          "fieldtype" : "Column Break",
          "fieldname" : "kr_details_col_break"
       },
       {
          "fieldname" : "context_preview_heading",
          "fieldtype" : "HTML",
+         "hidden" : 1,
          "options" : "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Context Preview</div>"
       },
       {
          "fieldname" : "context_preview_html",
          "fieldtype" : "HTML",
-         "label" : "Context Preview"
+         "label" : "Context and Preview of Plan and Objective"
       },
       {
          "label" : "Description",

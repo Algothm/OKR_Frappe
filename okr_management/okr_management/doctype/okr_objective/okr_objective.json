@@ -64,7 +64,7 @@
          "export": 0,
          "delete": 0
       },
-{
+      {
          "role": "OKR User",
          "print": 0,
          "report": 0,
@@ -75,7 +75,7 @@
          "export": 0,
          "delete": 0
       }
-],
+   ],
    "autoname": "naming_series:",
    "index_web_pages_for_search": 1,
    "engine": "InnoDB",
@@ -112,7 +112,7 @@
       {
          "label": "Priority",
          "fieldname": "priority",
-         "default": "High",
+         "default": "Medium",
          "in_standard_filter": 1,
          "reqd": 1,
          "fieldtype": "Select",
@@ -375,7 +375,7 @@
       {
          "fieldname": "context_preview_html",
          "fieldtype": "HTML",
-         "label": "Context Preview"
+         "label": "Context and Preview of Plan"
       },
       {
          "fieldname": "teams",
@@ -426,7 +426,7 @@
       "alignment_map"
    ],
    "actions": [],
-"name":"OKR Objective",
+   "name": "OKR Objective",
    "doctype": "DocType",
    "istable": 0,
    "naming_rule": "By \"Naming Series\" field"

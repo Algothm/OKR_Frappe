@@ -11,7 +11,7 @@ class OKRWorkspace {
                 this.wrapper = wrapper;
                 this.page = frappe.ui.make_app_page({ parent: wrapper, single_column: true });
                 this.$body = $('<div class="okr-workspace-page"></div>').appendTo(this.page.main);
-                this.filters = Object.assign({ plan: '', level: 'Department', owner: 'me' }, frappe.session.okr_workspace_filters || {});
+                this.filters = Object.assign({ plan: '', level: '', owner: 'me' }, frappe.session.okr_workspace_filters || {});
                 delete this.filters.year;
                 if (this.filters.owner === 'all') this.filters.owner = 'team';
                 this.state = { objectives: {}, key_results: {}, action_history: {}, action_history_all: {}, action_checkin: null, selected_objective: null };

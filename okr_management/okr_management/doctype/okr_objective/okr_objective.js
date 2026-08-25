@@ -34,7 +34,6 @@ frappe.ui.form.on('OKR Objective', {
         layout_left_fields(frm);
     },
     refresh(frm) {
-        frm.$wrapper.find('.form-dashboard').hide();
         sync_level_details(frm);
         configure_objective_form(frm);
         configure_level_details(frm, false);
@@ -96,7 +95,7 @@ function configure_objective_form(frm) {
         'plan_name', 'plan_description', 'company', 'financial_year', 'plan_owner'
     ].forEach((fieldname) => frm.set_df_property(fieldname, 'read_only', 1));
 
-    frm.set_df_property('context_preview_html', 'label', __('Context Preview'));
+    frm.set_df_property('context_preview_html', 'label', __('Context and Preview of Plan'));
     frm.toggle_display('context_preview_html', 1);
     frm.toggle_display('plan_team_preview', 0);
     ['plan_name', 'plan_description', 'company', 'financial_year', 'plan_owner', 'timeline_preview', 'plan_team_preview'].forEach((fieldname) => frm.set_df_property(fieldname, 'hidden', 1));
@@ -275,17 +274,15 @@ function render_plan_context_preview(frm, context) {
         { icon: icons.clock,    label: __('Timeline'),         value: timeline_value },
         { icon: icons.notes,    label: __('Description'),      value: ctx.description || frm.doc.plan_description, wide: true },
         { icon: icons.team,     label: __('Plan Team'),        html: team_html, wide: true },
-    ], __('No plan context available.'));
+    ], __("No plan context available."), __("Context and Preview of Plan"));
 }
 
-function render_preview_cards(field, cards, empty_message) {
-    if (window.okr_management && window.okr_management.ui && window.okr_management.ui.render_preview_cards) {
-        window.okr_management.ui.render_preview_cards(field, cards, empty_message);
-        return;
-    }
+function render_preview_cards(field, cards, empty_message, title) {
     if (!field || !field.$wrapper) return;
     const visible_cards = cards || [];
     const escape_html = (val) => frappe.utils.escape_html(String(val ?? "—"));
+    const header_title = title || __("Context and Preview");
+
     const card_html = visible_cards.length
         ? visible_cards.map((card) => {
             if (!card) return "";
@@ -313,11 +310,33 @@ function render_preview_cards(field, cards, empty_message) {
             + escape_html(empty_message || __("No context available."))
             + '</div>';
 
-    const wrapper_html = '<div style="display:flex;flex-wrap:wrap;gap:12px;">' + card_html + '</div>';
-    if (typeof field.set_value === 'function') {
-        field.set_value(wrapper_html);
-    } else {
-        field.$wrapper.html(wrapper_html);
+    const title_html = '<div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:10px;">'
+        + escape_html(header_title)
+        + '</div>';
+
+    const cards_box_html = '<div style="border:1.5px solid #cbd5e0;border-radius:10px;background:#fafbff;padding:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,0.06);display:flex;flex-wrap:wrap;gap:12px;">'
+        + card_html
+        + '</div>';
+
+    field.$wrapper.prev('.okr-context-heading').remove();
+    $(title_html).addClass('okr-context-heading').insertBefore(field.$wrapper);
+    const full_html = cards_box_html;
+
+    if (field.$wrapper && field.$wrapper[0]) {
+        field.$wrapper[0].innerHTML = full_html;
+    } else if (typeof field.set_value === 'function') {
+        field.set_value(full_html);
+    }
+
+    if (field.$wrapper) {
+        field.$wrapper.css({
+            'border': 'none',
+            'border-radius': '0',
+            'background': 'transparent',
+            'padding': '0',
+            'box-shadow': 'none',
+            'display': 'block'
+        });
     }
 }
 

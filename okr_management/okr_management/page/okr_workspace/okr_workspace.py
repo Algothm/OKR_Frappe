@@ -146,7 +146,11 @@ def get_workspace_data(year: str | None = None, plan: str | None = None, level: 
     hierarchy = []
     for objective in objectives:
         objective["key_results"] = krs_by_objective.get(objective.name, [])
-        if objective["key_results"] or objective.name in scope["owned_objectives"]:
+        if (
+            objective["key_results"]
+            or objective.name in scope["owned_objectives"]
+            or objective.parent_plan in scope["full_plan_names"]
+        ):
             hierarchy.append(objective)
 
     return base_response(hierarchy, year, plan, level, owner)
