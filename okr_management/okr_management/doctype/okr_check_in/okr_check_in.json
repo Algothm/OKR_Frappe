@@ -555,61 +555,28 @@
  "owner": "Administrator",
  "permissions": [
   {
-   "create": 1,
-   "delete": 0,
-   "email": 0,
-   "export": 0,
-   "print": 0,
-   "read": 1,
-   "report": 0,
-   "role": "System Manager",
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 0,
-   "email": 0,
-   "export": 0,
-   "print": 0,
-   "read": 1,
-   "report": 0,
-   "role": "OKR Admin",
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 0,
-   "email": 0,
-   "export": 0,
-   "print": 0,
-   "read": 1,
-   "report": 0,
-   "role": "Employee",
-   "write": 1
-  },
-{
-   "create": 1,
-   "delete": 0,
-   "email": 0,
-   "export": 0,
-   "print": 0,
-   "read": 1,
-   "report": 0,
    "role": "OKR User",
-   "write": 1
-  },
-{
-   "create": 1,
-   "delete": 0,
-   "email": 0,
-   "export": 0,
-   "print": 0,
    "read": 1,
-   "report": 0,
-   "role": "Guest",
-   "write": 1
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
   }
-],
+ ],
  "sort_field": "modified",
  "sort_order": "DESC",
  "track_changes": 1

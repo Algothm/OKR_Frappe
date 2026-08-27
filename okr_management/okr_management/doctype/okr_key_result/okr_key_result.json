@@ -1,496 +1,463 @@
 {
-   "permissions" : [
-      {
-         "write" : 1,
-         "email" : 1,
-         "read" : 1,
-         "delete" : 1,
-         "print" : 1,
-         "create" : 1,
-         "role" : "OKR Admin",
-         "export" : 1,
-         "report" : 1
-      },
-      {
-         "role" : "Team Lead",
-         "create" : 1,
-         "report" : 0,
-         "export" : 0,
-         "print" : 0,
-         "delete" : 0,
-         "read" : 1,
-         "write" : 1,
-         "email" : 0
-      },
-      {
-         "write" : 1,
-         "email" : 0,
-         "read" : 1,
-         "delete" : 0,
-         "print" : 0,
-         "create" : 1,
-         "role" : "Employee",
-         "export" : 0,
-         "report" : 0
-      },
-{
-         "write" : 1,
-         "email" : 0,
-         "read" : 1,
-         "delete" : 0,
-         "print" : 0,
-         "create" : 1,
-         "role" : "OKR User",
-         "export" : 0,
-         "report" : 0
-      },
-{
-         "write" : 1,
-         "email" : 0,
-         "read" : 1,
-         "delete" : 0,
-         "print" : 0,
-         "create" : 1,
-         "role" : "Guest",
-         "export" : 0,
-         "report" : 0
-      }
-],
-   "autoname" : "naming_series:",
-   "actions" : [],
-"title_field":"key_result_title",
-   "doctype" : "DocType",
-   "creation" : "2026-06-22 00:00:00.000000",
-   "istable" : 0,
-   "fields" : [
-      {
-         "label" : "Key Result Setup",
-         "fieldtype" : "Section Break",
-         "fieldname" : "kr_details_section"
-      },
-      {
-         "in_list_view" : 1,
-         "in_standard_filter" : 1,
-         "reqd" : 1,
-         "fieldtype" : "Data",
-         "label" : "Key Result Title",
-         "fieldname" : "key_result_title"
-      },
-      {
-         "reqd" : 1,
-         "options" : "OKR Objective",
-         "description" : "Select the objective this key result belongs to. Plan, organization, dates, and ownership context are filled from the objective.",
-         "fieldtype" : "Link",
-         "fieldname" : "objective",
-         "label" : "Objective",
-         "in_standard_filter" : 1,
-         "in_list_view" : 0
-      },
-      {
-         "label" : "",
-         "fieldtype" : "Column Break",
-         "fieldname" : "kr_details_col_break"
-      },
-      {
-         "fieldname" : "context_preview_heading",
-         "fieldtype" : "HTML",
-         "hidden" : 1,
-         "options" : "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Context Preview</div>"
-      },
-      {
-         "fieldname" : "context_preview_html",
-         "fieldtype" : "HTML",
-         "label" : "Context and Preview of Plan and Objective"
-      },
-      {
-         "label" : "Description",
-         "fieldname" : "description",
-         "fieldtype" : "Small Text"
-      },
-      {
-         "label" : "Assignee",
-         "fieldname" : "assignee",
-         "fieldtype" : "Link",
-         "options" : "User",
-         "in_list_view" : 1,
-         "reqd" : 1
-      },
-      {
-         "fieldtype" : "Section Break",
-         "label" : "Inherited Context",
-         "fieldname" : "inherited_context_section"
-      },
-      {
-         "options" : "OKR Plan",
-         "fieldname" : "parent_plan",
-         "label" : "Plan Name",
-         "fieldtype" : "Link",
-         "read_only" : 1,
-         "in_standard_filter" : 0,
-         "in_list_view" : 1
-      },
-      {
-         "read_only" : 1,
-         "fieldname" : "objective_title",
-         "label" : "Objective Name",
-         "fieldtype" : "Data",
-         "in_list_view" : 1
-      },
-      {
-         "read_only" : 1,
-         "in_standard_filter" : 0,
-         "in_list_view" : 0,
-         "options" : "Company",
-         "label" : "Organization",
-         "fieldname" : "company",
-         "ignore_user_permissions" : 1,
-         "fieldtype" : "Link"
-      },
-      {
-         "in_list_view" : 0,
-         "in_standard_filter" : 0,
-         "read_only" : 1,
-         "fieldname" : "financial_year",
-         "label" : "Financial Year",
-         "fieldtype" : "Link",
-         "ignore_user_permissions" : 1,
-         "options" : "Fiscal Year"
-      },
-      {
-         "read_only" : 1,
-         "in_standard_filter" : 0,
-         "options" : "Department",
-         "label" : "Department",
-         "fieldtype" : "Link",
-         "ignore_user_permissions" : 1,
-         "fieldname" : "department"
-      },
-      {
-         "fieldname" : "inherited_context_col_break",
-         "fieldtype" : "Column Break"
-      },
-      {
-         "options" : "User",
-         "fieldtype" : "Link",
-         "label" : "Plan Owner",
-         "hidden" : 1,
-         "fieldname" : "plan_owner",
-         "in_standard_filter" : 0,
-         "in_list_view" : 0,
-         "read_only" : 1
-      },
-      {
-         "fieldname" : "objective_owner",
-         "label" : "Objective Owner",
-         "fieldtype" : "Link",
-         "hidden" : 1,
-         "in_list_view" : 0,
-         "in_standard_filter" : 0,
-         "read_only" : 1,
-         "options" : "User"
-      },
-      {
-         "options" : "Organization\nDepartment",
-         "read_only" : 1,
-         "in_list_view" : 0,
-         "in_standard_filter" : 0,
-         "fieldtype" : "Select",
-         "fieldname" : "objective_level",
-         "label" : "Objective Level",
-         "hidden" : 1
-      },
-      {
-         "read_only" : 1,
-         "in_list_view" : 0,
-         "in_standard_filter" : 0,
-         "fieldtype" : "Date",
-         "label" : "Start Date",
-         "fieldname" : "start_date",
-         "hidden" : 1
-      },
-      {
-         "fieldname" : "target_period",
-         "fieldtype" : "Select",
-         "label" : "Target Period",
-         "reqd" : 0,
-         "in_list_view" : 0,
-         "hidden" : 1,
-         "read_only" : 1
-      },
-      {
-         "in_list_view" : 0,
-         "in_standard_filter" : 0,
-         "read_only" : 0,
-         "fieldname" : "end_date",
-         "hidden" : 0,
-         "reqd" : 1,
-         "in_list_view" : 1,
-         "label" : "Target Date",
-         "fieldtype" : "Date"
-      },
-      {
-         "label" : "Timeline",
-         "fieldtype" : "Data",
-         "fieldname" : "date_range",
-         "read_only" : 1,
-         "hidden" : 1
-      },
-      {
-         "fieldname" : "ownership_section",
-         "hidden" : 1,
-         "label" : "Assignment",
-         "fieldtype" : "Section Break",
-         "in_list_view" : 0,
-         "in_standard_filter" : 0
-      },
-      {
-         "reqd" : 0,
-         "options" : "User",
-         "label" : "Key Result Owner",
-         "fieldname" : "owner_user",
-         "hidden" : 1,
-         "fieldtype" : "Link",
-         "in_standard_filter" : 0,
-         "in_list_view" : 0
-      },
-      {
-         "options" : "User",
-         "fieldtype" : "Link",
-         "fieldname" : "reviewer",
-         "label" : "Reviewer",
-         "hidden" : 1,
-         "in_standard_filter" : 0
-      },
-      {
-         "fieldtype" : "Link",
-         "fieldname" : "approver",
-         "label" : "Approver",
-         "hidden" : 1,
-         "in_standard_filter" : 0,
-         "options" : "User"
-      },
-      {
-         "hidden" : 1,
-         "fieldtype" : "Column Break",
-         "fieldname" : "ownership_col_break",
-         "in_list_view" : 0,
-         "in_standard_filter" : 0
-      },
-      {
-         "in_list_view" : 0,
-         "fieldtype" : "Select",
-         "fieldname" : "priority",
-         "label" : "Priority",
-         "default" : "Medium",
-         "hidden" : 1,
-         "options" : "Low\nMedium\nHigh"
-      },
-      {
-         "hidden" : 1,
-         "fieldname" : "ownership_status_col_break",
-         "fieldtype" : "Column Break",
-         "in_list_view" : 0,
-         "in_standard_filter" : 0
-      },
-      {
-         "reqd" : 1,
-         "options" : "Draft\nPlanned\nActive\nOn Hold\nCompleted\nClosed\nArchived",
-         "in_standard_filter" : 1,
-         "in_list_view" : 0,
-         "label" : "Status",
-         "fieldname" : "status",
-         "fieldtype" : "Select",
-         "default" : "Draft",
-         "hidden" : 1
-      },
-      {
-         "label" : "Measurement Configuration",
-         "fieldtype" : "Section Break",
-         "fieldname" : "measurement_section"
-      },
-      {
-         "options" : "Manual\nAutomatic",
-         "reqd" : 0,
-         "in_list_view" : 0,
-         "in_standard_filter" : 0,
-         "fieldtype" : "Select",
-         "label" : "Calculation Mode",
-         "default" : "Manual",
-         "fieldname" : "calculation_mode",
-         "hidden" : 1
-      },
-      {
-         "default" : "Percentage",
-         "fieldtype" : "Select",
-         "label" : "Measurement Type",
-         "fieldname" : "metric_type",
-         "options" : "Percentage\nNumber\nCurrency",
-         "reqd" : 1,
-         "in_list_view" : 0,
-         "in_standard_filter" : 0
-      },
-      {
-         "options" : "Increase\nDecrease",
-         "default" : "Increase",
-         "label" : "Goal Direction",
-         "fieldtype" : "Select",
-         "fieldname" : "metric_direction",
-         "reqd" : 1
-      },
-      {
-         "placeholder" : "e.g., Customers, Leads, Orders, Hours, Tasks, Bottles, Calls",
-         "default" : "%",
-         "fieldtype" : "Data",
-         "label" : "Unit of Measure",
-         "fieldname" : "unit_of_measure"
-      },
-      {
-         "fieldtype" : "Column Break",
-         "fieldname" : "measurement_col_break"
-      },
-      {
-         "fieldtype" : "Float",
-         "default" : 0,
-         "label" : "Starting Value (Current)",
-         "fieldname" : "baseline_value"
-      },
-      {
-         "in_list_view" : 0,
-         "default" : 100,
-         "fieldname" : "target_value",
-         "label" : "Target to Achieve",
-         "fieldtype" : "Float"
-      },
-      {
-         "label" : "Current Progress Value",
-         "default" : 0,
-         "fieldtype" : "Float",
-         "fieldname" : "current_value",
-         "in_list_view" : 0,
-         "read_only" : 1,
-         "hidden" : 1
-      },
-      {
-         "depends_on" : "eval:doc.metric_type=='Currency'",
-         "options" : "Currency",
-         "fieldtype" : "Link",
-         "label" : "Currency",
-         "fieldname" : "currency"
-      },
-      {
-         "hidden" : 1,
-         "fieldname" : "summary_sidebar_section",
-         "label" : "Performance Summary",
-         "fieldtype" : "Section Break"
-      },
-      {
-         "in_list_view" : 0,
-         "read_only" : 1,
-         "fieldtype" : "Percent",
-         "fieldname" : "target_progress",
-         "label" : "Progress %",
-         "default" : 0,
-         "hidden" : 1
-      },
-      {
-         "read_only" : 1,
-         "in_list_view" : 0,
-         "fieldname" : "score",
-         "default" : 0,
-         "label" : "Score",
-         "fieldtype" : "Float",
-         "hidden" : 1
-      },
-      {
-         "hidden" : 1,
-         "fieldname" : "summary_sidebar_col_break",
-         "fieldtype" : "Column Break"
-      },
-      {
-         "read_only" : 1,
-         "fieldtype" : "Int",
-         "label" : "Action Item Count",
-         "fieldname" : "action_item_count",
-         "hidden" : 1,
-         "default" : 0
-      },
-      {
-         "hidden" : 1,
-         "fieldname" : "summary_checkin_col_break",
-         "fieldtype" : "Column Break"
-      },
-      {
-         "fieldtype" : "Int",
-         "fieldname" : "checkin_count",
-         "label" : "Check-In Count",
-         "default" : 0,
-         "hidden" : 1,
-         "read_only" : 1
-      },
-      {
-         "reqd" : 1,
-         "options" : "OKR-KR-.YYYY.-",
-         "fieldname" : "naming_series",
-         "fieldtype" : "Select",
-         "default" : "OKR-KR-.YYYY.-",
-         "hidden" : 1,
-         "label" : "Naming Series",
-         "read_only" : 1
-      }
-   ],
-   "module" : "OKR Management",
-   "show_title_field_in_link" : 1,
-   "search_fields" : "key_result_title,name,owner_user,status",
-   "engine" : "InnoDB",
-   "naming_rule" : "By \"Naming Series\" field",
-   "track_changes" : 1,
-   "default_view" : "List",
-   "index_web_pages_for_search" : 1,
-   "owner" : "Administrator",
-   "field_order" : [
-      "kr_details_section",
-      "objective",
-      "objective_title",
-      "key_result_title",
-      "description",
-      "parent_plan",
-      "assignee",
-      "target_period",
-      "end_date",
-      "priority",
-      "status",
-      "kr_details_col_break",
-      "context_preview_heading",
-      "context_preview_html",
-      "company",
-      "financial_year",
-      "department",
-      "date_range",
-      "measurement_section",
-      "metric_type",
-      "currency",
-      "metric_direction",
-      "unit_of_measure",
-      "measurement_col_break",
-      "baseline_value",
-      "target_value",
-      "current_value",
-      "calculation_mode",
-      "summary_sidebar_section",
-      "target_progress",
-      "summary_sidebar_col_break",
-      "action_item_count",
-      "summary_checkin_col_break",
-      "checkin_count",
-      "owner_user",
-      "objective_level",
-      "ownership_section",
-      "ownership_col_break",
-      "ownership_status_col_break",
-      "naming_series"
-   ],
-   "sort_order" : "DESC",
-   "name" : "OKR Key Result",
-   "sort_field" : "modified",
-   "allow_rename" : 1
+ "permissions": [
+  {
+   "role": "OKR User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
+  }
+ ],
+ "autoname": "naming_series:",
+ "actions": [],
+ "title_field": "key_result_title",
+ "doctype": "DocType",
+ "creation": "2026-06-22 00:00:00.000000",
+ "istable": 0,
+ "fields": [
+  {
+   "label": "Key Result Setup",
+   "fieldtype": "Section Break",
+   "fieldname": "kr_details_section"
+  },
+  {
+   "reqd": 1,
+   "options": "OKR Objective",
+   "description": "Select the objective this key result belongs to. Plan, organization, dates, and ownership context are filled from the objective.",
+   "fieldtype": "Link",
+   "fieldname": "objective",
+   "label": "Objective",
+   "in_standard_filter": 1,
+   "in_list_view": 0
+  },
+  {
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "reqd": 1,
+   "fieldtype": "Data",
+   "label": "Key Result Title",
+   "fieldname": "key_result_title"
+  },
+  {
+   "label": "Description",
+   "fieldname": "description",
+   "fieldtype": "Small Text"
+  },
+  {
+   "label": "Assignee",
+   "fieldname": "assignee",
+   "fieldtype": "Link",
+   "options": "User",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "read_only": 0,
+   "in_list_view": 1,
+   "in_standard_filter": 0,
+   "fieldtype": "Date",
+   "label": "Start Date",
+   "fieldname": "start_date",
+   "hidden": 0,
+   "reqd": 1
+  },
+  {
+   "in_list_view": 1,
+   "in_standard_filter": 0,
+   "read_only": 0,
+   "fieldname": "end_date",
+   "hidden": 0,
+   "reqd": 1,
+   "label": "Target Date",
+   "fieldtype": "Date"
+  },
+  {
+   "label": "",
+   "fieldtype": "Column Break",
+   "fieldname": "kr_details_col_break"
+  },
+  {
+   "fieldname": "context_preview_heading",
+   "fieldtype": "HTML",
+   "hidden": 1,
+   "options": "<div style=\"font-size:18px;font-weight:600;line-height:1.4;margin:0 0 20px;\">Context Preview</div>"
+  },
+  {
+   "fieldname": "context_preview_html",
+   "fieldtype": "HTML",
+   "label": "Context and Preview of Plan and Objective"
+  },
+  {
+   "label": "Measurement Configuration",
+   "fieldtype": "Section Break",
+   "fieldname": "measurement_section"
+  },
+  {
+   "default": "Percentage",
+   "fieldtype": "Select",
+   "label": "Measurement Type",
+   "fieldname": "metric_type",
+   "options": "Percentage\nNumber\nCurrency",
+   "reqd": 1,
+   "in_list_view": 0,
+   "in_standard_filter": 0
+  },
+  {
+   "depends_on": "eval:doc.metric_type=='Currency'",
+   "options": "Currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "fieldname": "currency"
+  },
+  {
+   "options": "Increase\nDecrease",
+   "default": "Increase",
+   "label": "Goal Direction",
+   "fieldtype": "Select",
+   "fieldname": "metric_direction",
+   "reqd": 1
+  },
+  {
+   "placeholder": "e.g., Customers, Leads, Orders, Hours, Tasks, Bottles, Calls",
+   "default": "%",
+   "fieldtype": "Data",
+   "label": "Unit of Measure",
+   "fieldname": "unit_of_measure"
+  },
+  {
+   "fieldtype": "Column Break",
+   "fieldname": "measurement_col_break"
+  },
+  {
+   "fieldtype": "Float",
+   "default": 0,
+   "label": "Starting Value (Current)",
+   "fieldname": "baseline_value"
+  },
+  {
+   "in_list_view": 0,
+   "default": 100,
+   "fieldname": "target_value",
+   "label": "Target to Achieve",
+   "fieldtype": "Float"
+  },
+  {
+   "label": "Current Progress Value",
+   "default": 0,
+   "fieldtype": "Float",
+   "fieldname": "current_value",
+   "in_list_view": 0,
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "options": "Manual\nAutomatic",
+   "reqd": 0,
+   "in_list_view": 0,
+   "in_standard_filter": 0,
+   "fieldtype": "Select",
+   "label": "Calculation Mode",
+   "default": "Manual",
+   "fieldname": "calculation_mode",
+   "hidden": 1
+  },
+  {
+   "hidden": 1,
+   "fieldname": "summary_sidebar_section",
+   "label": "Performance Summary",
+   "fieldtype": "Section Break"
+  },
+  {
+   "in_list_view": 0,
+   "read_only": 1,
+   "fieldtype": "Percent",
+   "fieldname": "target_progress",
+   "label": "Progress %",
+   "default": 0,
+   "hidden": 1
+  },
+  {
+   "hidden": 1,
+   "fieldname": "summary_sidebar_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "read_only": 1,
+   "fieldtype": "Int",
+   "label": "Action Item Count",
+   "fieldname": "action_item_count",
+   "hidden": 1,
+   "default": 0
+  },
+  {
+   "hidden": 1,
+   "fieldname": "summary_checkin_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldtype": "Int",
+   "fieldname": "checkin_count",
+   "label": "Check-In Count",
+   "default": 0,
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "read_only": 1,
+   "in_list_view": 0,
+   "fieldname": "score",
+   "default": 0,
+   "label": "Score",
+   "fieldtype": "Float",
+   "hidden": 1
+  },
+  {
+   "fieldname": "ownership_section",
+   "hidden": 1,
+   "label": "Assignment",
+   "fieldtype": "Section Break",
+   "in_list_view": 0,
+   "in_standard_filter": 0
+  },
+  {
+   "reqd": 0,
+   "options": "User",
+   "label": "Key Result Owner",
+   "fieldname": "owner_user",
+   "hidden": 1,
+   "fieldtype": "Link",
+   "in_standard_filter": 0,
+   "in_list_view": 0
+  },
+  {
+   "options": "User",
+   "fieldtype": "Link",
+   "fieldname": "reviewer",
+   "label": "Reviewer",
+   "hidden": 1,
+   "in_standard_filter": 0
+  },
+  {
+   "fieldtype": "Link",
+   "fieldname": "approver",
+   "label": "Approver",
+   "hidden": 1,
+   "in_standard_filter": 0,
+   "options": "User"
+  },
+  {
+   "hidden": 1,
+   "fieldtype": "Column Break",
+   "fieldname": "ownership_col_break",
+   "in_list_view": 0,
+   "in_standard_filter": 0
+  },
+  {
+   "in_list_view": 0,
+   "fieldtype": "Select",
+   "fieldname": "priority",
+   "label": "Priority",
+   "default": "Medium",
+   "hidden": 1,
+   "options": "Low\nMedium\nHigh"
+  },
+  {
+   "hidden": 1,
+   "fieldname": "ownership_status_col_break",
+   "fieldtype": "Column Break",
+   "in_list_view": 0,
+   "in_standard_filter": 0
+  },
+  {
+   "reqd": 1,
+   "options": "Draft\nPlanned\nActive\nOn Hold\nCompleted\nClosed\nArchived",
+   "in_standard_filter": 1,
+   "in_list_view": 0,
+   "label": "Status",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "default": "Draft",
+   "hidden": 1
+  },
+  {
+   "reqd": 1,
+   "options": "OKR-KR-.YYYY.-",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "default": "OKR-KR-.YYYY.-",
+   "hidden": 1,
+   "label": "Naming Series",
+   "read_only": 1
+  },
+  {
+   "fieldtype": "Section Break",
+   "label": "Inherited Context",
+   "fieldname": "inherited_context_section"
+  },
+  {
+   "options": "OKR Plan",
+   "fieldname": "parent_plan",
+   "label": "Plan Name",
+   "fieldtype": "Link",
+   "read_only": 1,
+   "in_standard_filter": 0,
+   "in_list_view": 1
+  },
+  {
+   "read_only": 1,
+   "fieldname": "objective_title",
+   "label": "Objective Name",
+   "fieldtype": "Data",
+   "in_list_view": 1
+  },
+  {
+   "read_only": 1,
+   "in_standard_filter": 0,
+   "in_list_view": 0,
+   "options": "Company",
+   "label": "Organization",
+   "fieldname": "company",
+   "ignore_user_permissions": 1,
+   "fieldtype": "Link"
+  },
+  {
+   "in_list_view": 0,
+   "in_standard_filter": 0,
+   "read_only": 1,
+   "fieldname": "financial_year",
+   "label": "Financial Year",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "options": "Fiscal Year"
+  },
+  {
+   "read_only": 1,
+   "in_standard_filter": 0,
+   "options": "Department",
+   "label": "Department",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "fieldname": "department"
+  },
+  {
+   "label": "Timeline",
+   "fieldtype": "Data",
+   "fieldname": "date_range",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "inherited_context_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "options": "User",
+   "fieldtype": "Link",
+   "label": "Plan Owner",
+   "hidden": 1,
+   "fieldname": "plan_owner",
+   "in_standard_filter": 0,
+   "in_list_view": 0,
+   "read_only": 1
+  },
+  {
+   "fieldname": "objective_owner",
+   "label": "Objective Owner",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "in_list_view": 0,
+   "in_standard_filter": 0,
+   "read_only": 1,
+   "options": "User"
+  },
+  {
+   "options": "Organization\nDepartment\nTeam\nIndividual",
+   "read_only": 1,
+   "in_list_view": 0,
+   "in_standard_filter": 0,
+   "fieldtype": "Select",
+   "fieldname": "objective_level",
+   "label": "Objective Level",
+   "hidden": 1
+  },
+  {
+   "fieldname": "target_period",
+   "fieldtype": "Select",
+   "label": "Target Period",
+   "reqd": 0,
+   "in_list_view": 0,
+   "hidden": 1,
+   "read_only": 1
+  }
+ ],
+ "module": "OKR Management",
+ "show_title_field_in_link": 1,
+ "search_fields": "key_result_title,name,owner_user,status",
+ "engine": "InnoDB",
+ "naming_rule": "By \"Naming Series\" field",
+ "track_changes": 1,
+ "default_view": "List",
+ "index_web_pages_for_search": 1,
+ "owner": "Administrator",
+ "field_order": [
+  "kr_details_section",
+  "objective",
+  "objective_title",
+  "key_result_title",
+  "description",
+  "parent_plan",
+  "assignee",
+  "target_period",
+  "end_date",
+  "priority",
+  "status",
+  "kr_details_col_break",
+  "context_preview_heading",
+  "context_preview_html",
+  "company",
+  "financial_year",
+  "department",
+  "date_range",
+  "measurement_section",
+  "metric_type",
+  "currency",
+  "metric_direction",
+  "unit_of_measure",
+  "measurement_col_break",
+  "baseline_value",
+  "target_value",
+  "current_value",
+  "calculation_mode",
+  "summary_sidebar_section",
+  "target_progress",
+  "summary_sidebar_col_break",
+  "action_item_count",
+  "summary_checkin_col_break",
+  "checkin_count",
+  "owner_user",
+  "objective_level",
+  "ownership_section",
+  "ownership_col_break",
+  "ownership_status_col_break",
+  "naming_series"
+ ],
+ "sort_order": "DESC",
+ "name": "OKR Key Result",
+ "sort_field": "modified",
+ "allow_rename": 1
 }

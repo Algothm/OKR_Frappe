@@ -394,49 +394,65 @@ class OKRWorkspace {
         }
 
         checkin_panel(ai, kr) {
-                const currentStatus = ai.status || 'In Progress';
-                const metricType = kr.metric_type || 'Percentage';
-                const baseline = flt(kr.baseline_value || 0, 2);
-                const target = flt(kr.target_value || 0, 2);
-                const minimum = Math.min(baseline, target);
-                const maximum = Math.max(baseline, target);
-                const actual = flt(kr.current_value || baseline, 2);
-                const valueLabel = metricType === 'Currency' ? __('Current Amount ({0})', [kr.currency || '']) : (metricType === 'Number' ? __('Current Value') : __('Current Percentage (%)'));
-                const actualDisplay = metricType === 'Currency' ? this.format_kr_currency(actual, kr.currency) : (metricType === 'Percentage' ? `${this.format_kr_number(actual)}%` : this.format_kr_number(actual));
-                return `
-                        <div class="okr-inline-checkin">
-                                <div class="okr-inline-context">
-                                        ${this.context(__('Key Result'), kr.key_result_title || kr.name)}${this.context(__('Objective'), kr.objective)}${this.context(__('Reported By'), frappe.session.user)}${this.context(__('Current Value'), actualDisplay)}${this.context(__('Completion'), `${flt(kr.target_progress || 0, 2)}%`)}
-                                </div>
-                                <div class="okr-inline-fields okr-quick-checkin-form">
-                                        <div class="okr-checkin-row">
-                                                <label>${valueLabel} <input class="form-control" type="number" min="${minimum}" max="${maximum}" step="0.01" data-ws-progress value="${actual}"><small class="text-muted">${__('Allowed range: {0} to {1}', [minimum, maximum])}</small></label>
-                                                <label>${__('Status')}
-                                                        <select class="form-control" data-ws-status>
-                                                                <option value="In Progress" ${currentStatus === 'In Progress' ? 'selected' : ''}>${__('In Progress')}</option>
-                                                                <option value="On Hold" ${currentStatus === 'On Hold' ? 'selected' : ''}>${__('On Hold')}</option>
-                                                                <option value="Blocked" ${currentStatus === 'Blocked' ? 'selected' : ''}>${__('Blocked')}</option>
-                                                                <option value="Archived" ${currentStatus === 'Archived' ? 'selected' : ''}>${__('Archived')}</option>
+		const currentStatus = ai.status || 'In Progress';
+		const metricType = kr.metric_type || 'Percentage';
+		const baseline = flt(kr.baseline_value || 0, 2);
+		const target = flt(kr.target_value || 0, 2);
+		const minimum = Math.min(baseline, target);
+		const maximum = Math.max(baseline, target);
+		const actual = flt(kr.current_value || baseline, 2);
+		const valueLabel = metricType === 'Currency' ? __('Current Amount ({0})', [kr.currency || '']) : (metricType === 'Number' ? __('Current Value') : __('Current Percentage (%)'));
+		const actualDisplay = metricType === 'Currency' ? this.format_kr_currency(actual, kr.currency) : (metricType === 'Percentage' ? `${this.format_kr_number(actual)}%` : this.format_kr_number(actual));
+		return `
+			<div class="okr-inline-checkin">
+				<div class="okr-inline-context">
+					<div class="okr-context-items-row">
+						${this.context(__('Key Result'), kr.key_result_title || kr.name)}
+						${this.context(__('Objective'), kr.objective)}
+						${this.context(__('Reported By'), frappe.session.user)}
+						${this.context(__('Current Value'), actualDisplay)}
+						${this.context(__('Completion'), `${flt(kr.target_progress || 0, 2)}%`)}
+					</div>
+					<div class="okr-context-collapse-wrap">
+						<button type="button" class="okr-close-btn" data-cancel-checkin title="${__('Close')}">
+							<span class="okr-close-icon">✕</span> ${__('Close')}
+						</button>
+					</div>
+				</div>
+				<div class="okr-inline-fields okr-quick-checkin-form">
+					<div class="okr-checkin-row">
+						<div class="okr-checkin-field">
+							<label>${valueLabel}</label>
+							<input class="form-control" type="number" min="${minimum}" max="${maximum}" step="0.01" data-ws-progress value="${actual}">
+							<small class="text-muted">${__('Allowed range: {0} to {1}', [minimum, maximum])}</small>
+						</div>
+						<div class="okr-checkin-field">
+							<label>${__('Status')}</label>
+							<select class="form-control" data-ws-status>
+								<option value="In Progress" ${currentStatus === 'In Progress' ? 'selected' : ''}>${__('In Progress')}</option>
+								<option value="On Hold" ${currentStatus === 'On Hold' ? 'selected' : ''}>${__('On Hold')}</option>
+								<option value="Blocked" ${currentStatus === 'Blocked' ? 'selected' : ''}>${__('Blocked')}</option>
+								<option value="Archived" ${currentStatus === 'Archived' ? 'selected' : ''}>${__('Archived')}</option>
+							</select>
+						</div>
+					</div>
+					<label class="okr-update-field">${__('Description / Update')} <textarea class="form-control" rows="4" data-ws-update></textarea></label>
+					<div class="okr-checkin-bottom-row">
+						<div class="okr-attach-line"><div data-ws-attachment></div><button class="btn btn-sm btn-default" data-attach-file>${__('Attach File')}</button></div>
+						<div class="okr-inline-actions"><button class="btn btn-sm btn-default" data-cancel-checkin>${__('Cancel')}</button><button class="btn btn-sm btn-dark" data-save-checkin>${__('Save Check-In')}</button></div>
+					</div>
+				</div>
+			</div>
+		`;
+	}
 
-                                                        </select>
-                                                </label>
-                                        </div>
-                                        <label class="okr-update-field">${__('Description / Update')} <textarea class="form-control" rows="4" data-ws-update></textarea></label>
-                                        <div class="okr-checkin-bottom-row">
-                                                <div class="okr-attach-line"><div data-ws-attachment></div><button class="btn btn-sm btn-default" data-attach-file>${__('Attach File')}</button></div>
-                                                <div class="okr-inline-actions"><button class="btn btn-sm btn-default" data-cancel-checkin>${__('Cancel')}</button><button class="btn btn-sm btn-dark" data-save-checkin>${__('Save Check-In')}</button></div>
-                                        </div>
-                                </div>
-                        </div>
-                `;
-        }
-
-        history_timeline(ai, kr) {
-                const rows = ai.history || [];
-                const checkinButton = ai.can_checkin
-                        ? `<button type="button" class="btn btn-sm btn-primary-light okr-history-checkin" data-open-checkin="${ai.name}">${__('+ Check-In')}</button>`
-                        : '';
-                const historyHeader = `<div class="okr-history-head"><div class="okr-history-title">${__('Check-In History')}</div>${checkinButton}</div>`;
+	history_timeline(ai, kr) {
+		const rows = ai.history || [];
+		const isCheckinOpen = this.state.action_checkin === ai.name;
+		const checkinButton = (ai.can_checkin && !isCheckinOpen)
+			? `<button type="button" class="btn btn-sm btn-primary-light okr-history-checkin" data-open-checkin="${ai.name}">${__('+ Check-In')}</button>`
+			: '';
+		const historyHeader = `<div class="okr-history-head"><div class="okr-history-title">${__('Check-In History')}</div>${checkinButton}</div>`;
                 if (!rows.length) return `<div class="okr-history">${historyHeader}<div class="okr-history-empty">${__('No check-ins yet this sprint')}</div></div>`;
                 const showAll = Boolean(this.state.action_history_all[ai.name]);
                 const visibleRows = showAll ? rows : rows.slice(0, 3);

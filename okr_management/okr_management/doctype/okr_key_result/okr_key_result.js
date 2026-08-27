@@ -25,7 +25,7 @@ frappe.ui.form.on('OKR Key Result', {
 		populate_objective_context(frm);
 		load_target_periods(frm);
 	},
-tend_date(frm) {
+end_date(frm) {
 		sync_target_period_from_date(frm);
 	},
 	assignee(frm) {
@@ -69,7 +69,7 @@ function load_target_periods(frm) {
 
 function sync_target_period_from_date(frm) {
 	if (!frm.doc.end_date || !(frm.__target_periods || []).length) {
-		frm.set_df_property('end_date', 'description', __('Select a Target Date. Its period is calculated automatically from the Plan frequency.'));
+		frm.set_df_property('end_date', 'description', '');
 		return;
 	}
 	const period = frm.__target_periods.find(row =>
@@ -98,8 +98,7 @@ const INHERITED_FIELDS = [
 	'plan_owner',
 	'objective_owner',
 	'objective_level',
-	'date_range',
-	'start_date'
+	'date_range'
 ];
 
 function populate_objective_context(frm) {
@@ -117,10 +116,12 @@ function populate_objective_context(frm) {
 		'plan_owner',
 		'owner_user',
 		'level',
+		'description',
 		'start_date',
 		'end_date'
 	]).then(r => {
 		const objective = r.message || {};
+		frm._objective_description = objective.description || '';
 		if (!objective.parent_plan) return objective;
 		return frappe.call({
 			method: 'okr_management.okr_management.doctype.okr_plan.okr_plan.get_plan_context',
@@ -179,6 +180,7 @@ function update_objective_date_range(frm, start_date, end_date) {
 }
 
 function apply_key_result_ui(frm) {
+	apply_dates_row_layout(frm);
 	frm.set_df_property('naming_series', 'hidden', 1);
 	frm.set_df_property('kr_details_section', 'label', '');
 	frm.set_df_property('kr_details_col_break', 'label', '');
@@ -188,7 +190,7 @@ function apply_key_result_ui(frm) {
 	INHERITED_FIELDS.forEach(fieldname => {
 		frm.set_df_property(fieldname, 'read_only', 1);
 	});
-	['parent_plan', 'objective_title', 'company', 'financial_year', 'department', 'date_range', 'owner_user', 'ownership_section', 'ownership_col_break', 'ownership_status_col_break', 'plan_owner', 'objective_owner', 'objective_level', 'start_date', 'context_preview_heading'].forEach(fieldname => {
+	['parent_plan', 'objective_title', 'company', 'financial_year', 'department', 'date_range', 'owner_user', 'ownership_section', 'ownership_col_break', 'ownership_status_col_break', 'plan_owner', 'objective_owner', 'objective_level', 'context_preview_heading'].forEach(fieldname => {
 		frm.set_df_property(fieldname, 'hidden', 1);
 	});
 
@@ -198,6 +200,12 @@ function apply_key_result_ui(frm) {
 	frm.set_df_property('summary_sidebar_section', 'hidden', 1);
 	frm.set_df_property('target_progress', 'hidden', 1);
 
+		frm.set_df_property( 'hidden', 0);
+	frm.set_df_property( 'read_only', 0);
+	frm.set_df_property( 'reqd', 1);
+	frm.set_df_property('end_date', 'hidden', 0);
+	frm.set_df_property('end_date', 'read_only', 0);
+	frm.set_df_property('end_date', 'reqd', 1);
 	frm.set_df_property('current_value', 'hidden', 0);
 	frm.set_df_property('current_value', 'read_only', frm.doc.calculation_mode === 'Automatic');
 	frm.toggle_display('currency', 0);
@@ -313,13 +321,15 @@ function render_key_result_context_preview(frm, context) {
 		clock:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
 	};
 
+	const obj_desc = ctx.description || frm._objective_description || '';
 	render_preview_cards(field, [
-		{ icon: icons.flag,     label: __('Objective'),      value: ctx.objective_title || frm.doc.objective_title || frm.doc.objective },
-		{ icon: icons.plan,     label: __('Plan'),           value: ctx.parent_plan || frm.doc.parent_plan },
-		{ icon: icons.building, label: __('Organization'),   value: ctx.company || frm.doc.company },
-		{ icon: icons.calendar, label: __('Financial Year'), value: ctx.financial_year || frm.doc.financial_year },
-		{ icon: icons.dept,     label: __('Department'),     value: ctx.department || frm.doc.department },
-		{ icon: icons.clock,    label: __('Timeline'),       value: timeline_value, wide: true },
+		{ icon: icons.flag,     label: __('Objective'),             value: ctx.objective_title || frm.doc.objective_title || frm.doc.objective },
+		{ icon: icons.plan,     label: __('Plan'),                  value: ctx.parent_plan || frm.doc.parent_plan },
+		{ icon: icons.building, label: __('Organization'),          value: ctx.company || frm.doc.company },
+		{ icon: icons.calendar, label: __('Financial Year'),        value: ctx.financial_year || frm.doc.financial_year },
+		{ icon: icons.dept,     label: __('Department'),            value: ctx.department || frm.doc.department, wide: true },
+		{ icon: icons.clock,    label: __('Timeline'),              value: timeline_value, wide: true },
+		{ icon: icons.plan,     label: __('Objective Description'), value: obj_desc, wide: true },
 	], __('Select an Objective to preview its context.'));
 }
 
@@ -456,3 +466,16 @@ function setup_realtime_inputs(frm) {
 
 
 
+
+function apply_dates_row_layout(frm) {
+	if (!frm.fields_dict.start_date || !frm.fields_dict.end_date) return;
+	const $start = frm.fields_dict.start_date.$wrapper;
+	const $end = frm.fields_dict.end_date.$wrapper;
+	if ($start && $end && !$start.parent().hasClass('okr-kr-dates-row')) {
+		const $row = $('<div class="okr-kr-dates-row" style="display: flex; gap: 14px; align-items: flex-start; margin-bottom: 0;"></div>');
+		$start.before($row);
+		$row.append($start).append($end);
+		$start.css({ 'flex': '1 1 50%', 'margin-bottom': '0', 'min-width': '0' });
+		$end.css({ 'flex': '1 1 50%', 'margin-bottom': '0', 'min-width': '0' });
+	}
+}

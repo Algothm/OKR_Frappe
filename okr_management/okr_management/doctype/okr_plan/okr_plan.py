@@ -236,7 +236,7 @@ def get_plan_context(plan_name: str) -> dict:
 
 	if not (is_okr_admin() or is_okr_user()):
 		frappe.throw(_("Only an OKR User or OKR Admin can access OKR Plan context."), frappe.PermissionError)
-	plan = frappe.get_doc("OKR Plan", plan_name)
+	plan = frappe.get_doc("OKR Plan", plan_name, ignore_permissions=True)
 	start_date, end_date = get_plan_timeline(plan)
 	members = [
 		{

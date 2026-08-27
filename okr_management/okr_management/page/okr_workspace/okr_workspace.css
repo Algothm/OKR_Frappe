@@ -78,8 +78,7 @@
 .okr-inline-context strong { display:block; color:#111827; }
 .okr-inline-fields { display:grid; grid-template-columns:1fr 1.5fr; gap:12px; }
 .okr-quick-checkin-form { grid-template-columns:1fr; gap:12px; }
-.okr-checkin-row { display:grid; grid-template-columns:minmax(120px, 180px) minmax(160px, 220px); gap:12px; align-items:end; }
-.okr-checkin-row .form-control { height:34px; }
+
 .okr-update-field textarea { min-height:112px; }
 .okr-inline-fields label { font-weight:700; }
 .okr-inline-fields .form-control { margin-top:5px; }
@@ -348,3 +347,34 @@
 
 .okr-summary-card:nth-child(3) { background:#fef2f2; border-color:#fecaca; }
 .okr-summary-card:nth-child(3) .okr-summary-card-label { color:#991b1b; }
+
+.okr-inline-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.okr-inline-header .okr-inline-context { margin-bottom: 0; flex: 1 1 auto; }
+.okr-close-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; font-size: 11px; font-weight: 700; color: #64748b; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; transition: all 0.15s ease; flex: 0 0 auto; }
+.okr-close-btn:hover { background: #e2e8f0; color: #1e293b; border-color: #94a3b8; }
+.okr-collapse-arrow { font-size: 9px; }
+.okr-checkin-row { display: flex; align-items: flex-start; gap: 18px; }
+.okr-checkin-field { display: flex; flex-direction: column; flex: 1 1 240px; max-width: 320px; }
+.okr-checkin-field label { font-weight: 700; font-size: 12px; color: #334155; margin-bottom: 5px; }
+.okr-checkin-field .form-control { height: 36px; width: 100%; }
+.okr-checkin-field small { margin-top: 4px; font-size: 11px; color: #64748b; }
+
+/* Checkin Form & Context Polish */
+.okr-inline-context { display: flex !important; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #edf2f7; }
+.okr-context-items-row { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 24px; flex: 1 1 auto; }
+.okr-context-items-row > div { display: flex; flex-direction: column; gap: 2px; }
+.okr-context-items-row span { display: block; color: #94a3b8; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+.okr-context-items-row strong { display: block; color: #1e293b; font-size: 13px; font-weight: 600; }
+.okr-context-collapse-wrap { flex: 0 0 auto; }
+.okr-close-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; font-size: 12px; font-weight: 700; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; transition: all 0.15s ease; }
+.okr-close-btn:hover { background: #e2e8f0; color: #0f172a; border-color: #94a3b8; }
+.okr-collapse-arrow { font-size: 10px; }
+.okr-checkin-row { display: flex !important; align-items: flex-start !important; gap: 24px !important; margin-bottom: 12px; }
+.okr-checkin-field { display: flex; flex-direction: column; flex: 1 1 260px; max-width: 320px; }
+.okr-checkin-field label { font-weight: 700; font-size: 12px; color: #334155; margin-bottom: 6px; }
+.okr-checkin-field .form-control { height: 38px !important; width: 100% !important; border-radius: 6px; border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 13px; margin-top: 0 !important; }
+.okr-checkin-field small { margin-top: 5px; font-size: 11px; color: #64748b; }
+
+.okr-close-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; font-size: 12px; font-weight: 600; color: #475569; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; transition: all 0.15s ease; }
+.okr-close-btn:hover { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+.okr-close-icon { font-size: 11px; font-weight: bold; }

@@ -141,50 +141,16 @@ okr_management.preview_attachment = function (file_url) {
 };
 
 (() => {
-    const user_roles = new Set(frappe.user_roles || []);
-    const admin_user = frappe.session.user === "Administrator" || user_roles.has("OKR Admin");
-    const okr_user = user_roles.has("OKR User");
-    const is_admin_ui_user = () => admin_user;
-    const is_okr_ui_user = () => okr_user;
-    const USER_OKR_LIST_SLUGS = new Set([
-        "okr-objective",
-        "okr-key-result",
-        "okr-action-item",
-        "okr-check-in",
-    ]);
-    const CUSTOM_PAGE_ROUTES = [
-        { name: "OKR Management", parent: "", path: () => is_admin_ui_user() ? "/app/admin-workspace" : "/app/okr-workspace" },
-        { name: "OKR Workspace", parent: "", path: "/app/okr-workspace" },
-        { name: "OKR Admin Workspace", parent: "", path: "/app/admin-workspace" },
-        { name: "Plan", parent: "OKR Admin Workspace", path: "/app/okr-plan" },
-    ];
-    const CUSTOM_PAGE_SLUGS = new Set(["okr-workspace", "admin-workspace"]);
-    const fallback_route = is_admin_ui_user()
-        ? "admin-workspace"
-        : is_okr_ui_user() ? "okr-workspace" : "home";
-    frappe.re_route["okr-management"] = fallback_route;
-    frappe.re_route["okr-admin-workspace"] = is_admin_ui_user() ? "admin-workspace" : fallback_route;
-    frappe.re_route["admin-workspace"] = is_admin_ui_user() ? undefined : fallback_route;
-    frappe.re_route["okr-workspace"] = is_okr_ui_user() ? undefined : fallback_route;
-    frappe.re_route["plan"] = "okr-plan";
-    frappe.re_route["objective"] = "okr-objective";
-    frappe.re_route["key-result"] = "okr-key-result";
-    frappe.re_route["action-item"] = "okr-action-item";
-    frappe.re_route["check-in"] = "okr-check-in";
-    localStorage.removeItem("_page:admin-workspace");
-
-    function enforce_okr_route_access() {
-        const first = window.location.pathname.replace(/^\/app\//, "").split("/")[0];
-        if (USER_OKR_LIST_SLUGS.has(first) && !okr_user) {
-            frappe.set_route(fallback_route);
-            return;
-        }
-        if (first === "admin-workspace" && !admin_user) {
-            frappe.set_route(fallback_route);
-        }
-    }
-
-    $(document).on("page-change", enforce_okr_route_access);
+    // Keep permitted OKR DocTypes in Frappe's native route registry.
+    const native_okr_routes = {
+        "okr-objective": "OKR Objective",
+        "okr-key-result": "OKR Key Result",
+        "okr-action-item": "OKR Action Item",
+        "okr-check-in": "OKR Check In",
+    };
+    Object.entries(native_okr_routes).forEach(([route, doctype]) => {
+        frappe.router.routes[route] = { doctype };
+    });
 
     function escape_html(value) {
         return frappe.utils.escape_html(String(value ?? "—"));

@@ -11,8 +11,8 @@ USER_WORKSPACES = {"OKR Workspace", "OKR Objective Execution", "OKR Key Result E
 def get_workspace_sidebar_items():
     result = _get_workspace_sidebar_items()
     roles = set(frappe.get_roles())
-    admin_user = frappe.session.user == "Administrator" or "OKR Admin" in roles
-    okr_user = "OKR User" in roles
+    admin_user = frappe.session.user == "Administrator" or "OKR Admin" in roles or "System Manager" in roles
+    okr_user = "OKR User" in roles or "System Manager" in roles or frappe.session.user == "Administrator"
 
     if admin_user and okr_user:
         allowed = ADMIN_WORKSPACES | USER_WORKSPACES

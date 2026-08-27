@@ -18,7 +18,7 @@ class TestOKRActionItem(FrappeTestCase):
         self.kr=frappe.get_doc({"doctype":"OKR Key Result","key_result_title":"AI KR "+frappe.generate_hash(length=6),"objective":self.objective.name,"assignee":"Administrator","metric_type":"Percentage","metric_direction":"Increase","target_value":100,"end_date":self.objective.end_date,"status":"Draft"}).insert(ignore_permissions=True)
 
     def make_action(self,**values):
-        payload={"doctype":"OKR Action Item","action_item_title":"AI Test "+frappe.generate_hash(length=6),"parent_key_result":self.kr.name,"assigned_to":self.employee,"due_date":self.kr.end_date}
+        payload={"doctype":"OKR Action Item","action_item_title":"AI Test "+frappe.generate_hash(length=6),"parent_key_result":self.kr.name,"assigned_to":"Administrator","due_date":self.kr.end_date}
         payload.update(values)
         return frappe.get_doc(payload).insert(ignore_permissions=True)
 

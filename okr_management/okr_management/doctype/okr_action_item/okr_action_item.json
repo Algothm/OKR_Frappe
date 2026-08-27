@@ -89,7 +89,7 @@
    "fieldname": "assigned_to",
    "fieldtype": "Link",
    "label": "Assigned To",
-   "options": "Employee",
+   "options": "User",
    "reqd": 1,
    "in_list_view": 1,
    "in_standard_filter": 1
@@ -404,64 +404,31 @@
  ],
  "name": "OKR Action Item",
  "actions": [],
-"title_field":"action_item_title",
+ "title_field": "action_item_title",
  "permissions": [
   {
-   "export": 1,
-   "delete": 1,
-   "write": 1,
-   "read": 1,
-   "report": 1,
-   "role": "OKR Admin",
-   "email": 1,
-   "create": 1,
-   "print": 1
-  },
-  {
-   "write": 1,
-   "delete": 1,
-   "export": 0,
-   "report": 0,
-   "read": 1,
-   "role": "Team Lead",
-   "email": 0,
-   "create": 1,
-   "print": 0
-  },
-  {
-   "write": 1,
-   "export": 0,
-   "delete": 1,
-   "print": 0,
-   "create": 1,
-   "email": 0,
-   "role": "Employee",
-   "report": 0,
-   "read": 1
-  },
-{
-   "write": 1,
-   "export": 0,
-   "delete": 1,
-   "print": 0,
-   "create": 1,
-   "email": 0,
    "role": "OKR User",
-   "report": 0,
-   "read": 1
-  },
-{
+   "read": 1,
    "write": 1,
-   "export": 0,
-   "delete": 1,
-   "print": 0,
    "create": 1,
-   "email": 0,
-   "role": "Guest",
-   "report": 0,
-   "read": 1
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
   }
-],
+ ],
  "autoname": "naming_series:",
  "istable": 0,
  "engine": "InnoDB",

@@ -80,16 +80,19 @@ class OKRActionItem(Document):
         if not self.assigned_to:
             return
 
-        employee_user = frappe.db.get_value("Employee", self.assigned_to, "user_id")
-        if employee_user:
-            self.owner_user = employee_user
+        if frappe.db.exists("User", self.assigned_to):
+            self.owner_user = self.assigned_to
+        else:
+            employee_user = frappe.db.get_value("Employee", self.assigned_to, "user_id")
+            if employee_user:
+                self.owner_user = employee_user
 
     def validate_assigned_to(self) -> None:
         ensure_required_link(self.assigned_to, "Assigned To")
-        if not frappe.db.exists("Employee", self.assigned_to):
-            frappe.throw(_("Assigned To Employee does not exist."))
-        if frappe.db.get_value("Employee", self.assigned_to, "status") != "Active":
-            frappe.throw(_("Assigned To Employee must be active."))
+        if not (frappe.db.exists("User", self.assigned_to) or frappe.db.exists("Employee", self.assigned_to)):
+            frappe.throw(_("Assigned To User does not exist."))
+        if frappe.db.exists("User", self.assigned_to) and not frappe.db.get_value("User", self.assigned_to, "enabled"):
+            frappe.throw(_("Assigned To User must be enabled."))
 
     def validate_parent_context(self) -> None:
         if not self.parent_key_result:

@@ -111,10 +111,18 @@ class OKRKeyResult(Document):
         if not objective_dates or not objective_dates.start_date or not objective_dates.end_date:
             return
 
+        if self.start_date and getdate(self.start_date) < getdate(objective_dates.start_date):
+            frappe.throw(_("Start Date cannot be before the Parent Objective's Start Date ({0}).").format(objective_dates.start_date))
+        if self.start_date and getdate(self.start_date) > getdate(objective_dates.end_date):
+            frappe.throw(_("Start Date cannot be after the Parent Objective's End Date ({0}).").format(objective_dates.end_date))
+
         if self.end_date and getdate(self.end_date) < getdate(objective_dates.start_date):
-            frappe.throw(_("Target Date cannot be before the Parent Objective's Start Date."))
+            frappe.throw(_("Target Date cannot be before the Parent Objective's Start Date ({0}).").format(objective_dates.start_date))
         if self.end_date and getdate(self.end_date) > getdate(objective_dates.end_date):
-            frappe.throw(_("Target Date cannot be after the Parent Objective's End Date."))
+            frappe.throw(_("Target Date cannot be after the Parent Objective's End Date ({0}).").format(objective_dates.end_date))
+
+        if self.start_date and self.end_date and getdate(self.start_date) > getdate(self.end_date):
+            frappe.throw(_("Start Date cannot be after Target Date."))
 
     def validate_target_period(self) -> None:
         if not self.parent_plan or not self.end_date:
@@ -206,7 +214,16 @@ class OKRKeyResult(Document):
         self.plan_owner = objective.plan_owner
         self.objective_owner = objective.owner_user
         self.objective_level = objective.level
-        self.start_date = objective.start_date
+        if not self.start_date:
+            today_date = getdate(today())
+            obj_start = getdate(objective.start_date) if objective.start_date else today_date
+            if self.end_date:
+                if obj_start <= today_date <= getdate(self.end_date):
+                    self.start_date = today_date
+                else:
+                    self.start_date = obj_start
+            else:
+                self.start_date = obj_start
 
     def clear_inherited_context(self) -> None:
         for fieldname in INHERITED_FIELDS:

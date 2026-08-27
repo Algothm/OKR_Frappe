@@ -16,7 +16,7 @@ class TestOKRCheckIn(FrappeTestCase):
         objective=frappe.get_doc({"doctype":"OKR Objective","objective_title":"CI Objective "+frappe.generate_hash(length=6),"parent_plan":self.plan.name,"level":"Department","level_details":department,"department":department,"owner_user":"Administrator","status":"Draft"}).insert(ignore_permissions=True)
         self.kr=frappe.get_doc({"doctype":"OKR Key Result","key_result_title":"CI KR "+frappe.generate_hash(length=6),"objective":objective.name,"assignee":"Administrator","metric_type":"Number","metric_direction":"Increase","baseline_value":0,"current_value":25,"target_value":100,"end_date":objective.end_date,"status":"Draft"}).insert(ignore_permissions=True)
         self.employee_user=employee.user_id
-        self.action=frappe.get_doc({"doctype":"OKR Action Item","action_item_title":"CI Action "+frappe.generate_hash(length=6),"parent_key_result":self.kr.name,"assigned_to":employee.name,"due_date":self.kr.end_date}).insert(ignore_permissions=True)
+        self.action=frappe.get_doc({"doctype":"OKR Action Item","action_item_title":"CI Action "+frappe.generate_hash(length=6),"parent_key_result":self.kr.name,"assigned_to":employee.user_id,"due_date":self.kr.end_date}).insert(ignore_permissions=True)
 
     def activate(self):
         self.plan.status="Active"; self.plan.save(ignore_permissions=True)

@@ -91,18 +91,21 @@ class OKRCheckIn(Document):
 
         key_result = frappe.get_doc("OKR Key Result", action.parent_key_result)
         objective = frappe.get_doc("OKR Objective", key_result.objective)
-        plan = frappe.get_doc("OKR Plan", key_result.parent_plan)
+        parent_plan_name = key_result.parent_plan or getattr(action, "parent_plan", None) or frappe.db.get_value("OKR Objective", key_result.objective, "parent_plan")
+        plan = frappe.get_doc("OKR Plan", parent_plan_name) if parent_plan_name and frappe.db.exists("OKR Plan", parent_plan_name) else None
 
-        from okr_management.okr_management.doctype.okr_plan.okr_plan import get_plan_timeline
-
-        start_date, end_date = get_plan_timeline(plan)
-        day_count = date_diff(end_date, start_date) + 1
+        start_date, end_date = (None, None)
+        day_count = 0
+        if plan:
+            from okr_management.okr_management.doctype.okr_plan.okr_plan import get_plan_timeline
+            start_date, end_date = get_plan_timeline(plan)
+            day_count = date_diff(end_date, start_date) + 1
 
         self.key_result = key_result.name
         self.objective = objective.name
-        self.parent_plan = plan.name
-        self.financial_year = plan.financial_year
-        self.company = plan.company
+        self.parent_plan = plan.name if plan else getattr(action, "parent_plan", None)
+        self.financial_year = plan.financial_year if plan else getattr(action, "financial_year", None)
+        self.company = plan.company if plan else getattr(action, "company", None)
         self.department = getattr(action, "department", None)
 
         if not self.action_status:
@@ -118,10 +121,10 @@ class OKRCheckIn(Document):
         self.key_result_description_context = key_result.description
         self.objective_name_context = objective.objective_title
         self.objective_description_context = objective.description
-        self.plan_name_context = plan.plan_name
-        self.plan_description_context = plan.description
-        self.organization_context = plan.company
-        self.financial_year_context = plan.financial_year
+        self.plan_name_context = plan.plan_name if plan else ""
+        self.plan_description_context = plan.description if plan else ""
+        self.organization_context = plan.company if plan else getattr(action, "company", "")
+        self.financial_year_context = plan.financial_year if plan else getattr(action, "financial_year", "")
         timeline_parts = []
         if objective.start_date and objective.end_date:
             timeline_parts.append(
@@ -170,7 +173,7 @@ class OKRCheckIn(Document):
         if user == "Administrator" or "OKR Admin" in roles or "System Manager" in roles:
             return
         employees = get_logged_in_employees(required=False)
-        if action.assigned_to in employees or action.owner_user == user or action.owner == user:
+        if action.assigned_to == user or action.assigned_to in employees or action.owner_user == user or action.owner == user:
             return
         frappe.throw(_("You can only create Check-Ins for Action Items assigned to you."))
 
@@ -277,7 +280,7 @@ def get_assigned_action_items(doctype, txt, searchfield, start, page_len, filter
     if has_broad_access:
         assignment_condition = ""
     else:
-        conds = ["ai.owner_user = %(user)s", "ai.owner = %(user)s"]
+        conds = ["ai.owner_user = %(user)s", "ai.owner = %(user)s", "ai.assigned_to = %(user)s"]
         params["user"] = user
         if employees:
             conds.append("ai.assigned_to in %(employees)s")

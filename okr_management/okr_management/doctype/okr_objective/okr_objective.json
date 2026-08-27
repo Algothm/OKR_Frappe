@@ -10,70 +10,26 @@
    "default_view": "List",
    "permissions": [
       {
-         "print": 1,
-         "role": "OKR Admin",
-         "email": 1,
-         "create": 1,
-         "report": 1,
-         "read": 1,
-         "write": 1,
-         "export": 1,
-         "delete": 1
-      },
-      {
-         "write": 1,
-         "read": 1,
-         "delete": 0,
-         "export": 1,
-         "role": "Department Head",
-         "print": 1,
-         "report": 1,
-         "create": 1,
-         "email": 1
-      },
-      {
-         "role": "Team Lead",
-         "print": 1,
-         "report": 1,
-         "email": 0,
-         "create": 1,
-         "read": 1,
-         "write": 1,
-         "export": 1,
-         "delete": 0
-      },
-      {
-         "role": "Employee",
-         "print": 0,
-         "report": 0,
-         "email": 0,
-         "create": 1,
-         "read": 1,
-         "write": 0,
-         "export": 0,
-         "delete": 0
-      },
-      {
-         "role": "All",
-         "print": 0,
-         "report": 0,
-         "email": 0,
-         "create": 1,
-         "read": 1,
-         "write": 0,
-         "export": 0,
-         "delete": 0
-      },
-      {
          "role": "OKR User",
-         "print": 0,
-         "report": 0,
-         "email": 0,
-         "create": 1,
          "read": 1,
-         "write": 0,
-         "export": 0,
-         "delete": 0
+         "write": 1,
+         "create": 1,
+         "delete": 1,
+         "email": 1,
+         "export": 1,
+         "print": 1,
+         "report": 1
+      },
+      {
+         "role": "System Manager",
+         "read": 1,
+         "write": 1,
+         "create": 1,
+         "delete": 1,
+         "email": 1,
+         "export": 1,
+         "print": 1,
+         "report": 1
       }
    ],
    "autoname": "naming_series:",

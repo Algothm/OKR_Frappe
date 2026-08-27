@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import frappe
 
-from okr_management.permissions import is_okr_admin
+from okr_management.permissions import is_okr_admin, is_okr_user
 
 
 EDITABLE_PLAN_TEAM_ROLES = {"Plan Coordinator", "Contributor"}
@@ -17,8 +17,23 @@ def _plan_team_plans(user, roles=None):
 
 def get_hierarchy_visibility_scope(user=None):
     user = user or frappe.session.user
-    admin_user = is_okr_admin(user)
-    if admin_user:
+    if not is_okr_user(user):
+        return {
+            "visible_objectives": set(),
+            "visible_key_results": set(),
+            "visible_action_items": set(),
+            "owned_objectives": set(),
+            "owned_key_results": set(),
+            "full_key_results": set(),
+            "direct_action_items": set(),
+            "full_plan_names": set(),
+            "editable_plan_names": set(),
+            "checkin_override": False,
+            "read_all": False,
+        }
+
+    roles = set(frappe.get_roles(user))
+    if user == "Administrator" or bool({"System Manager", "OKR Admin"} & roles):
         return {
             "visible_objectives": set(),
             "visible_key_results": set(),
@@ -39,139 +54,105 @@ def get_hierarchy_visibility_scope(user=None):
         fields=["name", "department", "company"],
     )
     employees = {row.name for row in employee_rows}
-    user_departments = {row.department for row in employee_rows if row.department}
+    user_identifiers = {user} | employees
+
     full_plan_names = _plan_team_plans(user)
     editable_plan_names = _plan_team_plans(user, EDITABLE_PLAN_TEAM_ROLES)
-    organization_objectives = set()
-    user_companies = {row.company for row in employee_rows if row.get("company")}
-    if user_companies:
-        organization_objectives.update(
-            frappe.get_all(
-                "OKR Objective",
-                filters={"level": "Organization", "company": ["in", list(user_companies)]},
-                pluck="name",
-            )
-        )
 
-    individual_objectives = set(
-        frappe.get_all(
-            "OKR Objective",
-            filters={"level": "Individual", "level_details": user},
-            pluck="name",
-        )
+    # 1. Directly Owned Objectives
+    owned_objectives = set(
+        frappe.get_all("OKR Objective", filters={"owner_user": ["in", list(user_identifiers)]}, pluck="name")
     )
-    team_objectives = set(
-        frappe.get_all(
-            "OKR Objective Team",
-            filters={"team": user, "parenttype": "OKR Objective"},
-            pluck="parent",
-        )
+    owned_objectives.update(
+        frappe.get_all("OKR Objective", filters={"owner": ["in", list(user_identifiers)]}, pluck="name")
+    )
+    owned_objectives.update(
+        frappe.get_all("OKR Objective", filters={"level": "Individual", "level_details": ["in", list(user_identifiers)]}, pluck="name")
+    )
+    owned_objectives.update(
+        frappe.get_all("OKR Objective Team", filters={"team": ["in", list(user_identifiers)], "parenttype": "OKR Objective"}, pluck="parent")
     )
 
-    department_objectives = set()
-    if user_departments and "Department Head" in frappe.get_roles(user):
-        department_objectives.update(
-            frappe.get_all(
-                "OKR Objective",
-                filters={"department": ["in", list(user_departments)]},
-                pluck="name",
-            )
-        )
-    owned_objectives = set(frappe.get_all("OKR Objective", filters={"owner_user": user}, pluck="name"))
-    owned_objectives.update(frappe.get_all("OKR Objective", filters={"owner": user}, pluck="name"))
-    owned_krs = set(frappe.get_all("OKR Key Result", filters={"assignee": user}, pluck="name"))
-    owned_krs.update(frappe.get_all("OKR Key Result", filters={"owner_user": user}, pluck="name"))
-
-    authority_objectives = (
-        owned_objectives
-        | department_objectives
-        | organization_objectives
-        | individual_objectives
-        | team_objectives
+    # 2. Directly Owned / Assigned Key Results
+    owned_krs = set(
+        frappe.get_all("OKR Key Result", filters={"assignee": ["in", list(user_identifiers)]}, pluck="name")
     )
-    authority_krs = set(owned_krs)
-    if authority_objectives:
-        authority_krs.update(
-            frappe.get_all("OKR Key Result", filters={"objective": ["in", list(authority_objectives)]}, pluck="name")
-        )
+    owned_krs.update(
+        frappe.get_all("OKR Key Result", filters={"owner_user": ["in", list(user_identifiers)]}, pluck="name")
+    )
+    owned_krs.update(
+        frappe.get_all("OKR Key Result", filters={"owner": ["in", list(user_identifiers)]}, pluck="name")
+    )
 
-    direct_actions = set()
-    if employees:
-        direct_actions.update(
-            frappe.get_all("OKR Action Item", filters={"assigned_to": ["in", list(employees)]}, pluck="name")
-        )
+    # 3. Directly Owned / Assigned Action Items
+    direct_actions = set(
+        frappe.get_all("OKR Action Item", filters={"assigned_to": ["in", list(user_identifiers)]}, pluck="name")
+    )
+    direct_actions.update(
+        frappe.get_all("OKR Action Item", filters={"owner_user": ["in", list(user_identifiers)]}, pluck="name")
+    )
+    direct_actions.update(
+        frappe.get_all("OKR Action Item", filters={"owner": ["in", list(user_identifiers)]}, pluck="name")
+    )
 
-    actions = set(direct_actions)
-    if authority_krs:
-        actions.update(
-            frappe.get_all("OKR Action Item", filters={"parent_key_result": ["in", list(authority_krs)]}, pluck="name")
-        )
+    # --- Tree Computation ---
+    # Descendants of owned Objectives
+    obj_child_krs = set(
+        frappe.get_all("OKR Key Result", filters={"objective": ["in", list(owned_objectives)]}, pluck="name")
+    ) if owned_objectives else set()
 
-    krs = set(authority_krs)
-    if direct_actions:
-        krs.update(
-            filter(
-                None,
-                frappe.get_all(
-                    "OKR Action Item",
-                    filters={"name": ["in", list(direct_actions)]},
-                    pluck="parent_key_result",
-                ),
-            )
-        )
+    obj_grandchild_actions = set(
+        frappe.get_all("OKR Action Item", filters={"parent_key_result": ["in", list(obj_child_krs)]}, pluck="name")
+    ) if obj_child_krs else set()
 
-    objectives = set(authority_objectives)
-    if krs:
-        objectives.update(
-            filter(
-                None,
-                frappe.get_all(
-                    "OKR Key Result",
-                    filters={"name": ["in", list(krs)]},
-                    pluck="objective",
-                ),
-            )
-        )
+    # Descendants of owned Key Results
+    kr_child_actions = set(
+        frappe.get_all("OKR Action Item", filters={"parent_key_result": ["in", list(owned_krs)]}, pluck="name")
+    ) if owned_krs else set()
 
-    # Plan Team membership grants read visibility to the complete execution
-    # tree of that Plan. Ownership/assignment sets stay unchanged.
+    # Ancestors of owned Key Results
+    kr_parent_objs = set(
+        filter(None, frappe.get_all("OKR Key Result", filters={"name": ["in", list(owned_krs)]}, pluck="objective"))
+    ) if owned_krs else set()
+
+    # Ancestors of direct Action Items
+    action_parent_krs = set(
+        filter(None, frappe.get_all("OKR Action Item", filters={"name": ["in", list(direct_actions)]}, pluck="parent_key_result"))
+    ) if direct_actions else set()
+
+    action_grandparent_objs = set(
+        filter(None, frappe.get_all("OKR Key Result", filters={"name": ["in", list(action_parent_krs)]}, pluck="objective"))
+    ) if action_parent_krs else set()
+
+    # Plan Team Membership
+    plan_objectives = set()
+    plan_key_results = set()
+    plan_action_items = set()
     if full_plan_names:
         plan_objectives = set(
-            frappe.get_all(
-                "OKR Objective",
-                filters={"parent_plan": ["in", list(full_plan_names)]},
-                pluck="name",
-            )
+            frappe.get_all("OKR Objective", filters={"parent_plan": ["in", list(full_plan_names)]}, pluck="name")
         )
-        plan_key_results = set()
         if plan_objectives:
-            plan_key_results.update(
-                frappe.get_all(
-                    "OKR Key Result",
-                    filters={"objective": ["in", list(plan_objectives)]},
-                    pluck="name",
-                )
+            plan_key_results = set(
+                frappe.get_all("OKR Key Result", filters={"objective": ["in", list(plan_objectives)]}, pluck="name")
             )
-        plan_action_items = set()
         if plan_key_results:
-            plan_action_items.update(
-                frappe.get_all(
-                    "OKR Action Item",
-                    filters={"parent_key_result": ["in", list(plan_key_results)]},
-                    pluck="name",
-                )
+            plan_action_items = set(
+                frappe.get_all("OKR Action Item", filters={"parent_key_result": ["in", list(plan_key_results)]}, pluck="name")
             )
-        objectives.update(plan_objectives)
-        krs.update(plan_key_results)
-        actions.update(plan_action_items)
+
+    # Combine total visible sets
+    visible_objectives = owned_objectives | kr_parent_objs | action_grandparent_objs | plan_objectives
+    visible_key_results = owned_krs | obj_child_krs | action_parent_krs | plan_key_results
+    visible_action_items = direct_actions | kr_child_actions | obj_grandchild_actions | plan_action_items
 
     return {
-        "visible_objectives": objectives,
-        "visible_key_results": krs,
-        "visible_action_items": actions,
+        "visible_objectives": visible_objectives,
+        "visible_key_results": visible_key_results,
+        "visible_action_items": visible_action_items,
         "owned_objectives": owned_objectives,
         "owned_key_results": owned_krs,
-        "full_key_results": authority_krs,
+        "full_key_results": owned_krs | obj_child_krs,
         "direct_action_items": direct_actions,
         "full_plan_names": full_plan_names,
         "editable_plan_names": editable_plan_names,
@@ -219,16 +200,21 @@ def _hierarchy_permission(doc, user, ptype, read_key, write_key):
     scope = get_hierarchy_visibility_scope(user)
     if scope["read_all"]:
         return None
+    if not doc:
+        return user not in {"Guest", ""}
+    doc_name = doc if isinstance(doc, str) else getattr(doc, "name", None)
+    if not doc_name:
+        return user not in {"Guest", ""}
     if ptype in {"write", "delete", "submit", "cancel", "amend"}:
-        return doc.name in scope[write_key]
-    return doc.name in scope[read_key]
+        return doc_name in scope[write_key]
+    return doc_name in scope[read_key]
 
 
 def objective_permission(doc, user=None, ptype=None):
     user = user or frappe.session.user
     scope = get_hierarchy_visibility_scope(user)
     if ptype == "create" and not scope["read_all"]:
-        return user not in {"Guest", ""}
+        return user not in {"Guest", ""} and is_okr_user(user)
     return _hierarchy_permission(doc, user, ptype, "visible_objectives", "owned_objectives")
 
 
@@ -236,9 +222,14 @@ def key_result_permission(doc, user=None, ptype=None):
     user = user or frappe.session.user
     scope = get_hierarchy_visibility_scope(user)
     if ptype == "create" and not scope["read_all"]:
-        return bool(doc.objective) and (
-            doc.objective in scope["owned_objectives"]
-            or frappe.db.get_value("OKR Objective", doc.objective, "parent_plan") in scope["editable_plan_names"]
+        if not doc:
+            return user not in {"Guest", ""}
+        objective = getattr(doc, "objective", None)
+        if not objective:
+            return user not in {"Guest", ""}
+        return (
+            objective in scope["owned_objectives"]
+            or frappe.db.get_value("OKR Objective", objective, "parent_plan") in scope["editable_plan_names"]
         )
     return _hierarchy_permission(doc, user, ptype, "visible_key_results", "owned_key_results")
 
@@ -247,13 +238,16 @@ def action_item_permission(doc, user=None, ptype=None):
     user = user or frappe.session.user
     scope = get_hierarchy_visibility_scope(user)
     if ptype == "create" and not scope["read_all"]:
-        if not doc.parent_key_result:
-            return False
+        if not doc:
+            return user not in {"Guest", ""}
+        parent_kr = getattr(doc, "parent_key_result", None)
+        if not parent_kr:
+            return user not in {"Guest", ""}
         parent = frappe.db.get_value(
-            "OKR Key Result", doc.parent_key_result, ["objective", "parent_plan"], as_dict=True
+            "OKR Key Result", parent_kr, ["objective", "parent_plan"], as_dict=True
         )
         return bool(parent) and (
-            doc.parent_key_result in scope["owned_key_results"]
+            parent_kr in scope["owned_key_results"]
             or parent.objective in scope["owned_objectives"]
             or parent.parent_plan in scope["editable_plan_names"]
         )
@@ -263,17 +257,22 @@ def action_item_permission(doc, user=None, ptype=None):
 def checkin_permission(doc, user=None, ptype=None):
     user = user or frappe.session.user
     scope = get_hierarchy_visibility_scope(user)
-    # Frappe checks ``write`` on a blank, unsaved document before uploading an
-    # attachment. The Action Item is not present on that temporary document,
-    # so defer to the DocType's role permissions for this one upload check.
-    # Normal create/validate checks still require an Action Item assigned to
-    # the logged-in employee before the Check-In can be inserted.
-    if ptype == "write" and doc.is_new():
-        return user not in {"Guest", ""} and bool(
-            frappe.db.exists("Employee", {"user_id": user, "status": "Active"})
-        )
-    if ptype in {"create", "write", "delete", "submit", "cancel", "amend"}:
-        return bool(doc.action_item) and doc.action_item in scope["direct_action_items"]
     if scope["read_all"]:
         return None
-    return doc.action_item in scope["visible_action_items"]
+    if not doc:
+        return user not in {"Guest", ""}
+
+    is_new_doc = callable(getattr(doc, "is_new", None)) and doc.is_new()
+    action_item = getattr(doc, "action_item", None) if not isinstance(doc, str) else None
+    if not action_item and isinstance(doc, str):
+        action_item = frappe.db.get_value("OKR Check In", doc, "action_item")
+
+    if ptype in {"create", "write"} and (is_new_doc or not action_item):
+        return user not in {"Guest", ""} and is_okr_user(user)
+
+    # Writing/submitting a Check-In requires direct assignment to that Action Item
+    if ptype in {"create", "write", "delete", "submit", "cancel", "amend"}:
+        return bool(action_item) and action_item in scope["direct_action_items"]
+
+    # Viewing (read) a Check-In is allowed for any user in the ancestor hierarchy of that Action Item
+    return bool(action_item) and action_item in scope["visible_action_items"]

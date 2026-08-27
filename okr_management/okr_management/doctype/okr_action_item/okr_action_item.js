@@ -1,17 +1,6 @@
 frappe.ui.form.on('OKR Action Item', {
     setup(frm) {
-        const employee_meta = frappe.get_meta('Employee');
-        if (employee_meta) employee_meta.show_title_field_in_link = 1;
-
-        frm.set_query('assigned_to', () => ({ filters: { status: 'Active' } }));
-        const assigned_to_field = frappe.meta.get_docfield('OKR Action Item', 'assigned_to', frm.doc.name);
-        if (assigned_to_field) {
-            assigned_to_field.only_select = 1;
-            assigned_to_field.show_title_field_in_link = 1;
-        }
-
-        const key_result_field = frappe.meta.get_docfield('OKR Action Item', 'parent_key_result', frm.doc.name);
-        if (key_result_field) key_result_field.only_select = 1;
+        frm.set_query('assigned_to', () => ({ filters: { enabled: 1, user_type: 'System User' } }));
     },
     onload(frm) {
         apply_route_context(frm);
@@ -165,7 +154,8 @@ function fetch_parent_key_result_context(frm) {
     const selected_key_result = frm.doc.parent_key_result;
     frappe.db.get_value('OKR Key Result', selected_key_result, [
         'key_result_title', 'objective', 'parent_plan', 'company', 'department',
-        'financial_year', 'start_date', 'end_date', 'reviewer', 'objective_title'
+        'financial_year', 'start_date', 'end_date', 'reviewer', 'objective_title',
+        'assignee', 'owner_user', 'objective_owner', 'description'
     ]).then((response) => {
         if (frm.doc.parent_key_result !== selected_key_result) return;
         const kr = response.message || {};
@@ -247,6 +237,7 @@ function render_context_preview(frm, context) {
         calendar: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
         clock:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
         notes:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+        user:     '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
     };
 
     const cards = [
@@ -256,8 +247,9 @@ function render_context_preview(frm, context) {
         { icon: icons.building, label: __('Organization'),     value: kr.company || frm.doc.company },
         { icon: icons.calendar, label: __('Financial Year'),   value: kr.financial_year || frm.doc.financial_year },
         { icon: icons.clock,    label: __('Key Result Timeline'), value: timeline_text + (timeline_detail ? ' • ' + timeline_detail : '') },
-        { icon: icons.calendar, label: __('Action Item Due Date'), value: frm.doc.due_date ? frappe.datetime.str_to_user(frm.doc.due_date) : __('Not set') },
-        { icon: icons.notes,    label: __('Plan Description'), value: plan.description || frm.doc.plan_description, wide: true },
+        { icon: icons.user,     label: __('Key Result Owner'),  value: kr.assignee || kr.owner_user || '' },
+        { icon: icons.user,     label: __('Objective Owner'),   value: kr.objective_owner || '' },
+        { icon: icons.notes,    label: __('Key Result Description'), value: kr.description || plan.description || frm.doc.plan_description, wide: true },
     ];
 
     render_preview_cards(field, cards, __('Select a Key Result to preview its context.'));

@@ -25,7 +25,7 @@ class TestOKRKeyResult(FrappeTestCase):
         return frappe.get_doc(payload).insert(ignore_permissions=True)
 
     def make_action(self, kr, progress=0, due_date=None):
-        return frappe.get_doc({"doctype":"OKR Action Item","action_item_title":"KR Action "+frappe.generate_hash(length=6),"parent_key_result":kr.name,"assigned_to":self.employee,"due_date":due_date or kr.end_date,"progress":progress}).insert(ignore_permissions=True)
+        return frappe.get_doc({"doctype":"OKR Action Item","action_item_title":"KR Action "+frappe.generate_hash(length=6),"parent_key_result":kr.name,"assigned_to":"Administrator","due_date":due_date or kr.end_date,"progress":progress}).insert(ignore_permissions=True)
 
     def test_target_date_is_required_and_editable(self):
         self.assertRaises(frappe.ValidationError, self.make_kr, end_date=None)
