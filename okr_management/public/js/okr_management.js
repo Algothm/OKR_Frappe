@@ -169,23 +169,8 @@ window.okr_management.preview_attachment = function (file_url) {
 };
 
 (() => {
-	// Keep permitted OKR DocTypes and Aliases in Frappe's native route registry.
-	const okr_alias_map = {
-		"plan": "okr-plan",
-		"objective": "okr-objective",
-		"key-result": "okr-key-result",
-		"action-item": "okr-action-item",
-		"check-in": "okr-check-in",
-		"okr-admin-workspace": "admin-workspace",
-	};
-
+	// Keep permitted OKR DocTypes in Frappe's native route registry.
 	const native_okr_routes = {
-		"plan": "OKR Plan",
-		"objective": "OKR Objective",
-		"key-result": "OKR Key Result",
-		"action-item": "OKR Action Item",
-		"check-in": "OKR Check In",
-		"okr-plan": "OKR Plan",
 		"okr-objective": "OKR Objective",
 		"okr-key-result": "OKR Key Result",
 		"okr-action-item": "OKR Action Item",
@@ -193,25 +178,6 @@ window.okr_management.preview_attachment = function (file_url) {
 	};
 	Object.entries(native_okr_routes).forEach(([route, doctype]) => {
 		frappe.router.routes[route] = { doctype };
-	});
-
-	if (frappe.re_route) {
-		Object.entries(okr_alias_map).forEach(([source, target]) => {
-			frappe.re_route[source] = target;
-		});
-	}
-
-	// Intercept sidebar / navbar clicks to alias routes immediately
-	$(document).on("click", "a", function (e) {
-		const href = $(this).attr("href") || "";
-		for (const [source, target] of Object.entries(okr_alias_map)) {
-			if (href === `/app/${source}` || href.startsWith(`/app/${source}?`) || href.startsWith(`/app/${source}#`)) {
-				e.preventDefault();
-				e.stopPropagation();
-				frappe.set_route(target);
-				return false;
-			}
-		}
 	});
 
 	function escape_html(value) {
