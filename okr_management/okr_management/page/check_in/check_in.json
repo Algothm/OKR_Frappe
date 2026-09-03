@@ -1,0 +1,19 @@
+{
+ "content": null,
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "module": "OKR Management",
+ "name": "check-in",
+ "page_name": "check-in",
+ "roles": [
+  {
+   "role": "All"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Check-In"
+}

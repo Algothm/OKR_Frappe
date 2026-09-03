@@ -1,0 +1,19 @@
+{
+ "content": null,
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "module": "OKR Management",
+ "name": "action-item",
+ "page_name": "action-item",
+ "roles": [
+  {
+   "role": "All"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Action Item"
+}
