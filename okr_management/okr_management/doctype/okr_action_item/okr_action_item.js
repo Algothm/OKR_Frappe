@@ -21,7 +21,7 @@ frappe.ui.form.on('OKR Action Item', {
     },
     due_date(frm) {
         validate_due_date_against_target(frm);
-        render_context_preview(frm);
+        render_context_preview(frm, frm._kr_context);
     },
     validate(frm) {
         if (!frm.doc.assigned_to) {
@@ -89,7 +89,7 @@ function apply_action_item_ui(frm) {
 	frm.toggle_display('context_preview_html', 1);
 
     [
-        'action_item_setup_heading', 'progress', 'priority', 'status', 'owner_user', 'reviewer', 'department',
+        'action_item_setup_heading', 'progress', 'priority', 'status', 'owner_user', 'reviewer', 'group', 'department',
         'parent_plan', 'parent_objective', 'objective_title', 'key_result_title',
         'plan_title', 'plan_description', 'company', 'financial_year', 'sprint_frequency',
         'context_start_date', 'context_end_date', 'timeline_preview', 'progress_visualization_html',
@@ -120,11 +120,13 @@ function apply_action_item_ui(frm) {
 }
 
 function clear_context(frm) {
+    frm._kr_context = null;
+    frm._plan_context = null;
     [
         'parent_plan', 'plan_title', 'plan_description', 'company', 'financial_year', 'sprint_frequency',
         'context_start_date', 'context_end_date', 'parent_objective', 'objective_title', 'key_result_title'
     ].forEach((fieldname) => frm.set_value(fieldname, ''));
-    render_context_preview(frm);
+    render_context_preview(frm, {});
 }
 
 function set_due_date_target_guidance(frm, target_date) {
@@ -146,6 +148,18 @@ function validate_due_date_against_target(frm) {
     }
 }
 
+function format_user_display(user_id) {
+    if (!user_id) return '';
+    if (window.frappe && frappe.user_info && frappe.user_info(user_id)) {
+        const info = frappe.user_info(user_id);
+        const name = info.fullname || info.full_name;
+        if (name && name.trim() && name.trim() !== user_id.trim()) {
+            return name.trim();
+        }
+    }
+    return user_id;
+}
+
 function fetch_parent_key_result_context(frm) {
     if (!frm.doc.parent_key_result) {
         clear_context(frm);
@@ -153,50 +167,70 @@ function fetch_parent_key_result_context(frm) {
     }
     const selected_key_result = frm.doc.parent_key_result;
     frappe.db.get_value('OKR Key Result', selected_key_result, [
-        'key_result_title', 'objective', 'parent_plan', 'company', 'department',
+        'key_result_title', 'objective', 'parent_plan', 'company', 'group', 'department',
         'financial_year', 'start_date', 'end_date', 'reviewer', 'objective_title',
         'assignee', 'owner_user', 'objective_owner', 'description'
     ]).then((response) => {
         if (frm.doc.parent_key_result !== selected_key_result) return;
         const kr = response.message || {};
-        set_due_date_target_guidance(frm, kr.end_date);
-        frappe.utils.add_link_title('OKR Key Result', selected_key_result, kr.key_result_title || selected_key_result);
-        const values = {
-            parent_objective: kr.objective || '',
-            objective_title: kr.objective_title || '',
-            parent_plan: kr.parent_plan || '',
-            company: kr.company || '',
-            department: kr.department || '',
-            context_start_date: kr.start_date || '',
-            context_end_date: kr.end_date || '',
-            key_result_title: kr.key_result_title || ''
+
+        const finalize_kr_context = (kr_data) => {
+            frm._kr_context = { kr: kr_data, plan: frm._plan_context || {} };
+            set_due_date_target_guidance(frm, kr_data.end_date);
+            frappe.utils.add_link_title('OKR Key Result', selected_key_result, kr_data.key_result_title || selected_key_result);
+            const values = {
+                parent_objective: kr_data.objective || '',
+                objective_title: kr_data.objective_title || '',
+                parent_plan: kr_data.parent_plan || '',
+                company: kr_data.company || '',
+                group: kr_data.group || '',
+                department: kr_data.department || '',
+                context_start_date: kr_data.start_date || '',
+                context_end_date: kr_data.end_date || '',
+                key_result_title: kr_data.key_result_title || ''
+            };
+            if (!frm.doc.reviewer) values.reviewer = kr_data.reviewer || '';
+            frm.doc.financial_year = kr_data.financial_year || '';
+            frm.refresh_field('financial_year');
+            frm.set_value(values);
+            load_plan_context(frm, kr_data.parent_plan, kr_data);
         };
-        if (!frm.doc.reviewer) values.reviewer = kr.reviewer || '';
-        frm.doc.financial_year = kr.financial_year || '';
-        frm.refresh_field('financial_year');
-        frm.set_value(values);
-        load_plan_context(frm, kr.parent_plan, kr);
+
+        if ((!kr.objective_owner || !kr.group) && kr.objective) {
+            frappe.db.get_value('OKR Objective', kr.objective, ['owner_user', 'owner', 'group']).then((obj_res) => {
+                const obj_data = obj_res.message || {};
+                if (!kr.objective_owner) {
+                    kr.objective_owner = obj_data.owner_user || obj_data.owner || '';
+                }
+                if (!kr.group) {
+                    kr.group = obj_data.group || '';
+                }
+                finalize_kr_context(kr);
+            });
+        } else {
+            finalize_kr_context(kr);
+        }
     });
 }
 
 function load_plan_context(frm, plan_name, kr) {
+    const active_kr = kr || (frm._kr_context && frm._kr_context.kr) || {};
     if (!plan_name) {
         frm.set_value({
             plan_title: '',
             plan_description: '',
             sprint_frequency: '',
         });
-        render_context_preview(frm, { kr });
+        frm._plan_context = {};
+        frm._kr_context = { kr: active_kr, plan: {} };
+        render_context_preview(frm, frm._kr_context);
         return;
     }
     frappe.call({
         method: 'okr_management.okr_management.doctype.okr_plan.okr_plan.get_plan_context',
         args: { plan_name }
     }).then((response) => {
-        if (frm.doc.parent_plan !== plan_name) return;
         const plan = response.message || {};
-        const fiscal_start = plan.start_date || '';
-        const fiscal_end = plan.end_date || '';
         if (plan.plan_name) frappe.utils.add_link_title('OKR Plan', plan_name, plan.plan_name);
         frm.doc.financial_year = plan.financial_year || frm.doc.financial_year || '';
         frm.refresh_field('financial_year');
@@ -205,7 +239,9 @@ function load_plan_context(frm, plan_name, kr) {
             plan_description: plan.description || '',
             sprint_frequency: plan.sprint_frequency || '',
         });
-        render_context_preview(frm, { kr, plan });
+        frm._plan_context = plan;
+        frm._kr_context = { kr: active_kr, plan };
+        render_context_preview(frm, frm._kr_context);
     });
 }
 
@@ -213,9 +249,9 @@ function render_context_preview(frm, context) {
     const field = frm.fields_dict.context_preview_html;
     if (!field || !field.$wrapper) return;
 
-    const ctx = context || {};
-    const kr = ctx.kr || {};
-    const plan = ctx.plan || {};
+    const ctx = context || frm._kr_context || {};
+    const kr = ctx.kr || (frm._kr_context && frm._kr_context.kr) || {};
+    const plan = ctx.plan || (frm._kr_context && frm._kr_context.plan) || frm._plan_context || {};
 
     let timeline_text = __('Select a Key Result to preview its timeline.');
     let timeline_detail = '';
@@ -233,6 +269,7 @@ function render_context_preview(frm, context) {
         target:   '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
         flag:     '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
         plan:     '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+        group:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
         building: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M3 9h6"/><path d="M3 15h6"/><path d="M15 3v18"/><path d="M15 9h6"/><path d="M15 15h6"/></svg>',
         calendar: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
         clock:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
@@ -240,15 +277,20 @@ function render_context_preview(frm, context) {
         user:     '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
     };
 
+    const kr_owner_raw = kr.assignee || kr.owner_user || (frm._kr_context && frm._kr_context.kr && (frm._kr_context.kr.assignee || frm._kr_context.kr.owner_user)) || '';
+    const obj_owner_raw = kr.objective_owner || (frm._kr_context && frm._kr_context.kr && frm._kr_context.kr.objective_owner) || '';
+    const kr_group_raw = kr.group || (frm._kr_context && frm._kr_context.kr && frm._kr_context.kr.group) || frm.doc.group || '';
+
     const cards = [
         { icon: icons.target,   label: __('Key Result'),       value: kr.key_result_title || frm.doc.key_result_title },
         { icon: icons.flag,     label: __('Objective'),        value: kr.objective_title || frm.doc.objective_title },
         { icon: icons.plan,     label: __('Plan'),             value: plan.plan_name || frm.doc.plan_title },
         { icon: icons.building, label: __('Organization'),     value: kr.company || frm.doc.company },
+        { icon: icons.group,    label: __('Group'),            value: kr_group_raw },
         { icon: icons.calendar, label: __('Financial Year'),   value: kr.financial_year || frm.doc.financial_year },
         { icon: icons.clock,    label: __('Key Result Timeline'), value: timeline_text + (timeline_detail ? ' • ' + timeline_detail : '') },
-        { icon: icons.user,     label: __('Key Result Owner'),  value: kr.assignee || kr.owner_user || '' },
-        { icon: icons.user,     label: __('Objective Owner'),   value: kr.objective_owner || '' },
+        { icon: icons.user,     label: __('Key Result Owner'),  value: format_user_display(kr_owner_raw) },
+        { icon: icons.user,     label: __('Objective Owner'),   value: format_user_display(obj_owner_raw) },
         { icon: icons.notes,    label: __('Key Result Description'), value: kr.description || plan.description || frm.doc.plan_description, wide: true },
     ];
 

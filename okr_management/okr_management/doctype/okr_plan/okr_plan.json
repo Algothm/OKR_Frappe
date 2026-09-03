@@ -1,4 +1,7 @@
 {
+ "title_field": "plan_name",
+ "show_title_field_in_link": 1,
+ "search_fields": "plan_name,name,company,financial_year,status",
  "actions": [],
  "allow_rename": 1,
  "autoname": "naming_series:",
@@ -17,14 +20,12 @@
   "plan_details_col_break",
   "status",
   "planned_activation_date",
+  "sprint_frequency",
   "plan_details_col_break_3",
   "description",
   "owner_user",
   "context_preview_heading",
   "context_preview_html",
-  "sprint_configuration_section",
-  "sprint_frequency",
-  "sprint_config_col_2",
   "plan_team_section",
   "members",
   "technical_section",
@@ -105,7 +106,7 @@
    "description": "The Draft Plan activates automatically on this date.",
    "mandatory_depends_on": "eval:doc.status=='Draft'",
    "in_list_view": 0,
-   "in_standard_filter": 1
+   "in_standard_filter": 0
   },
   {
    "fieldname": "objective_count",
@@ -238,8 +239,5 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "track_changes": 1,
- "title_field": "",
- "search_fields": "plan_name,name,financial_year,company,status",
- "show_title_field_in_link": 0
+ "track_changes": 1
 }

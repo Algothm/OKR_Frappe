@@ -255,6 +255,14 @@
    "read_only": 1
   },
   {
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "label": "Group",
+   "options": "Group",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
    "label": "Department",
    "options": "Department",
    "hidden": 1,
@@ -379,6 +387,7 @@
   "status",
   "owner_user",
   "reviewer",
+  "group",
   "department",
   "progress_visualization_html",
   "execution_progress_section",

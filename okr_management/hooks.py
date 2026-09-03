@@ -26,11 +26,11 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 app_include_css = "/assets/okr_management/css/okr_management.css"
-app_include_js = "/assets/okr_management/js/okr_management.js"
+app_include_js = "/assets/okr_management/js/okr_management.js?v=20260903-5"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/okr_management/css/okr_management.css"
-# web_include_js = "/assets/okr_management/js/okr_management.js"
+# web_include_js = "/assets/okr_management/js/okr_management.js?v=20260903-5"
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "okr_management/public/scss/website"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -9,8 +10,13 @@ from frappe.utils import add_months, flt, get_last_day, getdate
 from okr_management.utils.okr_calculations import recalculate_plan_progress
 from okr_management.utils.okr_validations import ensure_date_range, ensure_required_link
 
-
-LOCKED_AFTER_ACTIVE_FIELDS = ("financial_year", "company", "owner_user", "sprint_frequency", "planned_activation_date")
+LOCKED_AFTER_ACTIVE_FIELDS = (
+	"financial_year",
+	"company",
+	"owner_user",
+	"sprint_frequency",
+	"planned_activation_date",
+)
 STATUS_TRANSITIONS = {
 	"Draft": {"Active", "Archived"},
 	"Active": {"Draft", "Archived"},
@@ -26,10 +32,7 @@ class OKRPlan(Document):
 
 		# Automatically add the current Plan Coordinator as the first coordinator row if table is empty
 		if self.owner_user and not self.get("members"):
-			self.append("members", {
-				"member_user": self.owner_user,
-				"role": "Plan Coordinator"
-			})
+			self.append("members", {"member_user": self.owner_user, "role": "Plan Coordinator"})
 
 		self.preserve_system_calculated_progress()
 
@@ -70,7 +73,9 @@ class OKRPlan(Document):
 			if not member.member_user:
 				continue
 			if member.member_user in seen_users:
-				frappe.throw(_("User {0} is added more than once in the Plan Team.").format(member.member_user))
+				frappe.throw(
+					_("User {0} is added more than once in the Plan Team.").format(member.member_user)
+				)
 			seen_users.add(member.member_user)
 
 		# Filter Plan Coordinator roles
@@ -130,7 +135,8 @@ class OKRPlan(Document):
 			locked_fields = LOCKED_AFTER_ACTIVE_FIELDS
 			if previous.status == "Active":
 				locked_fields = tuple(
-					fieldname for fieldname in locked_fields
+					fieldname
+					for fieldname in locked_fields
 					if fieldname not in {"financial_year", "sprint_frequency"}
 				)
 			self.validate_fields_unchanged(previous, locked_fields)
@@ -203,7 +209,10 @@ def get_plan_timeline(plan: Document | str) -> tuple:
 
 
 def get_derived_periods(plan: Document | str) -> list[dict]:
-	plan = frappe.get_doc("OKR Plan", plan) if isinstance(plan, str) else plan
+	if isinstance(plan, str):
+		plan = frappe.db.get_value("OKR Plan", plan, ["financial_year", "sprint_frequency"], as_dict=True)
+		if not plan:
+			return []
 	start, fiscal_end = _fiscal_year_dates(plan.financial_year)
 	step = 1 if plan.sprint_frequency == "Monthly" else 3
 	periods = []
