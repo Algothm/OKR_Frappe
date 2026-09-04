@@ -236,9 +236,9 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 			for page in get_workspace_sidebar_items().get("pages", [])
 			if page.get("module") == "OKR Management"
 		}
-		self.assertEqual(pages["Admin Workspace"], "admin-workspace")
+		self.assertEqual(pages["OKR Admin Workspace Sidebar"], "admin-workspace")
 		self.assertEqual(pages["OKR Plan Planning"], "okr-plan")
-		self.assertEqual(pages["OKR Workspace"], "okr-workspace")
+		self.assertEqual(pages["OKR Workspace Sidebar"], "okr-workspace")
 		self.assertEqual(pages["OKR Objective Execution"], "okr-objective")
 		self.assertEqual(pages["OKR Key Result Execution"], "okr-key-result")
 		self.assertEqual(pages["Action Item"], "okr-action-item")
@@ -264,7 +264,7 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		self.assertEqual(
 			user_pages,
 			{
-				"OKR Workspace",
+				"OKR Workspace Sidebar",
 				"OKR Objective Execution",
 				"OKR Key Result Execution",
 				"Action Item",
@@ -278,7 +278,7 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 			for page in get_workspace_sidebar_items().get("pages", [])
 			if page.get("module") == "OKR Management"
 		}
-		self.assertEqual(admin_pages, {"Admin Workspace", "OKR Plan Planning"})
+		self.assertEqual(admin_pages, {"OKR Admin Workspace Sidebar", "OKR Plan Planning"})
 
 		frappe.set_user(self.users["dual_role"])
 		dual_role_pages = {
@@ -289,9 +289,9 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		self.assertEqual(
 			dual_role_pages,
 			{
-				"Admin Workspace",
+				"OKR Admin Workspace Sidebar",
 				"OKR Plan Planning",
-				"OKR Workspace",
+				"OKR Workspace Sidebar",
 				"OKR Objective Execution",
 				"OKR Key Result Execution",
 				"Action Item",
@@ -515,3 +515,62 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		self.assertTrue(frappe.has_permission("OKR Plan", "read", doc=self.plan))
 		frappe.set_user(self.users["okr_user"])
 		self.assertFalse(frappe.has_permission("OKR Plan", "read", doc=self.plan))
+
+	def test_group_doctype_permission_strictly_administrator_only(self):
+		from frappe.desk.form.load import getdoc
+
+		group_name = frappe.db.get_value("Group", {"disabled": 0}, "name")
+		if not group_name:
+			# Ensure at least one group exists
+			g = frappe.get_doc({
+				"doctype": "Group",
+				"group_name": "Test Admin Perm Group",
+				"company": self.company,
+			}).insert(ignore_permissions=True)
+			group_name = g.name
+
+		# 1. Administrator checks
+		frappe.set_user("Administrator")
+		self.assertTrue(frappe.has_permission("Group", "read", user="Administrator"))
+		self.assertTrue(frappe.has_permission("Group", "write", user="Administrator"))
+		self.assertTrue(frappe.has_permission("Group", "create", user="Administrator"))
+		self.assertTrue(frappe.has_permission("Group", "delete", user="Administrator"))
+		admin_list = frappe.get_list("Group")
+		self.assertTrue(len(admin_list) > 0)
+		frappe.response["docs"] = []
+		getdoc("Group", group_name)
+		self.assertTrue(bool(frappe.response.get("docs")))
+
+		# 2. Denied roles: System Manager, OKR Admin, OKR User, Employee
+		test_users = [
+			self.users["system"],
+			self.users["okr_admin"],
+			self.users["okr_user"],
+			self.users["outsider"],
+		]
+		for u in test_users:
+			frappe.set_user(u)
+			self.assertFalse(frappe.has_permission("Group", "read", user=u))
+			self.assertFalse(frappe.has_permission("Group", "write", user=u))
+			self.assertFalse(frappe.has_permission("Group", "create", user=u))
+			self.assertFalse(frappe.has_permission("Group", "delete", user=u))
+
+			with self.assertRaises(frappe.PermissionError):
+				frappe.get_list("Group")
+
+			with self.assertRaises(frappe.PermissionError):
+				getdoc("Group", group_name)
+
+			doc = frappe.get_doc("Group", group_name)
+			with self.assertRaises(frappe.PermissionError):
+				doc.check_permission("read")
+			with self.assertRaises(frappe.PermissionError):
+				doc.check_permission("write")
+			with self.assertRaises(frappe.PermissionError):
+				frappe.new_doc("Group", group_name=f"Denied Group {u}", company=self.company).insert()
+
+		# 3. Internal OKR logic (raw DB lookups) remains functional for non-admins
+		frappe.set_user(self.users["okr_user"])
+		group_val = frappe.db.get_value("Group", group_name, ["name", "company"], as_dict=True)
+		self.assertIsNotNone(group_val)
+		self.assertEqual(group_val["name"], group_name)

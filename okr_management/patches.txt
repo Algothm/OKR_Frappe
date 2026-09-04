@@ -53,3 +53,5 @@ okr_management.patches.v0_0_41_two_role_access_model
 okr_management.patches.v0_0_42_allow_okr_user_department_lookup
 okr_management.patches.v0_0_43_rename_plan_admin_role
 okr_management.patches.v0_0_44_archive_cancelled_action_items
+
+okr_management.patches.v0_0_38_cleanup_legacy_workspaces

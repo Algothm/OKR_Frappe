@@ -26,7 +26,7 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 app_include_css = "/assets/okr_management/css/okr_management.css"
-app_include_js = "/assets/okr_management/js/okr_management.js?v=20260903-5"
+app_include_js = "/assets/okr_management/js/okr_management.js?v=20260904-1"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/okr_management/css/okr_management.css"
@@ -40,14 +40,7 @@ app_include_js = "/assets/okr_management/js/okr_management.js?v=20260903-5"
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-page_js = {
-	"okr-admin-workspace": "public/js/okr_alias_redirect.js",
-	"plan": "public/js/okr_alias_redirect.js",
-	"objective": "public/js/okr_alias_redirect.js",
-	"key-result": "public/js/okr_alias_redirect.js",
-	"action-item": "public/js/okr_alias_redirect.js",
-	"check-in": "public/js/okr_alias_redirect.js",
-}
+# page_js = {}
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
@@ -130,6 +123,7 @@ permission_query_conditions = {
 	"OKR Key Result": "okr_management.hierarchy_visibility.key_result_query",
 	"OKR Check In": "okr_management.hierarchy_visibility.checkin_query",
 	"OKR Action Item": "okr_management.hierarchy_visibility.action_item_query",
+	"Group": "okr_management.permissions.get_group_permission_query_conditions",
 }
 
 # DocType Class
@@ -247,6 +241,7 @@ has_permission = {
 	"OKR Key Result": "okr_management.hierarchy_visibility.key_result_permission",
 	"OKR Action Item": "okr_management.hierarchy_visibility.action_item_permission",
 	"OKR Check In": "okr_management.hierarchy_visibility.checkin_permission",
+	"Group": "okr_management.permissions.has_group_permission",
 }
 
 
