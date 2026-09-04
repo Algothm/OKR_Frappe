@@ -370,3 +370,58 @@ window.okr_management.preview_attachment = function (file_url) {
 		}
 	);
 })();
+// Respect custom workspace sidebar route mappings from get_workspace_sidebar_items.
+(() => {
+	function patch_workspace_sidebar_routes() {
+		if (!frappe.views?.Workspace?.prototype?.sidebar_item_container) return false;
+		if (frappe.views.Workspace.prototype._okr_route_patched) return true;
+
+		const original_sidebar_item_container =
+			frappe.views.Workspace.prototype.sidebar_item_container;
+
+		frappe.views.Workspace.prototype.sidebar_item_container = function (item) {
+			const $item = original_sidebar_item_container.call(this, item);
+			if (item && item.route) {
+				const href = item.route.startsWith("/") ? item.route : `/app/${item.route}`;
+				$item.find("> .desk-sidebar-item > .item-anchor").attr("href", href);
+			}
+			return $item;
+		};
+
+		frappe.views.Workspace.prototype._okr_route_patched = true;
+		return true;
+	}
+
+	function sync_rendered_sidebar_routes() {
+		if (!frappe.workspace?.all_pages) return;
+		const route_lookup = {};
+		for (const page of frappe.workspace.all_pages) {
+			if (page && page.title && page.route) {
+				route_lookup[page.title] = page.route.startsWith("/")
+					? page.route
+					: `/app/${page.route}`;
+			}
+		}
+		document.querySelectorAll(".sidebar-item-container[item-name]").forEach((el) => {
+			const name = el.getAttribute("item-name");
+			const target_href = route_lookup[name];
+			if (target_href) {
+				const anchor = el.querySelector(":scope > .desk-sidebar-item > a.item-anchor");
+				if (anchor && anchor.getAttribute("href") !== target_href) {
+					anchor.setAttribute("href", target_href);
+				}
+			}
+		});
+	}
+
+	if (!patch_workspace_sidebar_routes()) {
+		const timer = setInterval(() => {
+			if (patch_workspace_sidebar_routes()) clearInterval(timer);
+		}, 50);
+	}
+
+	$(document).on("page-change route-change", () => {
+		setTimeout(sync_rendered_sidebar_routes, 50);
+	});
+	frappe.after_ajax && frappe.after_ajax(sync_rendered_sidebar_routes);
+})();
