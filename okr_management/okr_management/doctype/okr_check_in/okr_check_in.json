@@ -14,6 +14,7 @@
   "progress",
   "action_status",
   "current_value",
+  "checkin_date",
   "achievements",
   "attachment",
   "context_preview_col_break",
@@ -37,7 +38,6 @@
   "objective",
   "parent_plan",
   "reported_by",
-  "checkin_date",
   "financial_year",
   "company",
   "group",
@@ -143,8 +143,8 @@
    "label": "Check-In Date",
    "reqd": 1,
    "default": "Today",
-   "read_only": 1,
-   "hidden": 1,
+   "read_only": 0,
+   "hidden": 0,
    "in_list_view": 0
   },
   {

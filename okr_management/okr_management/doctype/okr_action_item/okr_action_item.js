@@ -23,6 +23,24 @@ frappe.ui.form.on('OKR Action Item', {
         validate_due_date_against_target(frm);
         render_context_preview(frm, frm._kr_context);
     },
+    customize_measurement(frm) {
+        handle_customize_measurement_change(frm);
+    },
+    current_value(frm) {
+        recalculate_form_action_progress(frm);
+    },
+    baseline_value(frm) {
+        recalculate_form_action_progress(frm);
+    },
+    target_value(frm) {
+        recalculate_form_action_progress(frm);
+    },
+    metric_direction(frm) {
+        recalculate_form_action_progress(frm);
+    },
+    metric_type(frm) {
+        recalculate_form_action_progress(frm);
+    },
     validate(frm) {
         if (!frm.doc.assigned_to) {
             frappe.throw(__('Assigned To is required.'));
@@ -49,7 +67,6 @@ frappe.ui.form.on('OKR Action Item', {
     after_save(frm) {
         if (frm.doc.parent_key_result) {
             frappe.kr_needs_reload = true;
-            frappe.set_route('Form', 'OKR Key Result', frm.doc.parent_key_result);
         }
     }
 });
@@ -82,7 +99,8 @@ function apply_action_item_ui(frm) {
     [
         'parent_plan', 'plan_title', 'plan_description', 'company', 'financial_year',
         'sprint_frequency', 'context_start_date', 'context_end_date',
-        'parent_objective', 'objective_title', 'key_result_title'
+        'parent_objective', 'objective_title', 'key_result_title',
+        'measurement_customization_status'
     ].forEach((fieldname) => frm.set_df_property(fieldname, 'read_only', 1));
 
 	frm.set_df_property('context_preview_html', 'label', __('Context and Preview of Plan, Objective and Key Result'));
@@ -169,7 +187,9 @@ function fetch_parent_key_result_context(frm) {
     frappe.db.get_value('OKR Key Result', selected_key_result, [
         'key_result_title', 'objective', 'parent_plan', 'company', 'group', 'department',
         'financial_year', 'start_date', 'end_date', 'reviewer', 'objective_title',
-        'assignee', 'owner_user', 'objective_owner', 'description'
+        'assignee', 'owner_user', 'objective_owner', 'description',
+        'lock_measurement_fields_for_action_item_assignees', 'metric_type', 'metric_direction',
+        'baseline_value', 'target_value', 'current_value'
     ]).then((response) => {
         if (frm.doc.parent_key_result !== selected_key_result) return;
         const kr = response.message || {};
@@ -194,6 +214,9 @@ function fetch_parent_key_result_context(frm) {
             frm.refresh_field('financial_year');
             frm.set_value(values);
             load_plan_context(frm, kr_data.parent_plan, kr_data);
+            const is_locked = Boolean(kr_data.lock_measurement_fields_for_action_item_assignees !== 0 && kr_data.lock_measurement_fields_for_action_item_assignees !== '0');
+            frm.set_value('measurement_customization_status', is_locked ? 'Locked' : 'Allowed');
+            update_measurement_customization_ui(frm, is_locked, kr_data);
         };
 
         if ((!kr.objective_owner || !kr.group) && kr.objective) {
@@ -358,4 +381,65 @@ function render_preview_cards(field, cards, empty_message, title) {
             'display': 'block'
         });
     }
+}
+
+function handle_customize_measurement_change(frm) {
+    const kr_data = (frm._kr_context && frm._kr_context.kr) || {};
+    const is_locked = Boolean(kr_data.lock_measurement_fields_for_action_item_assignees !== 0 && kr_data.lock_measurement_fields_for_action_item_assignees !== '0');
+    if (frm.doc.customize_measurement) {
+        if (!frm.doc.metric_type && kr_data.metric_type) {
+            frm.set_value('metric_type', kr_data.metric_type || 'Percentage');
+            frm.set_value('metric_direction', kr_data.metric_direction || 'Increase');
+            frm.set_value('baseline_value', flt(kr_data.baseline_value, 2));
+            frm.set_value('target_value', flt(kr_data.target_value, 2));
+        }
+    }
+    update_measurement_customization_ui(frm, is_locked, kr_data);
+}
+
+function update_measurement_customization_ui(frm, is_locked, kr_data) {
+    frm.set_df_property('measurement_customization_status', 'read_only', 1);
+
+    const user = frappe.session.user;
+    const is_admin = (user === 'Administrator' || (frappe.user_roles && (frappe.user_roles.includes('System Manager') || frappe.user_roles.includes('OKR Admin'))));
+    const is_assignee = (frm.doc.assigned_to === user || is_admin);
+    const is_editable_status = ['Open', 'In Progress', 'On Hold', 'Blocked'].includes(frm.doc.status || 'Open');
+    const can_customize = !is_locked && is_assignee && is_editable_status;
+
+    if (is_locked) {
+        frm.set_df_property('customize_measurement', 'hidden', 1);
+        frm.set_df_property('customize_measurement', 'read_only', 1);
+        frm.set_df_property('measurement_section', 'hidden', !frm.doc.customize_measurement);
+        ['metric_type', 'metric_direction', 'baseline_value', 'target_value', 'current_value'].forEach((f) => {
+            frm.set_df_property(f, 'read_only', 1);
+        });
+    } else {
+        frm.set_df_property('customize_measurement', 'hidden', 0);
+        frm.set_df_property('customize_measurement', 'read_only', can_customize ? 0 : 1);
+        const show_section = Boolean(frm.doc.customize_measurement);
+        frm.set_df_property('measurement_section', 'hidden', !show_section);
+        const can_edit_fields = can_customize && show_section;
+        ['metric_type', 'metric_direction', 'baseline_value', 'target_value', 'current_value'].forEach((f) => {
+            frm.set_df_property(f, 'read_only', can_edit_fields ? 0 : 1);
+        });
+    }
+}
+
+function recalculate_form_action_progress(frm) {
+    if (!frm.doc.customize_measurement) return;
+    const actual = flt(frm.doc.current_value);
+    const baseline = flt(frm.doc.baseline_value);
+    const target = flt(frm.doc.target_value);
+    let progress = 0;
+    if (frm.doc.metric_type === 'Boolean') {
+        progress = actual ? 100 : 0;
+    } else if (target !== baseline) {
+        if (frm.doc.metric_direction === 'Decrease') {
+            progress = ((baseline - actual) / (baseline - target)) * 100;
+        } else {
+            progress = ((actual - baseline) / (target - baseline)) * 100;
+        }
+        progress = Math.min(100, Math.max(0, Math.round(progress * 100) / 100));
+    }
+    frm.set_value('progress', progress);
 }

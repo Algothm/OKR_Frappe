@@ -73,6 +73,11 @@
    "role": "Administrator",
    "share": 1,
    "write": 1
+  },
+  {
+   "read": 1,
+   "role": "OKR User",
+   "select": 1
   }
  ],
  "quick_entry": 1,

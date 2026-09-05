@@ -55,3 +55,4 @@ okr_management.patches.v0_0_43_rename_plan_admin_role
 okr_management.patches.v0_0_44_archive_cancelled_action_items
 
 okr_management.patches.v0_0_38_cleanup_legacy_workspaces
+okr_management.patches.v0_0_45_lock_kr_measurement_by_default

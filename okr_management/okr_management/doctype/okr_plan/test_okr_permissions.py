@@ -516,7 +516,7 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		frappe.set_user(self.users["okr_user"])
 		self.assertFalse(frappe.has_permission("OKR Plan", "read", doc=self.plan))
 
-	def test_group_doctype_permission_strictly_administrator_only(self):
+	def test_group_read_select_for_okr_user_and_management_administrator_only(self):
 		from frappe.desk.form.load import getdoc
 
 		group_name = frappe.db.get_value("Group", {"disabled": 0}, "name")
@@ -541,11 +541,22 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		getdoc("Group", group_name)
 		self.assertTrue(bool(frappe.response.get("docs")))
 
-		# 2. Denied roles: System Manager, OKR Admin, OKR User, Employee
+		# 2. OKR User can read/select existing Groups, but cannot manage them.
+		okr_user = self.users["okr_user"]
+		frappe.set_user(okr_user)
+		self.assertTrue(frappe.has_permission("Group", "read", user=okr_user))
+		self.assertTrue(frappe.has_permission("Group", "select", user=okr_user))
+		self.assertFalse(frappe.has_permission("Group", "write", user=okr_user))
+		self.assertFalse(frappe.has_permission("Group", "create", user=okr_user))
+		self.assertFalse(frappe.has_permission("Group", "delete", user=okr_user))
+		self.assertEqual(frappe.get_list("Group"), [])
+		with self.assertRaises(frappe.PermissionError):
+			frappe.new_doc("Group", group_name="Denied Group OKR User", company=self.company).insert()
+
+		# 3. Other non-Administrator roles cannot read or manage Groups.
 		test_users = [
 			self.users["system"],
 			self.users["okr_admin"],
-			self.users["okr_user"],
 			self.users["outsider"],
 		]
 		for u in test_users:
@@ -569,8 +580,60 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 			with self.assertRaises(frappe.PermissionError):
 				frappe.new_doc("Group", group_name=f"Denied Group {u}", company=self.company).insert()
 
-		# 3. Internal OKR logic (raw DB lookups) remains functional for non-admins
+		# 4. Internal OKR logic (raw DB lookups) remains functional for non-admins
 		frappe.set_user(self.users["okr_user"])
 		group_val = frappe.db.get_value("Group", group_name, ["name", "company"], as_dict=True)
 		self.assertIsNotNone(group_val)
 		self.assertEqual(group_val["name"], group_name)
+
+	def test_kr_group_context_and_save_by_normal_okr_user_with_read_select_permission(self):
+		from frappe.client import validate_link
+
+		# 1. Setup an objective with Group belonging to self.company
+		group_name = frappe.db.get_value("Group", {"company": self.company}, "name")
+		if not group_name:
+			group = frappe.get_doc({
+				"doctype": "Group",
+				"group_name": f"Test Group {frappe.generate_hash(length=6)}",
+				"company": self.company,
+			}).insert(ignore_permissions=True)
+			group_name = group.name
+
+		frappe.set_user("Administrator")
+		self.objective.group = group_name
+		self.objective.save(ignore_permissions=True)
+
+		# 2. Normal permitted OKR user can read/select an existing Group.
+		user = self.users["objective"]
+		frappe.set_user(user)
+		self.assertTrue(frappe.has_permission("Group", "read", user=user))
+		self.assertTrue(frappe.has_permission("Group", "select", user=user))
+
+		# Direct Link validation succeeds for an existing Group.
+		validate_link("Group", group_name)
+
+		# 3. Normal OKR user creates and saves a Key Result linked to the Objective
+		kr = frappe.get_doc({
+			"doctype": "OKR Key Result",
+			"key_result_title": "Normal User KR With Group " + frappe.generate_hash(length=6),
+			"objective": self.objective.name,
+			"assignee": self.users["kr"],
+			"metric_type": "Percentage",
+			"metric_direction": "Increase",
+			"target_value": 100,
+			"end_date": self.objective.end_date,
+			"status": "Draft",
+		})
+		kr.insert()
+
+		# 4. Verify inherited Group value is saved and persists correctly
+		kr.reload()
+		self.assertEqual(kr.group, group_name)
+		self.assertEqual(kr.parent_plan, self.plan.name)
+
+		# 5. Normal OKR user can edit and save the KR without permission errors
+		kr.target_value = 150
+		kr.save()
+		kr.reload()
+		self.assertEqual(kr.target_value, 150)
+		self.assertEqual(kr.group, group_name)

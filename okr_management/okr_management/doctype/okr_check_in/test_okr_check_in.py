@@ -12,7 +12,7 @@ class TestOKRCheckIn(FrappeTestCase):
         fiscal_year=frappe.db.get_value("Fiscal Year",{"year_start_date":["<=",today()],"year_end_date":[">=",today()]},"name")
         if not all((company,department,employee,fiscal_year)): self.skipTest("Required ERP masters are missing.")
         fy=frappe.db.get_value("Fiscal Year",fiscal_year,["year_start_date","year_end_date"],as_dict=True)
-        self.plan=frappe.get_doc({"doctype":"OKR Plan","plan_name":"CI Test "+frappe.generate_hash(length=6),"financial_year":fiscal_year,"company":company,"owner_user":"Administrator","sprint_frequency":"Monthly","planned_activation_date":fy.year_start_date,"status":"Draft"}).insert(ignore_permissions=True)
+        self.plan=frappe.get_doc({"doctype":"OKR Plan","plan_name":"CI Test "+frappe.generate_hash(length=6),"financial_year":fiscal_year,"company":company,"owner_user":"Administrator","sprint_frequency":"Monthly","planned_activation_date":today(),"status":"Draft"}).insert(ignore_permissions=True)
         objective=frappe.get_doc({"doctype":"OKR Objective","objective_title":"CI Objective "+frappe.generate_hash(length=6),"parent_plan":self.plan.name,"level":"Department","level_details":department,"department":department,"owner_user":"Administrator","status":"Draft"}).insert(ignore_permissions=True)
         self.kr=frappe.get_doc({"doctype":"OKR Key Result","key_result_title":"CI KR "+frappe.generate_hash(length=6),"objective":objective.name,"assignee":"Administrator","metric_type":"Number","metric_direction":"Increase","baseline_value":0,"current_value":25,"target_value":100,"end_date":objective.end_date,"status":"Draft"}).insert(ignore_permissions=True)
         self.employee_user=employee.user_id
@@ -68,3 +68,68 @@ class TestOKRCheckIn(FrappeTestCase):
         self.activate(); checkin=self.checkin(); checkin.achievements="Changed"
         self.assertRaises(frappe.ValidationError,checkin.save)
 
+    def test_stale_zero_kr_checkin_count_does_not_bypass_submitted_immutability(self):
+        self.activate()
+        checkin = self.checkin()
+        frappe.db.set_value("OKR Key Result", self.kr.name, "checkin_count", 0)
+        checkin.achievements = "Changed despite stale count"
+        self.assertRaises(frappe.ValidationError, checkin.save)
+
+    def test_checkin_date_defaults_to_today_when_not_supplied(self):
+        self.activate()
+        frappe.set_user(self.employee_user)
+        ci = frappe.get_doc({
+            "doctype": "OKR Check In",
+            "action_item": self.action.name,
+            "current_value": 30,
+            "achievements": "Default date check",
+            "action_status": "In Progress",
+        }).insert(ignore_permissions=True)
+        self.assertEqual(str(ci.checkin_date), today())
+
+    def test_checkin_custom_date_persists_and_is_not_overwritten(self):
+        self.activate()
+        frappe.set_user(self.employee_user)
+        custom_date = "2026-09-01"
+        ci = frappe.get_doc({
+            "doctype": "OKR Check In",
+            "action_item": self.action.name,
+            "current_value": 35,
+            "achievements": "Custom date check",
+            "action_status": "In Progress",
+            "checkin_date": custom_date,
+        }).insert(ignore_permissions=True)
+        ci.reload()
+        self.assertEqual(str(ci.checkin_date), custom_date)
+
+    def test_save_workspace_checkin_persists_custom_date(self):
+        from okr_management.okr_management.page.okr_workspace.okr_workspace import save_workspace_checkin
+        self.activate()
+        if "OKR User" not in frappe.get_roles(self.employee_user):
+            frappe.get_doc("User", self.employee_user).add_roles("OKR User")
+        frappe.set_user(self.employee_user)
+        custom_date = "2026-08-25"
+        res = save_workspace_checkin(
+            action_item=self.action.name,
+            current_value=45,
+            update="Workspace custom date check",
+            status="In Progress",
+            checkin_date=custom_date,
+        )
+        ci = frappe.get_doc("OKR Check In", res["name"])
+        self.assertEqual(str(ci.checkin_date), custom_date)
+
+    def test_save_workspace_checkin_defaults_date_to_today_when_omitted(self):
+        from okr_management.okr_management.page.okr_workspace.okr_workspace import save_workspace_checkin
+        self.activate()
+        if "OKR User" not in frappe.get_roles(self.employee_user):
+            frappe.get_doc("User", self.employee_user).add_roles("OKR User")
+        frappe.set_user(self.employee_user)
+        res = save_workspace_checkin(
+            action_item=self.action.name,
+            current_value=50,
+            update="Workspace default date check",
+            status="In Progress",
+        )
+        ci = frappe.get_doc("OKR Check In", res["name"])
+        self.assertEqual(str(ci.checkin_date), today())
