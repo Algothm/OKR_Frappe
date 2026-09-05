@@ -156,7 +156,7 @@ def get_workspace_data(
 	action_items = get_action_items([row.name for row in key_results])
 	if not scope["read_all"]:
 		action_items = [row for row in action_items if row.name in scope["visible_action_items"]]
-	add_period_labels(key_results, action_items)
+	add_period_labels(key_results, action_items, objectives)
 	histories = get_checkin_history([row.name for row in action_items])
 	active_plan_names = set(get_active_plan_names())
 
@@ -247,6 +247,7 @@ def save_workspace_checkin(
 	attachment: str | None = None,
 	status: str | None = None,
 	current_value: float | None = None,
+	checkin_date: str | None = None,
 ) -> dict:
 	scope = get_hierarchy_visibility_scope()
 	if action_item not in scope["assigned_action_items"]:
@@ -260,23 +261,35 @@ def save_workspace_checkin(
 		["name", "metric_type", "metric_direction", "baseline_value", "current_value", "target_value"],
 		as_dict=True,
 	)
+	is_custom = bool(action.customize_measurement)
+	if is_custom:
+		metric_type = action.metric_type or "Percentage"
+		metric_direction = action.metric_direction or "Increase"
+		baseline = flt(action.baseline_value)
+		target = flt(action.target_value)
+	else:
+		metric_type = key_result_config.metric_type or "Percentage"
+		metric_direction = key_result_config.metric_direction or "Increase"
+		baseline = flt(key_result_config.baseline_value)
+		target = flt(key_result_config.target_value)
+
 	actual_value = flt(current_value if current_value is not None else progress)
-	baseline = flt(key_result_config.baseline_value)
-	target = flt(key_result_config.target_value)
 	lower, upper = sorted((baseline, target))
-	if key_result_config.metric_type != "Boolean" and not lower <= actual_value <= upper:
+	if metric_type != "Boolean" and not lower <= actual_value <= upper:
 		frappe.throw(_("Current value must be between {0} and {1}.").format(lower, upper))
-	if key_result_config.metric_type == "Boolean":
+	if metric_type == "Boolean":
 		calculated_progress = 100.0 if actual_value else 0.0
 	elif target == baseline:
 		calculated_progress = 0.0
-	elif key_result_config.metric_direction == "Decrease":
+	elif metric_direction == "Decrease":
 		calculated_progress = ((baseline - actual_value) / (baseline - target)) * 100.0
 	else:
 		calculated_progress = ((actual_value - baseline) / (target - baseline)) * 100.0
 	calculated_progress = min(100.0, max(0.0, calculated_progress))
 
-	frappe.db.set_value("OKR Key Result", key_result_config.name, "current_value", actual_value)
+	if not is_custom:
+		frappe.db.set_value("OKR Key Result", key_result_config.name, "current_value", actual_value)
+	frappe.db.set_value("OKR Action Item", action.name, "current_value", actual_value)
 	doc = frappe.new_doc("OKR Check In")
 	doc.action_item = action_item
 	doc.current_value = actual_value
@@ -286,6 +299,9 @@ def save_workspace_checkin(
 	doc.dependency = dependency or ""
 	doc.attachment = attachment or ""
 	doc.action_status = status or "In Progress"
+	if checkin_date:
+		from frappe.utils import getdate
+		doc.checkin_date = getdate(checkin_date)
 	doc.flags.ignore_permissions = True
 	doc.save()
 	link_uploaded_attachment(doc)
@@ -416,10 +432,19 @@ def get_action_items(kr_names: list[str]) -> list:
 			"priority",
 			"progress",
 			"due_date",
+			"customize_measurement",
+			"metric_type",
+			"metric_direction",
+			"baseline_value",
+			"target_value",
+			"current_value",
 		],
 		order_by="due_date asc, modified desc",
 		limit_page_length=800,
 	)
+	for row in rows:
+		if row.get("customize_measurement"):
+			row["progress"] = calculate_effective_action_progress(row)
 	return add_user_full_names(rows, "owner_user", "owner_full_name")
 
 
@@ -474,3 +499,20 @@ def get_checkin_history(action_item_names: list[str]) -> dict:
 	for row in rows:
 		out.setdefault(row.action_item, []).append(row)
 	return out
+
+
+def calculate_effective_action_progress(item: dict) -> float:
+	actual = flt(item.get("current_value"))
+	baseline = flt(item.get("baseline_value"))
+	target = flt(item.get("target_value"))
+	m_type = item.get("metric_type") or "Percentage"
+	direction = item.get("metric_direction") or "Increase"
+	if m_type == "Boolean":
+		return 100.0 if actual else 0.0
+	if target == baseline:
+		return 0.0
+	if direction == "Decrease":
+		prog = ((baseline - actual) / (baseline - target)) * 100.0
+	else:
+		prog = ((actual - baseline) / (target - baseline)) * 100.0
+	return min(100.0, max(0.0, round(prog, 2)))

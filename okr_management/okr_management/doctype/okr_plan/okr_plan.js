@@ -23,6 +23,9 @@ frappe.ui.form.on("OKR Plan", {
 		schedule_description_height(frm);
 	},
 	status(frm) {
+		if (frm.doc.status === "Active" && !frm.doc.planned_activation_date) {
+			frm.set_value("planned_activation_date", frappe.datetime.get_today());
+		}
 		apply_plan_locks(frm);
 		match_plan_description_height(frm);
 		render_plan_context_preview(frm);
@@ -59,27 +62,12 @@ function match_plan_description_height(frm) {
 	const description = frm.fields_dict.description?.$wrapper;
 	if (!description?.length) return;
 
-	const resize = () => {
-		const textarea = description.find("textarea").first();
-		if (!textarea.length || !textarea.is(":visible")) return;
-
-		const sprint = frm.fields_dict.sprint_frequency?.$wrapper;
-		if (!sprint?.length || !sprint.is(":visible")) return;
-
-		// Match the visible frequency control; wrapper margins vary in Draft.
-		const sprint_control = sprint.find(".control-input:visible").first();
-		const target = sprint_control.length ? sprint_control[0] : sprint[0];
-		const left_bottom = target.getBoundingClientRect().bottom;
-		const textarea_top = textarea[0].getBoundingClientRect().top;
-		const height = Math.max(100, Math.round(left_bottom - textarea_top));
-
-		textarea[0].style.setProperty("height", `${height}px`, "important");
-		textarea[0].style.setProperty("min-height", `${height}px`, "important");
-		textarea[0].style.setProperty("max-height", `${height}px`, "important");
-	};
-
-	requestAnimationFrame(resize);
-	[100, 300, 700].forEach((delay) => setTimeout(resize, delay));
+	const textarea = description.find("textarea").first();
+	if (!textarea.length) return;
+	textarea[0].style.setProperty("height", "84px", "important");
+	textarea[0].style.setProperty("min-height", "84px", "important");
+	textarea[0].style.setProperty("max-height", "none", "important");
+	textarea[0].style.setProperty("resize", "vertical", "important");
 }
 
 function apply_sprint_configuration_layout(frm) {
@@ -261,7 +249,9 @@ function apply_plan_locks(frm) {
 	["financial_year", "sprint_frequency"].forEach((fieldname) => {
 		frm.set_df_property(fieldname, "read_only", is_closed);
 	});
-	frm.set_df_property("planned_activation_date", "read_only", !is_draft);
+	frm.set_df_property("planned_activation_date", "hidden", 0);
+	frm.toggle_display("planned_activation_date", true);
+	frm.set_df_property("planned_activation_date", "read_only", is_closed);
 	frm.set_df_property("planned_activation_date", "reqd", is_draft);
 	frm.set_df_property("description", "read_only", is_closed);
 	frm.set_df_property("progress", "hidden", 1);

@@ -20,7 +20,7 @@ ACTION_STATUS_MAP = {
 class OKRCheckIn(Document):
 	def before_validate(self) -> None:
 		self.reported_by = frappe.session.user
-		self.checkin_date = nowdate()
+		self.checkin_date = self.checkin_date or nowdate()
 		self.status = "Submitted"
 		if self.action_item:
 			self.populate_from_action_item()
@@ -30,20 +30,35 @@ class OKRCheckIn(Document):
 			self.progress_percent = self.progress
 
 	def set_metric_progress(self) -> None:
-		key_result = frappe.db.get_value(
-			"OKR Key Result",
-			self.key_result,
-			["metric_type", "metric_direction", "baseline_value", "target_value"],
+		ai_data = frappe.db.get_value(
+			"OKR Action Item",
+			self.action_item,
+			["customize_measurement", "metric_type", "metric_direction", "baseline_value", "target_value"],
 			as_dict=True,
-		)
-		if not key_result:
-			frappe.throw(_("The selected Action Item has no valid Key Result."))
+		) if self.action_item else None
+
+		if ai_data and ai_data.customize_measurement:
+			metric_type = ai_data.metric_type or "Percentage"
+			metric_direction = ai_data.metric_direction or "Increase"
+			baseline = flt(ai_data.baseline_value)
+			target = flt(ai_data.target_value)
+		else:
+			key_result = frappe.db.get_value(
+				"OKR Key Result",
+				self.key_result,
+				["metric_type", "metric_direction", "baseline_value", "target_value"],
+				as_dict=True,
+			)
+			if not key_result:
+				frappe.throw(_("The selected Action Item has no valid Key Result."))
+			metric_type = key_result.metric_type
+			metric_direction = key_result.metric_direction
+			baseline = flt(key_result.baseline_value)
+			target = flt(key_result.target_value)
 
 		actual = flt(self.current_value)
-		baseline = flt(key_result.baseline_value)
-		target = flt(key_result.target_value)
 		lower, upper = sorted((baseline, target))
-		if key_result.metric_type == "Boolean":
+		if metric_type == "Boolean":
 			if actual not in (0, 1):
 				frappe.throw(_("Current Value must be 0 or 1 for a Boolean Key Result."))
 			progress = 100.0 if actual else 0.0
@@ -52,7 +67,7 @@ class OKRCheckIn(Document):
 				frappe.throw(_("Current Value must be between {0} and {1}.").format(lower, upper))
 			if target == baseline:
 				progress = 0.0
-			elif key_result.metric_direction == "Decrease":
+			elif metric_direction == "Decrease":
 				progress = ((baseline - actual) / (baseline - target)) * 100.0
 			else:
 				progress = ((actual - baseline) / (target - baseline)) * 100.0
@@ -190,20 +205,24 @@ class OKRCheckIn(Document):
 			frappe.throw(_("Submitted Check-ins cannot be deleted."))
 
 	def on_update(self) -> None:
+		ai_custom = 0
 		if self.action_item and frappe.db.exists("OKR Action Item", self.action_item):
 			action_status = ACTION_STATUS_MAP[self.action_status]
+			ai_custom = frappe.db.get_value("OKR Action Item", self.action_item, "customize_measurement") or 0
 			frappe.db.set_value(
 				"OKR Action Item",
 				self.action_item,
 				{
 					"progress": self.progress,
+					"current_value": flt(self.current_value),
 					"status": action_status,
 					"completion_date": nowdate() if action_status == "Completed" else None,
 				},
 			)
 
 		if self.key_result:
-			frappe.db.set_value("OKR Key Result", self.key_result, "current_value", flt(self.current_value))
+			if not ai_custom:
+				frappe.db.set_value("OKR Key Result", self.key_result, "current_value", flt(self.current_value))
 			from okr_management.utils.okr_calculations import recalculate_key_result_progress
 
 			recalculate_key_result_progress(self.key_result)
@@ -310,25 +329,54 @@ def get_action_item_context(action_item: str) -> dict:
 	doc = frappe.new_doc("OKR Check In")
 	doc.action_item = action_item
 	doc.populate_from_action_item()
-	metric = frappe.db.get_value(
-		"OKR Key Result",
-		doc.key_result,
+
+	ai_data = frappe.db.get_value(
+		"OKR Action Item",
+		action_item,
 		[
+			"customize_measurement",
 			"metric_type",
 			"metric_direction",
 			"baseline_value",
-			"current_value",
 			"target_value",
-			"currency",
-			"unit_of_measure",
-			"target_progress",
+			"current_value",
+			"progress",
 		],
 		as_dict=True,
 	)
+
+	if ai_data and ai_data.customize_measurement:
+		metric = frappe._dict({
+			"metric_type": ai_data.metric_type or "Percentage",
+			"metric_direction": ai_data.metric_direction or "Increase",
+			"baseline_value": flt(ai_data.baseline_value),
+			"target_value": flt(ai_data.target_value),
+			"current_value": flt(ai_data.current_value),
+			"currency": "",
+			"unit_of_measure": "",
+			"target_progress": flt(ai_data.progress),
+		})
+	else:
+		metric = frappe.db.get_value(
+			"OKR Key Result",
+			doc.key_result,
+			[
+				"metric_type",
+				"metric_direction",
+				"baseline_value",
+				"current_value",
+				"target_value",
+				"currency",
+				"unit_of_measure",
+				"target_progress",
+			],
+			as_dict=True,
+		)
+
 	doc.current_value = (
-		metric.current_value if metric.current_value is not None else (metric.baseline_value or 0)
+		metric.get("current_value") if metric.get("current_value") is not None else (metric.get("baseline_value") or 0)
 	)
-	doc.progress = metric.target_progress or 0
+	doc.progress = metric.get("target_progress") or 0
 	result = {
 		fieldname: doc.get(fieldname)
 		for fieldname in (

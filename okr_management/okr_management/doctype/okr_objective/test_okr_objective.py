@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, getdate
+from frappe.utils import add_days, get_last_day, getdate
 
 
 class TestOKRObjectivePlanContext(FrappeTestCase):
@@ -82,7 +82,123 @@ class TestOKRObjectivePlanContext(FrappeTestCase):
 		self.assertEqual(objective.company, plan.company)
 		self.assertEqual(objective.plan_owner, plan.owner_user)
 		self.assertEqual(getdate(objective.start_date), getdate(fiscal_year.year_start_date))
-		self.assertEqual(getdate(objective.end_date), getdate(fiscal_year.year_end_date))
+		self.assertEqual(getdate(objective.end_date), get_last_day(fiscal_year.year_start_date))
+
+	def test_manual_dates_preserved_on_save(self):
+		plan = self.make_plan()
+		custom_start = "2026-05-01"
+		custom_end = "2026-08-31"
+		objective = self.make_objective(plan, start_date=custom_start, end_date=custom_end)
+		self.assertEqual(getdate(objective.start_date), getdate(custom_start))
+		self.assertEqual(getdate(objective.end_date), getdate(custom_end))
+		objective.objective_title = "Updated Title " + frappe.generate_hash(length=4)
+		objective.save(ignore_permissions=True)
+		objective.reload()
+		self.assertEqual(getdate(objective.start_date), getdate(custom_start))
+		self.assertEqual(getdate(objective.end_date), getdate(custom_end))
+
+	def test_manual_dates_can_span_multiple_quarters(self):
+		# Example A: Quarterly activation 01-04-2026 (Q1 default 01-04-2026 -> 30-06-2026)
+		# User manually extends end_date to 30-09-2026 (spans Q1 + Q2)
+		plan_a = frappe.get_doc({
+			"doctype": "OKR Plan",
+			"plan_name": "Quarterly Plan A " + frappe.generate_hash(length=6),
+			"financial_year": self.fiscal_year,
+			"company": self.company,
+			"owner_user": "Administrator",
+			"sprint_frequency": "Quarterly",
+			"planned_activation_date": "2026-04-01",
+			"status": "Draft",
+		}).insert(ignore_permissions=True)
+
+		obj_a = self.make_objective(plan_a, start_date="2026-04-01", end_date="2026-09-30")
+		self.assertEqual(getdate(obj_a.start_date), getdate("2026-04-01"))
+		self.assertEqual(getdate(obj_a.end_date), getdate("2026-09-30"))
+
+		# Example B: Quarterly activation 01-07-2026 (Q2 default 01-07-2026 -> 30-09-2026)
+		# User manually extends end_date to 31-12-2026 (spans Q2 + Q3)
+		plan_b = frappe.get_doc({
+			"doctype": "OKR Plan",
+			"plan_name": "Quarterly Plan B " + frappe.generate_hash(length=6),
+			"financial_year": self.fiscal_year,
+			"company": self.company,
+			"owner_user": "Administrator",
+			"sprint_frequency": "Quarterly",
+			"planned_activation_date": "2026-07-01",
+			"status": "Draft",
+		}).insert(ignore_permissions=True)
+
+		obj_b = self.make_objective(plan_b, start_date="2026-07-01", end_date="2026-12-31")
+		self.assertEqual(getdate(obj_b.start_date), getdate("2026-07-01"))
+		self.assertEqual(getdate(obj_b.end_date), getdate("2026-12-31"))
+
+	def test_manual_dates_can_span_multiple_months(self):
+		# Example C: Monthly activation 04-09-2026 (Sep default 01-09-2026 -> 30-09-2026)
+		# User manually extends end_date to 31-10-2026 (spans Sep + Oct)
+		plan_c = frappe.get_doc({
+			"doctype": "OKR Plan",
+			"plan_name": "Monthly Plan C " + frappe.generate_hash(length=6),
+			"financial_year": self.fiscal_year,
+			"company": self.company,
+			"owner_user": "Administrator",
+			"sprint_frequency": "Monthly",
+			"planned_activation_date": "2026-09-04",
+			"status": "Draft",
+		}).insert(ignore_permissions=True)
+
+		obj_c = self.make_objective(plan_c, start_date="2026-09-01", end_date="2026-10-31")
+		self.assertEqual(getdate(obj_c.start_date), getdate("2026-09-01"))
+		self.assertEqual(getdate(obj_c.end_date), getdate("2026-10-31"))
+
+	def test_manual_dates_outside_plan_timeline_rejected(self):
+		# Example D: Manual date outside Plan timeline is rejected
+		plan = self.make_plan()
+		fiscal = frappe.db.get_value(
+			"Fiscal Year", plan.financial_year, ["year_start_date", "year_end_date"], as_dict=True
+		)
+		self.assertRaises(
+			frappe.ValidationError,
+			self.make_objective,
+			plan,
+			start_date=add_days(fiscal.year_start_date, -1),
+			end_date="2026-09-30",
+		)
+		self.assertRaises(
+			frappe.ValidationError,
+			self.make_objective,
+			plan,
+			start_date="2026-04-01",
+			end_date=add_days(fiscal.year_end_date, 1),
+		)
+
+	def test_default_dates_from_draft_and_active_plan(self):
+		draft_plan = frappe.get_doc({
+			"doctype": "OKR Plan",
+			"plan_name": "Draft Plan " + frappe.generate_hash(length=6),
+			"financial_year": self.fiscal_year,
+			"company": self.company,
+			"owner_user": "Administrator",
+			"sprint_frequency": "Quarterly",
+			"planned_activation_date": "2026-09-04",
+			"status": "Draft",
+		}).insert(ignore_permissions=True)
+		obj_draft = self.make_objective(draft_plan)
+		self.assertEqual(getdate(obj_draft.start_date), getdate("2026-09-04"))
+		self.assertEqual(getdate(obj_draft.end_date), getdate("2026-09-30"))
+
+		active_plan = frappe.get_doc({
+			"doctype": "OKR Plan",
+			"plan_name": "Active Plan " + frappe.generate_hash(length=6),
+			"financial_year": self.fiscal_year,
+			"company": self.company,
+			"owner_user": "Administrator",
+			"sprint_frequency": "Quarterly",
+			"planned_activation_date": "2026-09-04",
+			"status": "Active",
+		}).insert(ignore_permissions=True)
+		obj_active = self.make_objective(active_plan)
+		self.assertEqual(getdate(obj_active.start_date), getdate("2026-09-04"))
+		self.assertEqual(getdate(obj_active.end_date), getdate("2026-09-30"))
 
 	def test_dates_must_stay_inside_plan_period(self):
 		plan = self.make_plan()
@@ -133,3 +249,45 @@ class TestOKRObjectivePlanContext(FrappeTestCase):
 		plan = self.make_plan()
 		plan_rows = search_plan_departments("Department", "", "name", 0, 100, {"parent_plan": plan.name})
 		self.assertIn(self.department, {row[0] for row in plan_rows})
+
+	def test_objective_post_save_dates_and_fields_editable_and_persist(self):
+		plan = self.make_plan(status="Active")
+		obj = self.make_objective(plan, start_date="2026-04-01", end_date="2026-06-30", status="Active")
+		self.assertEqual(getdate(obj.start_date), getdate("2026-04-01"))
+		self.assertEqual(getdate(obj.end_date), getdate("2026-06-30"))
+
+		# First save edit: change End Date and Title
+		obj.end_date = "2026-09-30"
+		new_title = "Objective Updated Once " + frappe.generate_hash(length=4)
+		obj.objective_title = new_title
+		obj.save(ignore_permissions=True)
+		obj.reload()
+		self.assertEqual(getdate(obj.end_date), getdate("2026-09-30"))
+		self.assertEqual(obj.objective_title, new_title)
+
+		# Second save edit: change Start Date
+		obj.start_date = "2026-04-15"
+		obj.save(ignore_permissions=True)
+		obj.reload()
+		self.assertEqual(getdate(obj.start_date), getdate("2026-04-15"))
+		self.assertEqual(getdate(obj.end_date), getdate("2026-09-30"))
+
+	def test_objective_unauthorized_user_write_denied(self):
+		plan = self.make_plan(status="Active")
+		obj = self.make_objective(plan, owner_user="Administrator")
+		test_user = "unauth_user_" + frappe.generate_hash(length=6) + "@example.com"
+		if not frappe.db.exists("User", test_user):
+			frappe.get_doc({
+				"doctype": "User",
+				"email": test_user,
+				"first_name": "Unauth",
+				"roles": [{"role": "All"}],
+			}).insert(ignore_permissions=True)
+
+		frappe.set_user(test_user)
+		try:
+			obj_doc = frappe.get_doc("OKR Objective", obj.name)
+			obj_doc.objective_title = "Unauthorized Hack"
+			self.assertRaises(frappe.PermissionError, obj_doc.save)
+		finally:
+			frappe.set_user("Administrator")

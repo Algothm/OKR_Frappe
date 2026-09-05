@@ -65,8 +65,6 @@ const INHERITED_FIELDS = [
 	"plan_owner",
 	"objective_owner",
 	"objective_level",
-	"start_date",
-	"end_date",
 	"date_range",
 ];
 
@@ -109,15 +107,19 @@ function populate_objective_context(frm) {
 						parent_plan: objective.parent_plan || "",
 						objective_title: objective.objective_title || "",
 						company: objective.company || "",
-						group: objective.group || "",
 						department: objective.department || "",
 						plan_owner: objective.plan_owner || "",
 						objective_owner: objective.owner_user || "",
 						objective_level: objective.level || "",
-						start_date: objective_start,
-						end_date: objective_end,
 					};
+					if (!frm.doc.end_date) {
+						values.end_date = objective_end;
+					}
+					if (!frm.doc.start_date) {
+						values.start_date = objective_start;
+					}
 					frm.doc.financial_year = plan.financial_year || objective.financial_year || "";
+					frm.doc.group = objective.group || "";
 					frm.refresh_field("financial_year");
 					frm.set_value(values);
 					update_objective_date_range(frm, objective_start, objective_end);
@@ -134,9 +136,12 @@ function populate_objective_context(frm) {
 
 function clear_objective_context(frm) {
 	frm._parent_plan_title = "";
+	frm.doc.group = "";
 	const values = {};
 	INHERITED_FIELDS.forEach((fieldname) => {
-		values[fieldname] = "";
+		if (fieldname !== "group") {
+			values[fieldname] = "";
+		}
 	});
 	frm.set_value(values);
 	render_key_result_context_preview(frm, {});
@@ -202,11 +207,12 @@ function apply_key_result_ui(frm) {
 		frm.set_df_property(fieldname, "hidden", 1);
 	});
 
-	["start_date", "end_date"].forEach((fieldname) => {
-		frm.set_df_property(fieldname, "hidden", 1);
-		frm.set_df_property(fieldname, "read_only", 1);
-		frm.set_df_property(fieldname, "reqd", 0);
-	});
+	frm.set_df_property("start_date", "hidden", 1);
+	frm.set_df_property("start_date", "read_only", 0);
+	frm.set_df_property("start_date", "reqd", 0);
+	frm.set_df_property("end_date", "hidden", 0);
+	frm.set_df_property("end_date", "read_only", 0);
+	frm.set_df_property("end_date", "reqd", 1);
 
 	["target_progress", "score", "action_item_count", "checkin_count"].forEach((fieldname) => {
 		frm.set_df_property(fieldname, "read_only", 1);

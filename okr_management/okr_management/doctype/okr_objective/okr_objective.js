@@ -12,7 +12,7 @@ frappe.ui.form.on("OKR Objective", {
 	},
 	onload(frm) {},
 	onload_post_render(frm) {
-		if (frm.doc.parent_plan) load_plan_context(frm);
+		if (frm.doc.parent_plan) load_plan_context(frm, false);
 		else render_plan_context_preview(frm, {});
 		layout_summary_fields(frm);
 		layout_timeline_fields(frm);
@@ -20,13 +20,13 @@ frappe.ui.form.on("OKR Objective", {
 	},
 	refresh(frm) {
 		configure_objective_form(frm);
-		frm.doc.parent_plan ? load_plan_context(frm) : clear_plan_context(frm);
+		frm.doc.parent_plan ? load_plan_context(frm, false) : clear_plan_context(frm);
 		layout_summary_fields(frm);
 		layout_timeline_fields(frm);
 		match_description_heights(frm);
 	},
 	parent_plan(frm) {
-		load_plan_context(frm);
+		load_plan_context(frm, true);
 	},
 
 	status(frm) {
@@ -51,9 +51,10 @@ function match_description_heights(frm) {
 
 	const input = wrapper.find("textarea").first();
 	if (!input.length) return;
-	input[0].style.setProperty("height", "90px", "important");
-	input[0].style.setProperty("min-height", "90px", "important");
-	input[0].style.setProperty("max-height", "90px", "important");
+	input[0].style.setProperty("height", "84px", "important");
+	input[0].style.setProperty("min-height", "84px", "important");
+	input[0].style.setProperty("max-height", "none", "important");
+	input[0].style.setProperty("resize", "vertical", "important");
 }
 function configure_objective_form(frm) {
 	["plan_name", "plan_description", "company", "financial_year", "plan_owner"].forEach(
@@ -73,31 +74,41 @@ function configure_objective_form(frm) {
 		"plan_team_preview",
 	].forEach((fieldname) => frm.set_df_property(fieldname, "hidden", 1));
 
-	const locked =
-		!frm.is_new() && ["Active", "On Hold", "Completed", "Closed"].includes(frm.doc.status);
+	const is_closed = frm.doc.status === "Closed";
 	frm.set_df_property("parent_plan", "hidden", 0);
 	frm.set_df_property("parent_plan", "reqd", 1);
+	frm.set_df_property("parent_plan", "read_only", !frm.is_new());
 	frm.toggle_display("parent_plan", true);
 	frm.set_df_property("level", "hidden", 1);
 	frm.set_df_property("level", "reqd", 0);
 	frm.set_df_property("level", "options", "Department");
 	frm.toggle_display("level", false);
-	["parent_plan", "group", "start_date", "end_date"].forEach((fieldname) =>
-		frm.set_df_property(fieldname, "read_only", locked)
-	);
 	frm.refresh_field("parent_plan");
 	frm.refresh_field("level");
-	if (frm.is_new()) {
-		["parent_plan", "objective_title", "description", "group", "priority", "status"].forEach(
-			(fieldname) => {
-				frm.set_df_property(fieldname, "hidden", 0);
-				frm.set_df_property(fieldname, "read_only", 0);
-				frm.toggle_display(fieldname, true);
-				frm.toggle_enable(fieldname, true);
-				frm.fields_dict[fieldname]?.$wrapper?.show();
-				frm.refresh_field(fieldname);
-			}
-		);
+
+	[
+		"objective_title",
+		"description",
+		"group",
+		"priority",
+		"status",
+		"start_date",
+		"end_date",
+	].forEach((fieldname) => {
+		frm.set_df_property(fieldname, "hidden", 0);
+		frm.set_df_property(fieldname, "read_only", is_closed ? 1 : 0);
+		frm.toggle_display(fieldname, true);
+		frm.toggle_enable(fieldname, !is_closed);
+		frm.fields_dict[fieldname]?.$wrapper?.show();
+		frm.refresh_field(fieldname);
+	});
+	frm.set_df_property("department", "hidden", 1);
+	frm.toggle_display("department", false);
+	frm.set_df_property("owner_user", "hidden", 1);
+	frm.toggle_display("owner_user", false);
+	frm.set_df_property("technical_section", "hidden", 1);
+	frm.toggle_display("technical_section", false);
+	if (!is_closed) {
 		frm.enable_save();
 	}
 	setTimeout(() => match_description_heights(frm), 0);
@@ -111,7 +122,7 @@ function configure_objective_form(frm) {
 	}
 }
 
-function load_plan_context(frm) {
+function load_plan_context(frm, auto_populate_dates = false) {
 	if (!frm.doc.parent_plan) {
 		clear_plan_context(frm);
 		return;
@@ -135,9 +146,15 @@ function load_plan_context(frm) {
 				plan_description: context.description || "",
 				company: context.company || "",
 				plan_owner: context.plan_owner || "",
-				start_date: context.start_date || "",
-				end_date: context.end_date || "",
 			};
+
+			if (auto_populate_dates || (frm.is_new() && !frm.doc.start_date && !frm.doc.end_date)) {
+				const def_start = context.default_start_date || context.start_date || "";
+				const def_end = context.default_end_date || context.end_date || "";
+				if (def_start) values.start_date = def_start;
+				if (def_end) values.end_date = def_end;
+			}
+
 			// Financial Year is derived from the selected Plan and populated again
 			// server-side during validation. Avoid client Link permission validation for
 			// this hidden context field; OKR Users do not need Fiscal Year access.

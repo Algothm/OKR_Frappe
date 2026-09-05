@@ -21,10 +21,8 @@ INHERITED_FIELDS = {
 	"group",
 	"department",
 	"plan_owner",
-	"end_date",
 	"objective_owner",
 	"objective_level",
-	"start_date",
 }
 
 # Placeholder values mapping removed
@@ -32,6 +30,10 @@ INHERITED_FIELDS = {
 
 class OKRKeyResult(Document):
 	def before_validate(self) -> None:
+		if self.lock_measurement_fields_for_action_item_assignees is None:
+			self.lock_measurement_fields_for_action_item_assignees = 1
+
+
 		if self.assignee:
 			self.owner_user = self.assignee
 		elif self.owner_user:
@@ -240,8 +242,8 @@ class OKRKeyResult(Document):
 		self.plan_owner = objective.plan_owner
 		self.objective_owner = objective.owner_user
 		self.objective_level = objective.level
-		self.start_date = objective.start_date
-		self.end_date = objective.end_date
+		self.start_date = self.start_date or objective.start_date
+		self.end_date = self.end_date or objective.end_date
 
 	def clear_inherited_context(self) -> None:
 		for fieldname in INHERITED_FIELDS:

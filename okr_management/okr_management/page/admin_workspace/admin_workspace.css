@@ -1047,7 +1047,7 @@
 }
 
 /* Key Results Section */
-.okr-kr-card {
+.okr-admin-page .okr-kr-card {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
@@ -1565,7 +1565,7 @@
 }
 .okr-admin-page * { font-family: inherit; }
 .okr-cmd-shell { gap: 32px; padding-top: 24px; }
-.okr-exec-band,.okr-filter-card,.okr-health-strip,.okr-plan-card,.okr-attention-card,.okr-detail-head-card,.okr-kr-card {
+.okr-exec-band,.okr-filter-card,.okr-health-strip,.okr-plan-card,.okr-attention-card,.okr-detail-head-card,.okr-admin-page .okr-kr-card {
   border-color: var(--admin-border); border-radius: var(--admin-radius); box-shadow: var(--admin-shadow);
 }
 .okr-filter-card { padding: 20px 24px; background: #fff; }
@@ -1615,7 +1615,7 @@
 .okr-detail-head__bottom { color:var(--admin-muted); }
 .okr-dept-owner-pill,.okr-detail-head__bottom strong { font-family:var(--admin-font); }
 .okr-kr-list { margin-left:24px; }
-.okr-kr-card { margin-bottom:20px; border-left:4px solid #8fa8f8; background:#fff; }
+.okr-admin-page .okr-kr-card { margin-bottom:20px; border-left:4px solid #8fa8f8; background:#fff; }
 .okr-kr-header { min-height:76px; padding:20px 24px; }
 .okr-kr-title { font-family:var(--admin-font); font-size:16px; font-weight:700; }
 .okr-kr-badge,.okr-ai-badge { border-radius:8px; font-family:var(--admin-font); font-size:11px; font-weight:800; }

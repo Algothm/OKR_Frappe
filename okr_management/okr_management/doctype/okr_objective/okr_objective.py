@@ -7,7 +7,10 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt, getdate, today
 
-from okr_management.okr_management.doctype.okr_plan.okr_plan import get_plan_timeline
+from okr_management.okr_management.doctype.okr_plan.okr_plan import (
+	get_default_objective_dates,
+	get_plan_timeline,
+)
 from okr_management.utils.okr_calculations import recalculate_objective_progress, recalculate_plan_progress
 
 STATUS_TRANSITIONS = {
@@ -18,8 +21,8 @@ STATUS_TRANSITIONS = {
 	"Closed": set(),
 }
 
-SETUP_LOCKED_STATUSES = {"Active", "On Hold", "Completed", "Closed"}
-ACTIVE_LOCKED_STATUSES = {"Active", "On Hold", "Completed", "Closed"}
+SETUP_LOCKED_STATUSES = {"Closed"}
+ACTIVE_LOCKED_STATUSES = {"Closed"}
 PLAN_ACTIVE_REQUIRED_STATUSES = {"Active", "On Hold", "Completed", "Closed"}
 COMPLETED_KR_STATUSES = {"Achieved", "Completed", "Closed"}
 GOVERNANCE_ROLES = {"OKR Admin"}
@@ -29,13 +32,9 @@ SETUP_LOCKED_FIELDS = {
 	"parent_plan",
 	"financial_year",
 	"company",
-	"group",
-	"department",
 	"plan_owner",
-	"start_date",
-	"end_date",
 }
-ACTIVE_LOCKED_FIELDS = {"objective_title", "owner_user"}
+ACTIVE_LOCKED_FIELDS = set()
 SYSTEM_FIELDS = {"progress", "key_result_count"}
 
 
@@ -116,9 +115,14 @@ class OKRObjective(Document):
 	def default_dates_from_plan(self) -> None:
 		if not self.parent_plan or not frappe.db.exists("OKR Plan", self.parent_plan):
 			return
-		start_date, end_date = get_plan_timeline(self.parent_plan)
-		self.start_date = self.start_date or start_date
-		self.end_date = self.end_date or end_date
+		default_start, default_end = get_default_objective_dates(self.parent_plan)
+		if default_start and default_end:
+			self.start_date = self.start_date or default_start
+			self.end_date = self.end_date or default_end
+		else:
+			start_date, end_date = get_plan_timeline(self.parent_plan)
+			self.start_date = self.start_date or start_date
+			self.end_date = self.end_date or end_date
 
 	def validate_required_fields(self) -> None:
 		required = {
@@ -264,14 +268,22 @@ class OKRObjective(Document):
 		if not old_doc:
 			return
 
-		locked_fields = set()
-		if old_doc.status in SETUP_LOCKED_STATUSES or self.has_key_results():
-			locked_fields.update(SETUP_LOCKED_FIELDS)
-		if old_doc.status in ACTIVE_LOCKED_STATUSES:
-			locked_fields.update(ACTIVE_LOCKED_FIELDS)
+		locked_fields = set(SETUP_LOCKED_FIELDS)
 		if old_doc.status in {"Closed"}:
 			locked_fields.update(
-				{"priority", "reviewer", "description", "partial_completion_accepted", "completion_notes"}
+				{
+					"objective_title",
+					"owner_user",
+					"group",
+					"department",
+					"start_date",
+					"end_date",
+					"priority",
+					"reviewer",
+					"description",
+					"partial_completion_accepted",
+					"completion_notes",
+				}
 			)
 
 		for fieldname in locked_fields:

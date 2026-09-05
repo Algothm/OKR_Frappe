@@ -78,11 +78,12 @@
   {
    "in_list_view": 1,
    "in_standard_filter": 0,
-   "read_only": 1,
+   "read_only": 0,
    "fieldname": "end_date",
-   "hidden": 1,
+   "hidden": 0,
    "label": "Target Date",
-   "fieldtype": "Date"
+   "fieldtype": "Date",
+   "reqd": 1
   },
   {
    "label": "",
@@ -136,6 +137,12 @@
    "fieldtype": "Data",
    "label": "Unit of Measure",
    "fieldname": "unit_of_measure"
+  },
+  {
+   "default": "1",
+   "fieldname": "lock_measurement_fields_for_action_item_assignees",
+   "fieldtype": "Check",
+   "label": "Lock Measurement Fields for Action Item Assignees"
   },
   {
    "fieldtype": "Column Break",
@@ -344,9 +351,8 @@
   },
   {
    "fieldname": "group",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Group",
-   "options": "Group",
    "hidden": 1,
    "read_only": 1
   },
@@ -444,6 +450,7 @@
   "currency",
   "metric_direction",
   "unit_of_measure",
+  "lock_measurement_fields_for_action_item_assignees",
   "measurement_col_break",
   "baseline_value",
   "target_value",

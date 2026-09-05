@@ -243,9 +243,9 @@
 
 [data-doctype="OKR Plan"] .frappe-control[data-fieldname="description"] textarea,
 .page-container[data-page-route^="Form/OKR Plan"] .frappe-control[data-fieldname="description"] textarea {
-	height: 96px !important;
-	min-height: 100px !important;
-	max-height: 120px !important;
+	height: 84px !important;
+	min-height: 84px !important;
+	max-height: none !important;
 	resize: vertical !important;
 }
 

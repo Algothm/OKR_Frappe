@@ -42,7 +42,7 @@ frappe.ui.form.on('OKR Check In', {
 
 function configure_form(frm) {
     const is_submitted = !frm.is_new() && frm.doc.status === 'Submitted';
-    ['action_item', 'current_value', 'action_status', 'achievements', 'attachment'].forEach(
+    ['action_item', 'current_value', 'action_status', 'checkin_date', 'achievements', 'attachment'].forEach(
         (fieldname) => frm.set_df_property(fieldname, 'read_only', is_submitted)
     );
     if (is_submitted) frm.disable_save();

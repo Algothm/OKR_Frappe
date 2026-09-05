@@ -48,6 +48,9 @@ class OKRWorkspace {
                                 <main class="okr-ws-main">
                                         <div class="okr-ws-topbar">
                                                 <div class="okr-ws-active-filters" data-active-filters></div>
+                                                <button class="okr-icon-toggle-all" data-toggle-all-krs title="${__(
+													"Collapse/Expand All"
+												)}">${frappe.utils.icon("collapse", "sm")}</button>
                                                 <button class="okr-icon-filter" data-open-filter title="${__(
 													"Filter"
 												)}">${frappe.utils.icon("filter", "sm")}</button>
@@ -121,6 +124,33 @@ class OKRWorkspace {
 				$chevron.removeClass("expanded").addClass("collapsed");
 			}
 		});
+		this.$body.on("click", "[data-toggle-all-krs]", () => {
+			this.toggle_all_krs();
+		});
+		this.$body.on("click", "[data-open-kr]", (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			const krName = $(e.currentTarget).data("open-kr");
+			if (krName) {
+				frappe.set_route("Form", "OKR Key Result", krName);
+			}
+		});
+		this.$body.on("click", "[data-open-kr-actions]", (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			const krName = $(e.currentTarget).data("open-kr-actions");
+			if (!krName) return;
+			this.state.key_results[krName] = true;
+			this.render_content();
+			requestAnimationFrame(() => {
+				const $card = this.$body
+					.find("[data-kr-card]")
+					.filter((_, element) => $(element).data("kr-card") === krName)
+					.first();
+				const target = $card.find(".okr-action-progress").first()[0] || $card[0];
+				target?.scrollIntoView({ behavior: "smooth", block: "center" });
+			});
+		});
 		this.$body.on("click", "[data-toggle-kr]", (e) => {
 			if ($(e.target).closest("a, button, input, select, textarea").length) return;
 			e.preventDefault();
@@ -138,6 +168,7 @@ class OKRWorkspace {
 			} else {
 				$chevron.removeClass("expanded").addClass("collapsed");
 			}
+			this.update_toggle_all_button();
 		});
 		this.$body.on("click", "[data-toggle-history]", (e) => {
 			if (
@@ -351,6 +382,56 @@ class OKRWorkspace {
 		});
 		this.$body.find("[data-workspace-content]").html(this.objective_card(selected));
 		this.render_attachment();
+		this.update_toggle_all_button();
+	}
+
+
+	toggle_all_krs() {
+		const objectives = this.data.objectives || [];
+		const selected =
+			objectives.find((obj) => obj.name === this.state.selected_objective) || objectives[0];
+		if (!selected) return;
+		const krs = selected.key_results || [];
+		if (!krs.length) return;
+
+		const anyOpen = krs.some((kr) => this.state.key_results[kr.name] !== false);
+		const targetState = !anyOpen;
+
+		krs.forEach((kr) => {
+			this.state.key_results[kr.name] = targetState;
+		});
+
+		const $cards = this.$body.find(".okr-kr-card");
+		const $collapses = $cards.find("> .okr-collapse");
+		const $chevrons = $cards.find(".okr-kr-chevron");
+
+		if (targetState) {
+			$collapses.stop(true, true).slideDown(180).addClass("open");
+			$chevrons.removeClass("collapsed").addClass("expanded");
+		} else {
+			$collapses.stop(true, true).slideUp(180).removeClass("open");
+			$chevrons.removeClass("expanded").addClass("collapsed");
+		}
+
+		this.update_toggle_all_button();
+	}
+
+	update_toggle_all_button() {
+		const $btn = this.$body.find("[data-toggle-all-krs]");
+		if (!$btn.length) return;
+		const objectives = this.data.objectives || [];
+		const selected =
+			objectives.find((obj) => obj.name === this.state.selected_objective) || objectives[0];
+		const krs = selected?.key_results || [];
+		if (!krs.length) {
+			$btn.hide();
+			return;
+		}
+		$btn.show();
+		const anyOpen = krs.some((kr) => this.state.key_results[kr.name] !== false);
+		const iconName = anyOpen ? "collapse" : "expand";
+		const titleText = anyOpen ? __("Collapse All") : __("Expand All");
+		$btn.attr("title", titleText).attr("aria-label", titleText).html(frappe.utils.icon(iconName, "sm"));
 	}
 
 	render_rail(objectives) {
@@ -362,7 +443,7 @@ class OKRWorkspace {
 							this.state.selected_objective === obj.name ? "active" : ""
 						}" href="#${obj.name}" data-select-objective="${
 							obj.name
-						}"><span></span><strong>${frappe.utils.escape_html(
+						}"><span class="okr-rail-dot"></span><strong>${frappe.utils.escape_html(
 							obj.objective_title || obj.name
 						)}</strong><small>${frappe.utils.escape_html(
 							obj.creator_full_name || obj.owner || "-"
@@ -406,22 +487,16 @@ class OKRWorkspace {
 
 		return `
                         <section class="okr-objective-card" id="${obj.name}">
-                                <div class="okr-objective-head" data-toggle-objective="${
-									obj.name
-								}">
-                                        <div><span class="okr-obj-chevron ${
-											open ? "expanded" : "collapsed"
-										}"></span><span class="okr-type-dot">OBJ</span><div style="display:flex;flex-direction:column;"><h2>${frappe.utils.escape_html(
+                                <div class="okr-objective-head">
+                                        <div class="okr-objective-head-left"><span class="okr-type-dot">OBJ</span><div style="display:flex;flex-direction:column;"><div class="okr-title-with-period"><h2>${frappe.utils.escape_html(
 			obj.objective_title || obj.name
-		)}</h2><small style="font-size:11px;color:#64748b;font-weight:500;margin-top:2px;">${frappe.utils.escape_html(
+		)}</h2>${this.period_badge(obj.period_label)}</div><small style="font-size:11px;color:#64748b;font-weight:500;margin-top:2px;">${frappe.utils.escape_html(
 			obj.creator_full_name || obj.owner || "-"
-		)}</small></div><span class="okr-status okr-${frappe.scrub(
+		)}</small></div></div><span class="okr-status okr-${frappe.scrub(
 			obj.status || ""
-		)}">${frappe.utils.escape_html(obj.status || "")}</span></div>
+		)}">${frappe.utils.escape_html(obj.status || "")}</span>
                                 </div>
-                                <div class="okr-collapse ${open ? "open" : ""}" style="${
-			open ? "display: block;" : "display: none;"
-		}">
+                                <div class="okr-collapse open" style="display: block;">
                                         <div class="okr-overview-summary">
                                                 <div class="okr-summary-card okr-completion-card">
                                                         <span class="okr-summary-card-label">${__(
@@ -495,21 +570,15 @@ class OKRWorkspace {
 								<span class="okr-attention-dot"></span>
 								<div>
 									<strong>${frappe.utils.escape_html(item.kr.key_result_title || item.kr.name)}</strong>
-									<small>${__("Key Result")} · ${frappe.utils.escape_html(item.kr.priority || __("Medium"))} ${__(
-							"Priority"
-						)}</small>
+									<ul class="okr-attention-reasons">${item.reasons
+										.map(
+											(reason) =>
+												"<li>" + frappe.utils.escape_html(reason) + "</li>"
+										)
+										.join("")}</ul>
 								</div>
 								<span class="okr-attention-actions">
 					<span class="okr-attention-status">${item.label}</span>
-					<span class="okr-attention-info" tabindex="0" aria-label="${__(
-						"Why this needs attention"
-					)}">i</span>
-					<div class="okr-attention-tooltip" role="tooltip">
-						<strong>${__("Why this needs attention")}</strong>
-						<ul>${item.reasons
-							.map((reason) => "<li>" + frappe.utils.escape_html(reason) + "</li>")
-							.join("")}</ul>
-					</div>
 				</span>
 							</div>`
 					)
@@ -589,7 +658,7 @@ class OKRWorkspace {
 		const progressDisplay = this.kr_progress_display(kr);
 		const assigneeName = kr.assignee_full_name || kr.assignee || "";
 		return `
-                        <div class="okr-kr-card">
+                        <div class="okr-kr-card" data-kr-card="${frappe.utils.escape_html(kr.name)}">
                                 <div class="okr-kr-head" data-toggle-kr="${kr.name}">
                                         <div>
                                                 <span class="okr-kr-chevron ${
@@ -612,9 +681,14 @@ class OKRWorkspace {
                                                 </div>
                                         </div>
                                         <div class="okr-kr-meta">
-                                                <span class="okr-signal ${statusClass}">${frappe.utils.escape_html(
+                                                <button type="button" class="okr-signal ${statusClass}" data-open-kr-actions="${frappe.utils.escape_html(
+			kr.name
+		)}" title="${__("View Action Item measurements")}">${frappe.utils.escape_html(
 			progressDisplay
-		)}</span>
+		)}</button>
+                                                <button type="button" class="okr-kr-redirect-btn" data-open-kr="${frappe.utils.escape_html(
+			kr.name
+		)}" title="${__("Open Key Result")}" aria-label="${__("Open Key Result")}">${frappe.utils.icon("arrow-up-right", "xs")}</button>
                                         </div>
                                 </div>
                                 <div class="okr-collapse ${open ? "open" : ""}" style="${
@@ -629,7 +703,8 @@ class OKRWorkspace {
 	}
 
 	action_row(ai, kr) {
-		const progress = flt(ai.progress || 0, 2);
+		const meas = this.get_effective_action_measurement(ai, kr);
+		const progress = flt(meas.progress, 2);
 		const historyOpen = this.state.action_history[ai.name];
 		const checkinOpen = this.state.action_checkin === ai.name;
 		const historyCount = (ai.history || []).length;
@@ -640,7 +715,7 @@ class OKRWorkspace {
 				? "good"
 				: "warn";
 		const ownerName = ai.owner_full_name || ai.owner_user || "";
-		const progressDisplay = this.action_progress_display(ai, kr);
+		const progressDisplay = this.action_progress_display(ai, kr, meas);
 		const latestCheckin = (ai.history || [])[0];
 		const latestCheckinDate =
 			latestCheckin && latestCheckin.checkin_date
@@ -693,25 +768,28 @@ class OKRWorkspace {
 									historyOpen ? "open" : ""
 								}" style="${
 			historyOpen ? "display: block;" : "display: none;"
-		}">${this.history_timeline(ai, kr)}</div>
+		}">${this.history_timeline(ai, kr, meas)}</div>
                         </div>
                 `;
 	}
 
 	checkin_panel(ai, kr) {
 		const currentStatus = ai.status || "In Progress";
-		const metricType = kr.metric_type || "Percentage";
-		const baseline = flt(kr.baseline_value || 0, 2);
-		const target = flt(kr.target_value || 0, 2);
+		const isCustom = Boolean(ai.customize_measurement);
+		const metricType = isCustom && ai.metric_type ? ai.metric_type : (kr.metric_type || "Percentage");
+		const baseline = flt(isCustom ? ai.baseline_value : (kr.baseline_value || 0), 2);
+		const target = flt(isCustom ? ai.target_value : (kr.target_value || 0), 2);
 		const minimum = Math.min(baseline, target);
 		const maximum = Math.max(baseline, target);
-		const actual = flt(kr.current_value || baseline, 2);
+		const actual = flt(isCustom ? (ai.current_value !== undefined && ai.current_value !== null ? ai.current_value : baseline) : (kr.current_value || baseline), 2);
+		const direction = isCustom && ai.metric_direction ? ai.metric_direction : (kr.metric_direction || "Increase");
 		const valueLabel =
 			metricType === "Currency"
-				? __("Current Amount ({0})", [kr.currency || ""])
+				? __("Current Amount ({0})", [isCustom ? "" : (kr.currency || "")])
 				: metricType === "Number"
 				? __("Current Value")
 				: __("Current Percentage (%)");
+		const completionDisplay = flt(isCustom ? (ai.progress || 0) : (kr.target_progress || 0), 2);
 		return `
 			<div class="okr-inline-checkin">
 				<div class="okr-inline-context">
@@ -726,14 +804,12 @@ class OKRWorkspace {
 					<div class="okr-checkin-row">
 						<div class="okr-checkin-field">
 							<label>${valueLabel}</label>
-							<input class="form-control" type="number" min="${minimum}" max="${maximum}" step="0.01" data-ws-progress data-baseline="${baseline}" data-target="${target}" data-metric-type="${metricType}" data-direction="${
-			kr.metric_direction || "Increase"
-		}" value="${actual}">
+							<input class="form-control" type="number" min="${minimum}" max="${maximum}" step="0.01" data-ws-progress data-baseline="${baseline}" data-target="${target}" data-metric-type="${metricType}" data-direction="${direction}" value="${actual}">
 							<small class="text-muted">${__("Allowed range: {0} to {1}", [minimum, maximum])}</small>
 						</div>
 						<div class="okr-checkin-field">
 							<label>${__("Completion")}</label>
-							<div class="form-control" data-ws-completion>${flt(kr.target_progress || 0, 2)}%</div>
+							<div class="form-control" data-ws-completion>${completionDisplay}%</div>
 						</div>
 						<div class="okr-checkin-field">
 							<label>${__("Status")}</label>
@@ -747,6 +823,10 @@ class OKRWorkspace {
 			"Archived"
 		)}</option>
 							</select>
+						</div>
+						<div class="okr-checkin-field">
+							<label>${__("Date")}</label>
+							<input class="form-control" type="date" data-ws-checkin-date value="${frappe.datetime.now_date()}">
 						</div>
 					</div>
 					<label class="okr-update-field">${__(
@@ -767,7 +847,8 @@ class OKRWorkspace {
 		`;
 	}
 
-	history_timeline(ai, kr) {
+	history_timeline(ai, kr, measurement) {
+		const meas = measurement || this.get_effective_action_measurement(ai, kr);
 		const rows = ai.history || [];
 		const isCheckinOpen = this.state.action_checkin === ai.name;
 		const checkinButton =
@@ -827,7 +908,7 @@ class OKRWorkspace {
 													row.action_status === "Blocked"
 														? "is-blocked"
 														: ""
-												}">${this.format_checkin_value(row, kr)}</strong>
+												}">${this.format_checkin_value(row, meas)}</strong>
                                         </span>
                                 </p>
                         </div>
@@ -835,21 +916,73 @@ class OKRWorkspace {
 			)
 			.join("")}${historyToggle}</div>`;
 	}
-	action_progress_display(ai, kr) {
-		const metricType = (kr.metric_type || "Percentage").toLowerCase();
-		if (metricType === "percentage") return `${this.format_kr_number(ai.progress || 0)}%`;
+	get_effective_action_measurement(ai, kr) {
+		const isCustom = Boolean(ai && ai.customize_measurement);
+		if (isCustom) {
+			const metricType = ai.metric_type || "Percentage";
+			const direction = ai.metric_direction || "Increase";
+			const baseline = flt(ai.baseline_value || 0, 2);
+			const target = flt(ai.target_value || 0, 2);
+			const current = ai.current_value !== undefined && ai.current_value !== null ? flt(ai.current_value, 2) : baseline;
+			let progress = flt(ai.progress || 0, 2);
+			if (metricType === "Boolean") {
+				progress = current ? 100.0 : 0.0;
+			} else if (target !== baseline) {
+				if (direction === "Decrease") {
+					progress = ((baseline - current) / (baseline - target)) * 100.0;
+				} else {
+					progress = ((current - baseline) / (target - baseline)) * 100.0;
+				}
+				progress = Math.min(100.0, Math.max(0.0, Math.round(progress * 100) / 100));
+			}
+			return {
+				is_custom: true,
+				metric_type: metricType,
+				metric_direction: direction,
+				baseline_value: baseline,
+				target_value: target,
+				current_value: current,
+				progress: progress,
+				currency: "",
+				unit_of_measure: "",
+			};
+		}
+
+		return {
+			is_custom: false,
+			metric_type: kr ? (kr.metric_type || "Percentage") : "Percentage",
+			metric_direction: kr ? (kr.metric_direction || "Increase") : "Increase",
+			baseline_value: flt(kr ? kr.baseline_value : 0, 2),
+			target_value: flt(kr ? kr.target_value : 0, 2),
+			current_value: flt(kr ? kr.current_value : 0, 2),
+			progress: flt(ai ? ai.progress : 0, 2),
+			currency: kr ? (kr.currency || "") : "",
+			unit_of_measure: kr ? (kr.unit_of_measure || "") : "",
+		};
+	}
+
+	action_progress_display(ai, kr, measurement) {
+		const meas = measurement || this.get_effective_action_measurement(ai, kr);
+		const metricType = (meas.metric_type || "Percentage").toLowerCase();
+		if (metricType === "percentage") {
+			return `${this.format_kr_number(meas.progress)}%`;
+		}
 		const latest = (ai.history || [])[0];
-		const value = latest ? latest.current_value : kr.current_value;
-		if (metricType === "currency") return this.format_kr_currency(value, kr.currency);
-		const unit = (kr.unit_of_measure || "").trim();
+		const value = latest && latest.current_value !== undefined && latest.current_value !== null
+			? latest.current_value
+			: meas.current_value;
+		if (metricType === "currency") {
+			return this.format_kr_currency(value, meas.currency);
+		}
+		const unit = (meas.unit_of_measure || "").trim();
 		const display = this.format_kr_number(value);
 		return unit && unit !== "%" ? `${display} ${frappe.utils.escape_html(unit)}` : display;
 	}
 
-	format_checkin_value(row, kr) {
-		const metricType = (kr.metric_type || "Percentage").toLowerCase();
+	format_checkin_value(row, measurement_or_kr) {
+		const metricType = ((measurement_or_kr && measurement_or_kr.metric_type) || "Percentage").toLowerCase();
 		if (metricType === "currency")
-			return this.format_kr_currency(row.current_value, kr.currency);
+			return this.format_kr_currency(row.current_value, measurement_or_kr.currency);
 		if (metricType === "percentage") return `${this.format_kr_number(row.current_value)}%`;
 		return this.format_kr_number(row.current_value);
 	}
@@ -1012,11 +1145,13 @@ class OKRWorkspace {
 		const minimum = flt($value.attr("min"), 2);
 		const maximum = flt($value.attr("max"), 2);
 		const update = ($panel.find("[data-ws-update]").val() || "").trim();
+		const checkinDate = ($panel.find("[data-ws-checkin-date]").val() || "").trim();
 		const args = {
 			action_item: action,
 			current_value: currentValue,
 			status: ($panel.find("[data-ws-status]").val() || "").trim(),
 			update,
+			checkin_date: checkinDate,
 			blocker: "",
 			dependency: "",
 			attachment: this.attachment || "",
