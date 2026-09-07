@@ -159,12 +159,17 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		self.assertIn(self.action.name, member_scope["visible_action_items"])
 		self.assertFalse(member_scope["direct_action_items"])
 
-	def test_only_action_item_assignee_can_checkin(self):
+	def test_authorized_hierarchy_can_checkin(self):
+		self.plan.append("members", {"member_user": self.users["okr_user"], "role": "Plan Coordinator"})
+		self.plan.save(ignore_permissions=True)
 		probe = frappe._dict(action_item=self.action.name)
-		self.assertFalse(checkin_permission(probe, self.users["system"], "create"))
+		self.assertIsNone(checkin_permission(probe, self.users["system"], "create"))
 		self.assertFalse(checkin_permission(probe, self.users["okr_admin"], "create"))
-		self.assertFalse(checkin_permission(probe, self.users["outsider"], "create"))
+		self.assertTrue(checkin_permission(probe, self.users["objective"], "create"))
+		self.assertTrue(checkin_permission(probe, self.users["kr"], "create"))
 		self.assertTrue(checkin_permission(probe, self.users["action"], "create"))
+		self.assertTrue(checkin_permission(probe, self.users["okr_user"], "create"))
+		self.assertFalse(checkin_permission(probe, self.users["outsider"], "create"))
 
 	def test_action_assignee_workspace_dropdown_and_save_flow(self):
 		from okr_management.okr_management.doctype.okr_check_in.okr_check_in import (
@@ -202,6 +207,7 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		assignee_result = save_workspace_checkin(self.action.name, 10, "", attachment=proof.file_url)
 		self.assertTrue(assignee_result.get("name"))
 		self.assertEqual(assignee_result.get("checkin", {}).get("attachment"), proof.file_url)
+		self.assertEqual(assignee_result.get("checkin", {}).get("delegated_by_name"), "")
 		proof.reload()
 		self.assertEqual(proof.attached_to_doctype, "OKR Check In")
 		self.assertEqual(proof.attached_to_name, assignee_result.get("name"))
@@ -214,10 +220,17 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		self.assertIn(proof.file_url, str(get_workspace_data()))
 		frappe.set_user("Administrator")
 		self.assertIn(proof.file_url, str(get_dashboard_data()))
-		for denied_user in (self.users["system"], self.users["okr_admin"], self.users["outsider"]):
-			frappe.set_user(denied_user)
-			with self.assertRaises(frappe.PermissionError):
-				save_workspace_checkin(self.action.name, 20, "Non-assignee must be denied")
+		frappe.set_user(self.users["objective"])
+		delegated_result = save_workspace_checkin(self.action.name, 20, "Objective owner delegated check-in")
+		expected_name = frappe.db.get_value("User", self.users["objective"], "full_name")
+		self.assertEqual(
+			delegated_result.get("checkin", {}).get("delegated_by_name"),
+			expected_name,
+		)
+
+		frappe.set_user(self.users["outsider"])
+		with self.assertRaises(frappe.PermissionError):
+			save_workspace_checkin(self.action.name, 30, "Unauthorized check-in must be denied")
 
 	def test_sidebar_uses_native_routes_without_click_interceptor(self):
 		from okr_management.navigation import get_workspace_sidebar_items
@@ -516,7 +529,7 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		frappe.set_user(self.users["okr_user"])
 		self.assertFalse(frappe.has_permission("OKR Plan", "read", doc=self.plan))
 
-	def test_group_read_select_for_okr_user_and_management_administrator_only(self):
+	def test_group_management_for_administrator_and_okr_admin(self):
 		from frappe.desk.form.load import getdoc
 
 		group_name = frappe.db.get_value("Group", {"disabled": 0}, "name")
@@ -541,7 +554,27 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		getdoc("Group", group_name)
 		self.assertTrue(bool(frappe.response.get("docs")))
 
-		# 2. OKR User can read/select existing Groups, but cannot manage them.
+		# 2. OKR Admin has complete Group master management access.
+		okr_admin = self.users["okr_admin"]
+		frappe.set_user(okr_admin)
+		for permission_type in ("read", "write", "create", "delete", "report", "export", "print", "email", "share"):
+			self.assertTrue(frappe.has_permission("Group", permission_type, user=okr_admin))
+		self.assertTrue(frappe.get_list("Group"))
+		frappe.response["docs"] = []
+		getdoc("Group", group_name)
+		self.assertTrue(bool(frappe.response.get("docs")))
+		managed_group = frappe.get_doc(
+			{
+				"doctype": "Group",
+				"group_name": f"OKR Admin Managed {frappe.generate_hash(length=6)}",
+				"company": self.company,
+			}
+		).insert()
+		managed_group.description = "Configured by OKR Admin"
+		managed_group.save()
+		managed_group.delete()
+
+		# 3. OKR User can read/select existing Groups, but cannot manage them.
 		okr_user = self.users["okr_user"]
 		frappe.set_user(okr_user)
 		self.assertTrue(frappe.has_permission("Group", "read", user=okr_user))
@@ -553,10 +586,9 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		with self.assertRaises(frappe.PermissionError):
 			frappe.new_doc("Group", group_name="Denied Group OKR User", company=self.company).insert()
 
-		# 3. Other non-Administrator roles cannot read or manage Groups.
+		# 4. Other roles cannot read or manage Groups.
 		test_users = [
 			self.users["system"],
-			self.users["okr_admin"],
 			self.users["outsider"],
 		]
 		for u in test_users:
@@ -580,7 +612,7 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 			with self.assertRaises(frappe.PermissionError):
 				frappe.new_doc("Group", group_name=f"Denied Group {u}", company=self.company).insert()
 
-		# 4. Internal OKR logic (raw DB lookups) remains functional for non-admins
+		# 5. Internal OKR logic (raw DB lookups) remains functional for non-admins
 		frappe.set_user(self.users["okr_user"])
 		group_val = frappe.db.get_value("Group", group_name, ["name", "company"], as_dict=True)
 		self.assertIsNotNone(group_val)

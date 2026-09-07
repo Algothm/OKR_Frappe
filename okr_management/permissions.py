@@ -47,15 +47,17 @@ def has_plan_permission(doc, ptype: str | None = None, user: str | None = None) 
 	return is_okr_admin(user)
 
 
-def get_group_permission_query_conditions(user: str | None = None) -> str:
-	"""Group DocType access is strictly Frappe Administrator only."""
+def is_group_manager(user: str | None = None) -> bool:
+	"""Return whether the user can fully configure the Group master."""
 	user = user or frappe.session.user
-	if user == "Administrator":
-		return ""
-	return "1=0"
+	return user == "Administrator" or "OKR Admin" in frappe.get_roles(user)
+
+
+def get_group_permission_query_conditions(user: str | None = None) -> str:
+	"""Only Administrator and OKR Admin can list Group records."""
+	return "" if is_group_manager(user) else "1=0"
 
 
 def has_group_permission(doc=None, ptype: str | None = None, user: str | None = None) -> bool:
-	"""Group DocType access is strictly Frappe Administrator only."""
-	user = user or frappe.session.user
-	return user == "Administrator"
+	"""Only Administrator and OKR Admin can directly access Group records."""
+	return is_group_manager(user)

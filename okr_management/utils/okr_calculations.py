@@ -160,6 +160,7 @@ def recalculate_plan_progress(plan_name: str | None) -> None:
 	progress = average([item.get('progress') for item in objectives])
 	values: dict[str, Any] = {}
 	set_if_has(values, 'OKR Plan', 'progress', progress)
+	set_if_has(values, 'OKR Plan', 'objective_count', len(objectives))
 	if values:
 		frappe.db.set_value('OKR Plan', plan_name, values, update_modified=False)
 

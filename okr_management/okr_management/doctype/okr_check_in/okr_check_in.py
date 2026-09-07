@@ -5,6 +5,7 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import date_diff, flt, formatdate, nowdate
 
+from okr_management.hierarchy_visibility import get_hierarchy_visibility_scope
 from okr_management.permissions import is_okr_admin
 from okr_management.utils.okr_validations import ensure_percentage, ensure_required_link
 
@@ -186,19 +187,10 @@ class OKRCheckIn(Document):
 		action = action or frappe.get_doc("OKR Action Item", self.action_item)
 		if self.is_new() and action.status not in ACTIVE_ACTION_STATUSES:
 			frappe.throw(_("Check-Ins can only be created for active Action Items."))
-		user = frappe.session.user
-		roles = frappe.get_roles(user)
-		if user == "Administrator" or "OKR Admin" in roles or "System Manager" in roles:
+		scope = get_hierarchy_visibility_scope()
+		if scope["read_all"] or action.name in scope["checkin_action_items"]:
 			return
-		employees = get_logged_in_employees(required=False)
-		if (
-			action.assigned_to == user
-			or action.assigned_to in employees
-			or action.owner_user == user
-			or action.owner == user
-		):
-			return
-		frappe.throw(_("You can only create Check-Ins for Action Items assigned to you."))
+		frappe.throw(_("You are not authorized to create a Check-In for this Action Item."))
 
 	def on_trash(self) -> None:
 		if self.status == "Submitted":

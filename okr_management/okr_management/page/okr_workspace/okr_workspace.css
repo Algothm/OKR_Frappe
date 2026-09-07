@@ -72,6 +72,13 @@
 .okr-status.blocked, .okr-status.on-hold { background:#fee2e2; color:#b91c1c; }
 .okr-action-progress { display:grid; gap:5px; padding-top:5px; }
 .okr-action-progress strong { text-align:right; font-size:12px; }
+.okr-action-progress.is-editable { cursor:pointer; border-radius:8px; padding:6px 8px; transition:background .15s, box-shadow .15s; }
+.okr-action-progress.is-editable:hover { background:#f8fafc; box-shadow:0 0 0 1px #c7d2fe; }
+.okr-action-progress.is-editable:focus { outline:2px solid #818cf8; outline-offset:2px; }
+.okr-action-progress.is-locked { cursor:not-allowed; opacity:.82; }
+.okr-inline-measurement { border-left-color:#2563eb; }
+.okr-measurement-grid { display:grid; grid-template-columns:repeat(5,minmax(130px,1fr)); gap:12px; }
+.okr-measurement-grid label span { display:block; font-size:11px; font-weight:800; color:#64748b; }
 .btn-primary-light { border:1px solid #c7d2fe; background:#eef2ff; color:#4f46e5; border-radius:999px; font-weight:800; }
 .okr-action-row .btn-primary-light { min-height:30px; height:30px; padding:4px 10px; font-size:12px; line-height:1.2; margin-top:0; }
 .okr-inline-checkin { margin:0 14px 14px 72px; border-left:3px solid #8b5cf6; background:#fbfcff; border-radius:0 10px 10px 0; padding:14px; }
@@ -360,6 +367,10 @@
 .okr-checkin-field label { font-weight: 700; font-size: 12px; color: #334155; margin-bottom: 5px; }
 .okr-checkin-field .form-control { height: 36px; width: 100%; }
 .okr-checkin-field small { margin-top: 4px; font-size: 11px; color: #64748b; }
+@media (max-width: 1100px) {
+	.okr-measurement-grid { grid-template-columns:repeat(2,minmax(160px,1fr)); }
+	.okr-measurement-grid label:last-child { grid-column:1 / -1; }
+}
 
 /* Checkin Form & Context Polish */
 .okr-inline-context { display: flex !important; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #edf2f7; }

@@ -45,6 +45,9 @@ frappe.ui.form.on('OKR Action Item', {
         if (!frm.doc.assigned_to) {
             frappe.throw(__('Assigned To is required.'));
         }
+        if (!validate_due_date_against_target(frm)) {
+            frappe.validated = false;
+        }
     },
     open_action_item(frm, cdt, cdn) {
         const child = frappe.get_doc(cdt, cdn);
@@ -147,23 +150,24 @@ function clear_context(frm) {
     render_context_preview(frm, {});
 }
 
-function set_due_date_target_guidance(frm, target_date) {
-    const message = target_date
+function set_due_date_target_guidance(frm, target_date, show_message = false) {
+    const message = show_message && target_date
         ? __('Key Result Target Date: {0}. Due Date must be on or before this date and inside the same target period.', [frappe.datetime.str_to_user(target_date)])
-        : __('Select a Key Result to load its Target Date.');
+        : '';
     frm.set_df_property('due_date', 'description', message);
 }
 
 function validate_due_date_against_target(frm) {
-    if (!frm.doc.due_date || !frm.doc.context_end_date) return;
-    if (moment(frm.doc.due_date).isAfter(frm.doc.context_end_date)) {
-        frappe.msgprint({
-            title: __('Invalid Due Date'),
-            message: __('Due Date cannot be after the Key Result Target Date {0}.', [frappe.datetime.str_to_user(frm.doc.context_end_date)]),
-            indicator: 'red'
-        });
-        frm.set_value('due_date', '');
+    if (!frm.doc.due_date || !frm.doc.context_end_date) {
+        set_due_date_target_guidance(frm, frm.doc.context_end_date, false);
+        return true;
     }
+    const before_start = frm.doc.context_start_date
+        && moment(frm.doc.due_date).isBefore(frm.doc.context_start_date, 'day');
+    const after_end = moment(frm.doc.due_date).isAfter(frm.doc.context_end_date, 'day');
+    const is_invalid = Boolean(before_start || after_end);
+    set_due_date_target_guidance(frm, frm.doc.context_end_date, is_invalid);
+    return !is_invalid;
 }
 
 function format_user_display(user_id) {
@@ -196,7 +200,7 @@ function fetch_parent_key_result_context(frm) {
 
         const finalize_kr_context = (kr_data) => {
             frm._kr_context = { kr: kr_data, plan: frm._plan_context || {} };
-            set_due_date_target_guidance(frm, kr_data.end_date);
+            set_due_date_target_guidance(frm, kr_data.end_date, false);
             frappe.utils.add_link_title('OKR Key Result', selected_key_result, kr_data.key_result_title || selected_key_result);
             const values = {
                 parent_objective: kr_data.objective || '',
@@ -209,6 +213,9 @@ function fetch_parent_key_result_context(frm) {
                 context_end_date: kr_data.end_date || '',
                 key_result_title: kr_data.key_result_title || ''
             };
+            if (frm.is_new() && !frm.doc.due_date && kr_data.end_date) {
+                values.due_date = kr_data.end_date;
+            }
             if (!frm.doc.reviewer) values.reviewer = kr_data.reviewer || '';
             frm.doc.financial_year = kr_data.financial_year || '';
             frm.refresh_field('financial_year');

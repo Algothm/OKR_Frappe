@@ -28,6 +28,7 @@ class OKRWorkspace {
 			action_history: {},
 			action_history_all: {},
 			action_checkin: null,
+			measurement_action: null,
 			selected_objective: null,
 		};
 		this.attachment = "";
@@ -173,7 +174,7 @@ class OKRWorkspace {
 		this.$body.on("click", "[data-toggle-history]", (e) => {
 			if (
 				$(e.target)
-					.closest("a, button, input, select, textarea")
+					.closest("a, button, input, select, textarea, [data-open-measurement]")
 					.not(".okr-history-toggle").length
 			)
 				return;
@@ -214,6 +215,20 @@ class OKRWorkspace {
 			this.render_content();
 		});
 		this.$body.on("click", "[data-save-checkin]", () => this.save_checkin());
+		this.$body.on("click", "[data-open-measurement]", (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			const actionName = $(e.currentTarget).data("open-measurement");
+			this.state.measurement_action =
+				this.state.measurement_action === actionName ? null : actionName;
+			this.state.action_checkin = null;
+			this.render_content();
+		});
+		this.$body.on("click", "[data-cancel-measurement]", () => {
+			this.state.measurement_action = null;
+			this.render_content();
+		});
+		this.$body.on("click", "[data-save-measurement]", () => this.save_measurement());
 		this.$body.on("input", "[data-ws-progress]", (e) => {
 			const $input = $(e.currentTarget);
 			const actual = flt($input.val(), 2);
@@ -707,6 +722,7 @@ class OKRWorkspace {
 		const progress = flt(meas.progress, 2);
 		const historyOpen = this.state.action_history[ai.name];
 		const checkinOpen = this.state.action_checkin === ai.name;
+		const measurementOpen = this.state.measurement_action === ai.name;
 		const historyCount = (ai.history || []).length;
 		const actionProgressTone =
 			(ai.status || "").toLowerCase() === "blocked"
@@ -747,7 +763,11 @@ class OKRWorkspace {
                                         <span class="okr-status ${frappe.scrub(
 											ai.status || ""
 										)}">${frappe.utils.escape_html(ai.status || "")}</span>
-                                        <div class="okr-action-progress ${actionProgressTone}"><div class="okr-bar"><i style="width:${Math.min(
+                                        <div class="okr-action-progress ${actionProgressTone} ${ai.can_edit_measurement ? "is-editable" : "is-locked"}" ${
+			ai.can_edit_measurement
+				? `data-open-measurement="${ai.name}" role="button" tabindex="0" title="${__("Edit Action Item measurement")}"`
+				: `title="${ai.measurement_locked ? __("Measurement configuration is locked by the Key Result owner.") : __("You are not authorized to edit this measurement.")}"`
+		}><div class="okr-bar"><i style="width:${Math.min(
 			100,
 			progress
 		)}%"></i></div><strong>${progressDisplay}</strong></div>
@@ -764,6 +784,7 @@ class OKRWorkspace {
                                         </div>
                                 </div>
                                 ${checkinOpen ? this.checkin_panel(ai, kr) : ""}
+                                ${measurementOpen ? this.measurement_panel(ai, kr) : ""}
                                 <div class="okr-history-collapse ${
 									historyOpen ? "open" : ""
 								}" style="${
@@ -771,6 +792,43 @@ class OKRWorkspace {
 		}">${this.history_timeline(ai, kr, meas)}</div>
                         </div>
                 `;
+	}
+
+
+	measurement_panel(ai, kr) {
+		const meas = this.get_effective_action_measurement(ai, kr);
+		const type = meas.metric_type || "Percentage";
+		const direction = meas.metric_direction || "Increase";
+		return `
+			<div class="okr-inline-checkin okr-inline-measurement" data-measurement-action="${ai.name}">
+				<div class="okr-inline-context">
+					<strong>${__("Measurement Configuration")}</strong>
+					<button type="button" class="okr-close-btn" data-cancel-measurement title="${__("Close")}">
+						<span class="okr-close-icon">✕</span> ${__("Close")}
+					</button>
+				</div>
+				<div class="okr-inline-fields">
+					<div class="okr-measurement-grid">
+						<label><span>${__("Measurement Type")}</span><select class="form-control" data-measurement-type>
+							${["Percentage", "Number", "Currency", "Boolean"].map((value) =>
+								`<option value="${value}" ${type === value ? "selected" : ""}>${__(value)}</option>`
+							).join("")}
+						</select></label>
+						<label><span>${__("Goal Direction")}</span><select class="form-control" data-measurement-direction>
+							<option value="Increase" ${direction === "Increase" ? "selected" : ""}>${__("Increase")}</option>
+							<option value="Decrease" ${direction === "Decrease" ? "selected" : ""}>${__("Decrease")}</option>
+						</select></label>
+						<label><span>${__("Starting Value")}</span><input class="form-control" type="number" step="0.01" data-measurement-baseline value="${meas.baseline_value}"></label>
+						<label><span>${__("Target Value")}</span><input class="form-control" type="number" step="0.01" data-measurement-target value="${meas.target_value}"></label>
+						<label><span>${__("Current Value")}</span><input class="form-control" type="number" step="0.01" data-measurement-current value="${meas.current_value}"></label>
+					</div>
+					<div class="okr-inline-actions">
+						<button type="button" class="btn btn-sm btn-default" data-cancel-measurement>${__("Cancel")}</button>
+						<button type="button" class="btn btn-sm btn-dark" data-save-measurement>${__("Save Measurement")}</button>
+					</div>
+				</div>
+			</div>
+		`;
 	}
 
 	checkin_panel(ai, kr) {
@@ -880,7 +938,13 @@ class OKRWorkspace {
                         <div class="okr-history-row">
                                 <div class="okr-history-date"><span>${frappe.datetime.str_to_user(
 									row.checkin_date
-								)}</span></div>
+								)}</span>${
+									row.delegated_by_name
+										? `<small style="display:block;margin-top:2px;font-size:10px;color:#64748b;">${frappe.utils.escape_html(
+												row.delegated_by_name
+										  )}</small>`
+										: ""
+								}</div>
                                 <p>
                                         <span class="okr-history-details">${frappe.utils.escape_html(
 											row.achievements || ""
@@ -1190,6 +1254,43 @@ class OKRWorkspace {
 				this.saving_checkin = false;
 				$button.prop("disabled", false).text(__("Save Check-In"));
 			},
+		});
+	}
+
+
+	save_measurement() {
+		const action = this.state.measurement_action;
+		const $panel = this.$body.find(`[data-measurement-action="${action}"]`);
+		const $button = $panel.find("[data-save-measurement]");
+		const args = {
+			action_item: action,
+			metric_type: $panel.find("[data-measurement-type]").val(),
+			metric_direction: $panel.find("[data-measurement-direction]").val(),
+			baseline_value: flt($panel.find("[data-measurement-baseline]").val(), 2),
+			target_value: flt($panel.find("[data-measurement-target]").val(), 2),
+			current_value: flt($panel.find("[data-measurement-current]").val(), 2),
+		};
+		if (!action || !$panel.length) return;
+		const lower = Math.min(args.baseline_value, args.target_value);
+		const upper = Math.max(args.baseline_value, args.target_value);
+		if (args.metric_type !== "Boolean" && (args.current_value < lower || args.current_value > upper)) {
+			frappe.msgprint(__("Current Value must be between {0} and {1}.", [lower, upper]));
+			return;
+		}
+		$button.prop("disabled", true).text(__("Saving..."));
+		frappe.call({
+			method: "okr_management.okr_management.page.okr_workspace.okr_workspace.save_action_measurement",
+			args,
+			freeze: true,
+			freeze_message: __("Saving Measurement..."),
+			callback: (r) => {
+				$button.prop("disabled", false).text(__("Save Measurement"));
+				if (r.exc) return;
+				frappe.show_alert({ message: __("Measurement updated"), indicator: "green" });
+				this.state.measurement_action = null;
+				this.load();
+			},
+			error: () => $button.prop("disabled", false).text(__("Save Measurement")),
 		});
 	}
 

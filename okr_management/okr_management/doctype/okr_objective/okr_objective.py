@@ -72,6 +72,10 @@ class OKRObjective(Document):
 		if self.has_key_results():
 			frappe.throw(_("Cannot delete Objective because Key Results exist."))
 
+	def after_delete(self) -> None:
+		if self.parent_plan:
+			recalculate_plan_progress(self.parent_plan)
+
 	def get_invalid_links(self, is_submittable=False):
 		# Dynamic links are checked before before_validate.
 		self.level_details_doctype = "Department"

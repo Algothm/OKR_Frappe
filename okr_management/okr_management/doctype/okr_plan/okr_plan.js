@@ -1,4 +1,13 @@
 const okr_management = window.okr_management;
+
+frappe.dom.set_style(`
+	.form-section[data-fieldname="plan_details_row_2"] .frappe-control[data-fieldname="description"] textarea {
+		height: 194px !important;
+		min-height: 194px !important;
+		max-height: 194px !important;
+		resize: none !important;
+	}
+`, "okr-plan-description-height-style");
 frappe.ui.form.on("OKR Plan", {
 	refresh(frm) {
 		frm.set_df_property("naming_series", "hidden", 1);
@@ -21,6 +30,29 @@ frappe.ui.form.on("OKR Plan", {
 		style_add_member_button(frm);
 		render_plan_context_preview(frm);
 		schedule_description_height(frm);
+		$(window).off("resize.okr_plan_desc").on("resize.okr_plan_desc", () => {
+			match_plan_description_height(frm);
+		});
+		if (window.ResizeObserver && frm.fields_dict.sprint_frequency?.$wrapper?.length) {
+			if (frm._sprint_observer) {
+				frm._sprint_observer.disconnect();
+			}
+			frm._sprint_observer = new ResizeObserver(() => {
+				match_plan_description_height(frm);
+			});
+			frm._sprint_observer.observe(frm.fields_dict.sprint_frequency.$wrapper[0]);
+		}
+		update_objective_connection_badge(frm);
+		frm.$wrapper
+			.off("click.okr_plan_connections", ".form-links .section-head")
+			.on("click.okr_plan_connections", ".form-links .section-head", () => {
+				setTimeout(() => {
+					update_objective_connection_badge(frm);
+				}, 50);
+			});
+	},
+	dashboard_update(frm) {
+		update_objective_connection_badge(frm);
 	},
 	status(frm) {
 		if (frm.doc.status === "Active" && !frm.doc.planned_activation_date) {
@@ -64,10 +96,26 @@ function match_plan_description_height(frm) {
 
 	const textarea = description.find("textarea").first();
 	if (!textarea.length) return;
-	textarea[0].style.setProperty("height", "84px", "important");
-	textarea[0].style.setProperty("min-height", "84px", "important");
-	textarea[0].style.setProperty("max-height", "none", "important");
-	textarea[0].style.setProperty("resize", "vertical", "important");
+
+	const sprint = frm.fields_dict.sprint_frequency?.$wrapper;
+	if (!sprint?.length) return;
+
+	const sprint_control = sprint.find("select:visible, input:visible, .control-input:visible").first();
+	const target = sprint_control.length ? sprint_control[0] : sprint[0];
+
+	let diff = 0;
+	if (textarea.is(":visible") && $(target).is(":visible")) {
+		const sprint_bottom = target.getBoundingClientRect().bottom;
+		const textarea_top = textarea[0].getBoundingClientRect().top;
+		diff = Math.round(sprint_bottom - textarea_top);
+	}
+
+	const final_height = 194;
+
+	textarea[0].style.setProperty("height", `${final_height}px`, "important");
+	textarea[0].style.setProperty("min-height", `${final_height}px`, "important");
+	textarea[0].style.setProperty("max-height", `${final_height}px`, "important");
+	textarea[0].style.setProperty("resize", "none", "important");
 }
 
 function apply_sprint_configuration_layout(frm) {
@@ -230,6 +278,10 @@ function customize_row_editor(frm, cdt, cdn) {
 
 function schedule_description_height(frm) {
 	match_plan_description_height(frm);
+	requestAnimationFrame(() => match_plan_description_height(frm));
+	[50, 150, 300, 600, 1000].forEach((delay) => {
+		setTimeout(() => match_plan_description_height(frm), delay);
+	});
 }
 
 function apply_plan_locks(frm) {
@@ -313,6 +365,52 @@ function fix_okr_plan_layout(frm) {
 			form_page[0].style.removeProperty("gap");
 			form_page[0].style.removeProperty("align-items");
 			form_page[0].style.removeProperty("width");
+		}
+	}
+}
+
+
+function update_objective_connection_badge(frm) {
+	if (!frm || frm.is_new() || !frm.doc?.name) return;
+
+	const render_count = (count) => {
+		const $links = frm.$wrapper.find('.form-dashboard .document-link[data-doctype="OKR Objective"]');
+		if (!$links.length) return;
+
+		$links.each(function () {
+			const $link = $(this);
+			let $count = $link.find(".count");
+			if (!$count.length) {
+				$count = $('<span class="count"></span>').prependTo($link.find(".document-link-badge"));
+			}
+			const count_num = cint(count);
+			const count_text = count_num > 99 ? "99+" : `${count_num}`;
+			$count
+				.text(count_text)
+				.removeClass("hidden")
+				.css({ display: "inline-block" })
+				.attr("title", __("{0} linked OKR Objective(s)", [count_num]));
+			$link.removeClass("hidden text-muted");
+		});
+	};
+
+	if (frm.doc.objective_count !== undefined && frm.doc.objective_count !== null) {
+		render_count(frm.doc.objective_count);
+	}
+
+	frappe.db.count("OKR Objective", {
+		filters: { parent_plan: frm.doc.name }
+	}).then((count) => {
+		render_count(count);
+		if (frm.doc.objective_count !== count) {
+			frm.doc.objective_count = count;
+		}
+	});
+
+	if (frm.dashboard) {
+		frm.dashboard._fetched_counts = false;
+		if (typeof frm.dashboard.set_open_count === "function") {
+			frm.dashboard.set_open_count();
 		}
 	}
 }
