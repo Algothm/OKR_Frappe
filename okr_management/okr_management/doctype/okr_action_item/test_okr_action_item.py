@@ -4,7 +4,12 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, flt, getdate, today
 
-from okr_management.okr_management.page.okr_workspace.okr_workspace import save_workspace_checkin, get_action_items, get_workspace_data
+from okr_management.okr_management.page.okr_workspace.okr_workspace import (
+	get_action_items,
+	get_workspace_data,
+	save_action_measurement,
+	save_workspace_checkin,
+)
 
 
 class TestOKRActionItem(FrappeTestCase):
@@ -132,6 +137,61 @@ class TestOKRActionItem(FrappeTestCase):
 	def test_due_date_can_use_full_objective_timeline(self):
 		due = add_days(self.kr.start_date, 10)
 		self.assertEqual(getdate(self.make_action(due_date=due).due_date), getdate(due))
+
+
+	def test_workspace_measurement_shortcut_respects_key_result_lock(self):
+		action = self.make_action(assigned_to=self.user_a)
+		self.kr.lock_measurement_fields_for_action_item_assignees = 0
+		self.kr.save(ignore_permissions=True)
+
+		frappe.set_user(self.user_a)
+		result = save_action_measurement(
+			action.name,
+			metric_type="Number",
+			metric_direction="Increase",
+			baseline_value=1,
+			target_value=6,
+			current_value=4,
+		)
+		self.assertEqual(result["current_value"], 4)
+		self.assertEqual(result["target_value"], 6)
+		action.reload()
+		self.assertEqual(action.customize_measurement, 1)
+		self.assertEqual(action.metric_type, "Number")
+		self.assertEqual(flt(action.progress), 60)
+
+		self.kr.reload()
+		self.assertEqual(self.kr.metric_type, "Currency")
+		self.assertEqual(flt(self.kr.target_value), 100000)
+
+		frappe.set_user("Administrator")
+		self.kr.lock_measurement_fields_for_action_item_assignees = 1
+		self.kr.save(ignore_permissions=True)
+		frappe.set_user(self.user_a)
+		with self.assertRaises(frappe.PermissionError):
+			save_action_measurement(
+				action.name,
+				metric_type="Number",
+				metric_direction="Increase",
+				baseline_value=1,
+				target_value=10,
+				current_value=5,
+			)
+
+	def test_workspace_measurement_shortcut_rejects_unauthorized_user(self):
+		action = self.make_action(assigned_to=self.user_a)
+		self.kr.lock_measurement_fields_for_action_item_assignees = 0
+		self.kr.save(ignore_permissions=True)
+		frappe.set_user(self.user_b)
+		with self.assertRaises(frappe.PermissionError):
+			save_action_measurement(
+				action.name,
+				metric_type="Percentage",
+				metric_direction="Increase",
+				baseline_value=0,
+				target_value=100,
+				current_value=50,
+			)
 
 	def test_context_and_assignment_are_inherited(self):
 		action = self.make_action()

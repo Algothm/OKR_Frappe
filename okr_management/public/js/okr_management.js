@@ -357,6 +357,14 @@ window.okr_management.preview_attachment = function (file_url) {
 // The document badge already contains the linked-record count.
 // Suppress Frappe's separate open-record count after every dashboard refresh.
 (() => {
+	const OKR_DOCTYPES = new Set([
+		"OKR Plan",
+		"OKR Objective",
+		"OKR Key Result",
+		"OKR Action Item",
+		"OKR Check In",
+	]);
+
 	["OKR Plan", "OKR Objective", "OKR Key Result", "OKR Action Item", "OKR Check In"].forEach(
 		(doctype) => {
 			frappe.ui.form.on(doctype, {
@@ -365,10 +373,40 @@ window.okr_management.preview_attachment = function (file_url) {
 						.find(".form-dashboard .open-notification")
 						.addClass("hidden")
 						.hide();
+
+					// Ensure all document links show their count badge even if count is 0
+					if (frm.dashboard_data?.count) {
+						const all_links = [
+							...(frm.dashboard_data.count.internal_links_found || []),
+							...(frm.dashboard_data.count.external_links_found || []),
+						];
+						all_links.forEach((d) => {
+							const $link = frm.$wrapper.find(`.form-dashboard .document-link[data-doctype="${d.doctype}"]`);
+							if ($link.length) {
+								let $count = $link.find(".count");
+								if (!$count.length) {
+									$count = $('<span class="count"></span>').prependTo($link.find(".document-link-badge"));
+								}
+								const count_num = cint(d.count);
+								const count_text = count_num > 99 ? "99+" : `${count_num}`;
+								$count.text(count_text).removeClass("hidden").show();
+							}
+						});
+					}
 				},
 			});
 		}
 	);
+
+	$(document).on("click", ".form-links .section-head", function () {
+		const frm = window.cur_frm;
+		if (frm && frm.dashboard && OKR_DOCTYPES.has(frm.doctype) && !frm.is_new()) {
+			frm.dashboard._fetched_counts = false;
+			if (typeof frm.dashboard.set_open_count === "function") {
+				frm.dashboard.set_open_count();
+			}
+		}
+	});
 })();
 // Respect custom workspace sidebar route mappings from get_workspace_sidebar_items.
 (() => {

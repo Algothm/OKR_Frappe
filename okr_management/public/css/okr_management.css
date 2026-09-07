@@ -241,12 +241,14 @@
 	resize: vertical !important;
 }
 
+.form-section[data-fieldname="plan_details_row_2"] .frappe-control[data-fieldname="description"] textarea,
 [data-doctype="OKR Plan"] .frappe-control[data-fieldname="description"] textarea,
-.page-container[data-page-route^="Form/OKR Plan"] .frappe-control[data-fieldname="description"] textarea {
-	height: 84px !important;
-	min-height: 84px !important;
-	max-height: none !important;
-	resize: vertical !important;
+.page-container[data-page-route^="Form/OKR Plan"] .frappe-control[data-fieldname="description"] textarea,
+.page-container[data-page-route*="okr-plan" i] .frappe-control[data-fieldname="description"] textarea {
+	height: 194px !important;
+	min-height: 194px !important;
+	max-height: 194px !important;
+	resize: none !important;
 }
 
 [data-doctype="OKR Plan"] .frappe-control[data-fieldname="financial_year"],

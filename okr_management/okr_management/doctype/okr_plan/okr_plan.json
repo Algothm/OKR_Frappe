@@ -122,8 +122,7 @@
   {
    "fieldname": "description",
    "fieldtype": "Small Text",
-   "label": "Description",
-   "max_height": "104px"
+   "label": "Description"
   },
   {
    "fieldname": "context_preview_heading",

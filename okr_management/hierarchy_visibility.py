@@ -38,6 +38,7 @@ def get_hierarchy_visibility_scope(user=None):
 			"full_key_results": set(),
 			"direct_action_items": set(),
 			"assigned_action_items": set(),
+			"checkin_action_items": set(),
 			"full_plan_names": set(),
 			"editable_plan_names": set(),
 			"checkin_override": False,
@@ -55,6 +56,7 @@ def get_hierarchy_visibility_scope(user=None):
 			"full_key_results": set(),
 			"direct_action_items": set(),
 			"assigned_action_items": get_assigned_action_items(user),
+			"checkin_action_items": set(),
 			"full_plan_names": set(),
 			"editable_plan_names": set(),
 			"checkin_override": False,
@@ -71,6 +73,7 @@ def get_hierarchy_visibility_scope(user=None):
 
 	full_plan_names = _plan_team_plans(user)
 	editable_plan_names = _plan_team_plans(user, EDITABLE_PLAN_TEAM_ROLES)
+	coordinator_plan_names = _plan_team_plans(user, {"Plan Coordinator", "Admin"})
 
 	# 1. Directly Owned Objectives
 	owned_objectives = set(
@@ -204,10 +207,23 @@ def get_hierarchy_visibility_scope(user=None):
 				)
 			)
 
+	coordinator_actions = (
+		set(
+			frappe.get_all(
+				"OKR Action Item",
+				filters={"parent_plan": ["in", list(coordinator_plan_names)]},
+				pluck="name",
+			)
+		)
+		if coordinator_plan_names
+		else set()
+	)
+
 	# Combine total visible sets
 	visible_objectives = owned_objectives | kr_parent_objs | action_grandparent_objs | plan_objectives
 	visible_key_results = owned_krs | obj_child_krs | action_parent_krs | plan_key_results
 	visible_action_items = direct_actions | kr_child_actions | obj_grandchild_actions | plan_action_items
+	checkin_action_items = direct_actions | kr_child_actions | obj_grandchild_actions | coordinator_actions
 
 	return {
 		"visible_objectives": visible_objectives,
@@ -218,6 +234,7 @@ def get_hierarchy_visibility_scope(user=None):
 		"full_key_results": owned_krs | obj_child_krs,
 		"direct_action_items": direct_actions,
 		"assigned_action_items": assigned_actions,
+		"checkin_action_items": checkin_action_items,
 		"full_plan_names": full_plan_names,
 		"editable_plan_names": editable_plan_names,
 		"checkin_override": False,
@@ -320,7 +337,7 @@ def checkin_permission(doc, user=None, ptype=None):
 	user = user or frappe.session.user
 	scope = get_hierarchy_visibility_scope(user)
 	write_types = {"create", "write", "delete", "submit", "cancel", "amend"}
-	if scope["read_all"] and ptype not in write_types:
+	if scope["read_all"]:
 		return None
 	if not doc:
 		return user not in {"Guest", ""}
@@ -332,9 +349,8 @@ def checkin_permission(doc, user=None, ptype=None):
 	if ptype in {"create", "write"} and not action_item:
 		return user not in {"Guest", ""} and is_okr_user(user)
 
-	# Writing/submitting a Check-In requires direct assignment to that Action Item
 	if ptype in write_types:
-		return bool(action_item) and action_item in scope["assigned_action_items"]
+		return bool(action_item) and action_item in scope["checkin_action_items"]
 
 	# Viewing (read) a Check-In is allowed for any user in the ancestor hierarchy of that Action Item
 	return bool(action_item) and action_item in scope["visible_action_items"]

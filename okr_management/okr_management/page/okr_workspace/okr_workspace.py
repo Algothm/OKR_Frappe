@@ -160,6 +160,7 @@ def get_workspace_data(
 	histories = get_checkin_history([row.name for row in action_items])
 	active_plan_names = set(get_active_plan_names())
 
+	kr_config_by_name = {row.name: row for row in key_results}
 	actions_by_kr = {}
 	for action in action_items:
 		action["history"] = histories.get(action.name, [])
@@ -168,9 +169,15 @@ def get_workspace_data(
 		)
 		action["can_checkin"] = (
 			action.parent_plan in active_plan_names
-			and action.name in scope["assigned_action_items"]
+			and (scope["read_all"] or action.name in scope["checkin_action_items"])
 			and action.status in {"Open", "In Progress", "On Hold", "Blocked"}
 		)
+		kr_config = kr_config_by_name.get(action.parent_key_result)
+		action["measurement_locked"] = bool(
+			kr_config
+			and kr_config.get("lock_measurement_fields_for_action_item_assignees") not in (0, "0")
+		)
+		action["can_edit_measurement"] = action["can_checkin"] and not action["measurement_locked"]
 		actions_by_kr.setdefault(action.parent_key_result, []).append(action)
 
 	krs_by_objective = {}
@@ -250,9 +257,9 @@ def save_workspace_checkin(
 	checkin_date: str | None = None,
 ) -> dict:
 	scope = get_hierarchy_visibility_scope()
-	if action_item not in scope["assigned_action_items"]:
+	if not scope["read_all"] and action_item not in scope["checkin_action_items"]:
 		frappe.throw(
-			"Only the employee assigned to this Action Item can submit its Check-In", frappe.PermissionError
+			"You are not authorized to submit a Check-In for this Action Item", frappe.PermissionError
 		)
 	action = frappe.get_doc("OKR Action Item", action_item)
 	key_result_config = frappe.db.get_value(
@@ -358,6 +365,72 @@ def save_workspace_checkin(
 	}
 
 
+@frappe.whitelist()
+def save_action_measurement(
+	action_item: str,
+	metric_type: str,
+	metric_direction: str,
+	baseline_value: float,
+	target_value: float,
+	current_value: float,
+) -> dict:
+	"""Save Action Item-specific measurement configuration from the workspace."""
+	scope = get_hierarchy_visibility_scope()
+	if not scope["read_all"] and action_item not in scope["checkin_action_items"]:
+		frappe.throw(_("You are not authorized to update measurement for this Action Item."), frappe.PermissionError)
+
+	action = frappe.get_doc("OKR Action Item", action_item)
+	if action.status not in {"Open", "In Progress", "On Hold", "Blocked"}:
+		frappe.throw(_("Measurement can only be updated for an active Action Item."))
+
+	plan_status = frappe.db.get_value("OKR Plan", action.parent_plan, "status")
+	if plan_status != "Active":
+		frappe.throw(_("Measurement can only be updated while the parent OKR Plan is Active."))
+
+	locked = frappe.db.get_value(
+		"OKR Key Result",
+		action.parent_key_result,
+		"lock_measurement_fields_for_action_item_assignees",
+	)
+	if locked not in (0, "0", None):
+		frappe.throw(_("Measurement customization is locked by the Key Result owner."), frappe.PermissionError)
+
+	if metric_type not in {"Percentage", "Number", "Currency", "Boolean"}:
+		frappe.throw(_("Invalid Measurement Type."))
+	if metric_direction not in {"Increase", "Decrease"}:
+		frappe.throw(_("Invalid Goal Direction."))
+
+	baseline = flt(baseline_value)
+	target = flt(target_value)
+	current = flt(current_value)
+	if metric_type == "Boolean":
+		baseline, target = 0.0, 1.0
+		current = 1.0 if current else 0.0
+	else:
+		lower, upper = sorted((baseline, target))
+		if not lower <= current <= upper:
+			frappe.throw(_("Current Value must be between {0} and {1}.").format(lower, upper))
+
+	action.customize_measurement = 1
+	action.metric_type = metric_type
+	action.metric_direction = metric_direction
+	action.baseline_value = baseline
+	action.target_value = target
+	action.current_value = current
+	action.flags.ignore_permissions = True
+	action.save()
+
+	return {
+		"name": action.name,
+		"metric_type": action.metric_type,
+		"metric_direction": action.metric_direction,
+		"baseline_value": flt(action.baseline_value),
+		"target_value": flt(action.target_value),
+		"current_value": flt(action.current_value),
+		"progress": flt(action.progress),
+	}
+
+
 def base_response(objectives, year, plan, level, owner) -> dict:
 	return {
 		"today": today(),
@@ -408,6 +481,7 @@ def get_key_results(objective_names: list[str]) -> list:
 			"currency",
 			"action_item_count",
 			"checkin_count",
+			"lock_measurement_fields_for_action_item_assignees",
 			"end_date",
 		],
 		order_by="priority desc, modified desc",
@@ -495,8 +569,33 @@ def get_checkin_history(action_item_names: list[str]) -> dict:
 		order_by="checkin_date desc, creation desc",
 		limit_page_length=2000,
 	)
+	action_assignees = {
+		row.name: row.assigned_to
+		for row in frappe.get_all(
+			"OKR Action Item",
+			filters={"name": ["in", action_item_names]},
+			fields=["name", "assigned_to"],
+		)
+	}
+	reporters = {row.reported_by for row in rows if row.reported_by}
+	reporter_names = (
+		{
+			row.name: row.full_name or row.name
+			for row in frappe.get_all(
+				"User", filters={"name": ["in", list(reporters)]}, fields=["name", "full_name"]
+			)
+		}
+		if reporters
+		else {}
+	)
 	out = {}
 	for row in rows:
+		assignee = action_assignees.get(row.action_item)
+		row["delegated_by_name"] = (
+			reporter_names.get(row.reported_by, row.reported_by or "")
+			if row.reported_by and row.reported_by != assignee
+			else ""
+		)
 		out.setdefault(row.action_item, []).append(row)
 	return out
 
