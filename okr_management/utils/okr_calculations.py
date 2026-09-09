@@ -34,11 +34,12 @@ def get_completion_percentage(current_value: Any, target_value: Any) -> float:
 
 def get_progress_from_values(baseline_value: Any, current_value: Any, target_value: Any) -> float:
 	baseline = flt(baseline_value)
+	current = flt(current_value)
 	target = flt(target_value)
 	if target == baseline:
 		return 0.0
-	progress = ((flt(current_value) - baseline) / (target - baseline)) * 100.0
-	return min(100.0, max(0.0, progress))
+	progress = ((current - baseline) / (target - baseline)) * 100.0
+	return round(min(100.0, max(0.0, progress)), 2)
 
 
 def get_current_value_from_progress(baseline_value: Any, target_value: Any, progress_percent: Any) -> float:
@@ -52,16 +53,11 @@ def get_metric_progress(key_result: Any) -> float:
 		return 0.0
 	if key_result.get('metric_type') == 'Boolean':
 		return 100.0 if flt(key_result.get('current_value')) else 0.0
-	baseline = flt(key_result.get('baseline_value'))
-	current = flt(key_result.get('current_value'))
-	target = flt(key_result.get('target_value'))
-	if target == baseline:
-		return 0.0
-	if key_result.get('metric_direction') == 'Decrease':
-		progress = ((baseline - current) / (baseline - target)) * 100.0
-	else:
-		progress = ((current - baseline) / (target - baseline)) * 100.0
-	return round(min(100.0, max(0.0, progress)), 2)
+	return get_progress_from_values(
+		key_result.get('baseline_value'),
+		key_result.get('current_value'),
+		key_result.get('target_value'),
+	)
 
 
 def recalculate_key_result_progress(key_result_name: str | None) -> None:
@@ -108,23 +104,8 @@ def get_key_result_progress(key_result_name: str, key_result: Any) -> float:
 	if action_items:
 		return average([item.get('progress') for item in action_items])
 
-	# No Action Items: fall back to metric-based calculation
-	if key_result and key_result.get('metric_type') == 'Boolean':
-		return 100.0 if flt(key_result.get('current_value')) else 0.0
-
-	if key_result and key_result.get('metric_direction') == 'Decrease':
-		baseline = flt(key_result.get('baseline_value'))
-		target = flt(key_result.get('target_value'))
-		if target == baseline:
-			return 0.0
-		progress = ((baseline - flt(key_result.get('current_value'))) / (baseline - target)) * 100.0
-		return round(min(100.0, max(0.0, progress)), 2)
-
-	return get_progress_from_values(
-		key_result.get('baseline_value') if key_result else 0,
-		key_result.get('current_value') if key_result else 0,
-		key_result.get('target_value') if key_result else 0,
-	)
+	# No Action Items: use the same normalized metric calculation as Manual KRs.
+	return get_metric_progress(key_result)
 
 
 def recalculate_objective_progress(objective_name: str | None) -> None:

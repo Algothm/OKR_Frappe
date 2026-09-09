@@ -317,9 +317,17 @@ class OKRKeyResult(Document):
 
 	def on_update(self) -> None:
 		self.resync_action_item_context_after_objective_move()
-		from okr_management.utils.okr_calculations import recalculate_objective_progress
+		from okr_management.utils.okr_calculations import (
+			recalculate_key_result_progress,
+			recalculate_objective_progress,
+		)
 
-		recalculate_objective_progress(self.objective)
+		# Persist fresh KR progress before rolling it up. Zero-progress sibling KRs
+		# are deliberately included by the Objective average.
+		recalculate_key_result_progress(self.name)
+		previous = self.get_doc_before_save()
+		if previous and previous.objective != self.objective:
+			recalculate_objective_progress(previous.objective)
 
 	def resync_action_item_context_after_objective_move(self) -> None:
 		"""Refresh denormalized hierarchy fields on children after a KR move."""

@@ -266,13 +266,8 @@ function apply_key_result_ui(frm) {
 	frm.set_df_property("baseline_value", "label", baseline_label);
 	frm.set_df_property("target_value", "label", target_label);
 	frm.set_df_property("current_value", "label", current_label);
-	frm.set_df_property(
-		"current_value",
-		"description",
-		__(
-			"Enter the actual measured value. The system converts it to a completion percentage using Starting Value, Target Value, and Goal Direction."
-		)
-	);
+	frm.set_df_property("current_value", "description", measurement_guidance(frm));
+	render_measurement_guidance(frm);
 
 	if (
 		window.okr_management &&
@@ -281,6 +276,49 @@ function apply_key_result_ui(frm) {
 	) {
 		window.okr_management.ui.apply_context_panel_style(frm);
 	}
+}
+
+
+function measurement_guidance(frm) {
+	const metric_type = frm.doc.metric_type || "Percentage";
+	if (metric_type === "Percentage") {
+		return __("Enter the actual percentage reached, for example 40 for 40%.");
+	}
+	if (metric_type === "Number") {
+		return __("Enter the actual result, not completion %. Example: Start 2, Target 10, Current 4.");
+	}
+	if (metric_type === "Currency") {
+		const currency = frm.doc.currency || frappe.defaults.get_default("currency") || "₹";
+		return __("Enter the actual amount reached, for example {0}4,00,000.", [currency === "INR" ? "₹" : currency + " "]);
+	}
+	if (metric_type === "Boolean") {
+		return __("Enter 0 for Not Achieved or 1 for Achieved.");
+	}
+	return __("Enter the actual measured value, not the completion percentage.");
+}
+
+function render_measurement_guidance(frm) {
+	const field = frm.fields_dict.current_value;
+	if (!field || !field.$wrapper) return;
+
+	const progress = Math.min(100, Math.max(0, flt(frm.doc.target_progress || 0, 2)));
+	const progress_text = Number.isInteger(progress) ? String(progress) : String(flt(progress, 2));
+	field.$wrapper.find(".okr-measurement-info").remove();
+	field.$wrapper.find(".okr-live-completion").remove();
+	const preview = $(`
+		<div class="okr-live-completion" style="margin-top:10px;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--subtle-fg);">
+			<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:7px;font-size:12px;">
+				<span style="color:var(--text-muted);font-weight:600;">${__("Calculated completion")}</span>
+				<strong style="color:var(--text-color);">${progress_text}%</strong>
+			</div>
+			<div style="height:6px;border-radius:999px;background:var(--gray-200);overflow:hidden;">
+				<div style="height:100%;width:${progress}%;border-radius:inherit;background:var(--primary);transition:width .2s ease;"></div>
+			</div>
+		</div>
+	`);
+	const $description = field.$wrapper.find(".help-box").last();
+	if ($description.length) preview.insertAfter($description);
+	else field.$wrapper.append(preview);
 }
 
 function handle_metric_type_change(frm) {
@@ -518,6 +556,7 @@ function calculate_target_progress(frm) {
 
 	frm.set_value("target_progress", flt(progress, 2));
 	frm.set_value("score", flt(progress, 2));
+	render_measurement_guidance(frm);
 }
 
 function setup_realtime_inputs(frm) {
@@ -539,4 +578,14 @@ function setup_realtime_inputs(frm) {
 				calculate_target_progress(frm);
 			});
 	}
+
+	if (frm.fields_dict.current_value && frm.fields_dict.current_value.$wrapper) {
+		frm.fields_dict.current_value.$wrapper
+			.off("input.okr-measurement", "input")
+			.on("input.okr-measurement", "input", function () {
+				frm.doc.current_value = flt($(this).val());
+				calculate_target_progress(frm);
+			});
+	}
+	render_measurement_guidance(frm);
 }

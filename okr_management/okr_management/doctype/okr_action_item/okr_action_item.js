@@ -125,12 +125,21 @@ function apply_action_item_ui(frm) {
 
 
     const assigned_to_field = frm.fields_dict.assigned_to;
+    const due_date_field = frm.fields_dict.due_date;
 
     if (assigned_to_field && assigned_to_field.$wrapper) {
         assigned_to_field.$wrapper.css({
-            'width': '100%',
+            'width': '48%',
             'display': 'inline-block',
-            'margin-right': '4%',
+            'margin-right': '3%',
+            'vertical-align': 'top'
+        });
+    }
+    if (due_date_field && due_date_field.$wrapper) {
+        due_date_field.$wrapper.css({
+            'width': '48%',
+            'display': 'inline-block',
+            'margin-right': '0',
             'vertical-align': 'top'
         });
     }

@@ -120,52 +120,104 @@ window.okr_management.preview_attachment = function (file_url) {
 		frappe.msgprint(__("Only files uploaded to this site can be previewed."));
 		return;
 	}
+
 	const preview_url = parsed.pathname + parsed.search;
 	const safe_url = frappe.utils.escape_html(preview_url);
 	const filename = decodeURIComponent(parsed.pathname.split("/").pop() || __("Attachment"));
-	const extension = filename.split(".").pop().toLowerCase();
+	const safe_filename = frappe.utils.escape_html(filename);
+	const extension = filename.includes(".") ? filename.split(".").pop().toLowerCase() : "";
 	const image_types = new Set(["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"]);
-	const embedded_url = extension === "pdf" ? safe_url + "#toolbar=0&navpanes=0" : safe_url;
-	let preview_html = image_types.has(extension)
-		? '<div style="display:flex;justify-content:center;max-height:72vh;overflow:auto;background:#f7f8fa;padding:12px;border-radius:8px">' +
-		  '<img src="' +
-		  safe_url +
-		  '" alt="' +
-		  frappe.utils.escape_html(filename) +
-		  '" style="max-width:100%;height:auto;object-fit:contain">' +
-		  "</div>"
-		: '<iframe src="' +
-		  embedded_url +
-		  '" title="' +
-		  frappe.utils.escape_html(filename) +
-		  '" style="width:100%;height:72vh;border:1px solid var(--border-color);border-radius:8px;background:#fff"></iframe>';
-	const download_html = `
-		<div style="display:flex;margin-right:8px">
-			<a href="${safe_url}" download="${frappe.utils.escape_html(filename)}"
-				class="btn btn-sm btn-primary" target="_blank" rel="noopener noreferrer"
+	const spreadsheet_types = new Set(["xlsx", "xlsm", "xls", "csv"]);
+
+	const show_preview = (preview_html) => {
+		const dialog = new frappe.ui.Dialog({
+			title: __("Attachment: {0}", [filename]),
+			size: "extra-large",
+			fields: [{ fieldtype: "HTML", fieldname: "attachment_preview" }],
+		});
+		dialog.fields_dict.attachment_preview.$wrapper.html(preview_html);
+		dialog.show();
+		const download_html = `
+			<a href="${safe_url}" download="${safe_filename}"
+				class="btn btn-sm btn-primary okr-attachment-download" target="_blank" rel="noopener noreferrer"
 				title="${__("Download attachment")}">
-				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-					stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
-					style="margin-right:6px">
-					<path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path>
-				</svg>
 				${__("Download")}
-			</a>
-		</div>`;
-	const dialog = new frappe.ui.Dialog({
-		title: __("Attachment: {0}", [filename]),
-		size: "extra-large",
-		fields: [{ fieldtype: "HTML", fieldname: "attachment_preview" }],
-	});
-	dialog.fields_dict.attachment_preview.$wrapper.html(preview_html);
-	dialog.show();
-	const $download = $(download_html);
-	const $modal_actions = dialog.$wrapper.find(".modal-header .modal-actions");
-	if ($modal_actions.length) {
-		$modal_actions.prepend($download);
-	} else {
-		dialog.$wrapper.find(".modal-header").append($download);
+			</a>`;
+		const $modal_header = dialog.$wrapper.find(".modal-header");
+		const $modal_actions = $modal_header.find(".modal-actions");
+		$modal_header.css({
+			display: "flex",
+			alignItems: "center",
+			justifyContent: "space-between",
+			flexWrap: "nowrap",
+			gap: "16px",
+		});
+		$modal_header.find(".modal-title").css({
+			margin: 0,
+			minWidth: 0,
+			lineHeight: "1.35",
+			wordBreak: "break-word",
+		});
+		if ($modal_actions.length) {
+			$modal_actions.prepend($(download_html)).css({
+				display: "flex",
+				flexDirection: "row",
+				alignItems: "center",
+				justifyContent: "flex-end",
+				flexWrap: "nowrap",
+				gap: "8px",
+				marginLeft: "auto",
+				flexShrink: 0,
+			});
+			$modal_actions.children().css({ margin: 0, flexShrink: 0 });
+			$modal_actions.find(".okr-attachment-download").css({
+				display: "inline-flex",
+				alignItems: "center",
+				justifyContent: "center",
+				padding: "6px 14px",
+			});
+		} else {
+			$modal_header.append($(download_html));
+		}
+	};
+
+	if (spreadsheet_types.has(extension)) {
+		frappe.call({
+			method: "okr_management.attachment_preview.get_spreadsheet_preview",
+			args: { file_url: preview_url },
+			freeze: true,
+			freeze_message: __("Preparing spreadsheet preview..."),
+			callback: (r) => {
+				if (r.exc) return;
+				const result = r.message || {};
+				const rows = result.rows || [];
+				if (!rows.length) {
+					show_preview(`<div class="text-muted" style="padding:32px;text-align:center">${__("This spreadsheet is empty.")}</div>`);
+					return;
+				}
+				const width = Math.max(...rows.map((row) => row.length), 1);
+				const table = rows.map((row, row_index) => {
+					const tag = row_index === 0 ? "th" : "td";
+					const cells = Array.from({ length: width }, (_, index) =>
+						`<${tag} style="padding:7px 10px;border:1px solid var(--border-color);white-space:nowrap;text-align:left">${frappe.utils.escape_html(String(row[index] ?? ""))}</${tag}>`
+					).join("");
+					return `<tr>${cells}</tr>`;
+				}).join("");
+				const note = result.truncated
+					? `<div class="text-muted" style="padding:8px 2px">${__("Preview limited to the first {0} rows and {1} columns. Download to view the complete spreadsheet.", [100, 30])}</div>`
+					: "";
+				show_preview(`${note}<div style="max-height:70vh;overflow:auto;border:1px solid var(--border-color);border-radius:8px"><table style="border-collapse:collapse;min-width:100%;background:var(--card-bg);color:var(--text-color)">${table}</table></div>`);
+			},
+		});
+		return;
 	}
+
+	if (image_types.has(extension)) {
+		show_preview(`<div style="display:flex;justify-content:center;max-height:72vh;overflow:auto;background:var(--subtle-fg);padding:12px;border-radius:8px"><img src="${safe_url}" alt="${safe_filename}" style="max-width:100%;height:auto;object-fit:contain"></div>`);
+		return;
+	}
+	const embedded_url = extension === "pdf" ? safe_url + "#toolbar=0&navpanes=0" : safe_url;
+	show_preview(`<iframe src="${embedded_url}" title="${safe_filename}" style="width:100%;height:72vh;border:1px solid var(--border-color);border-radius:8px;background:var(--card-bg)"></iframe>`);
 };
 
 (() => {

@@ -16,6 +16,8 @@ class TestOKRCheckIn(FrappeTestCase):
         objective=frappe.get_doc({"doctype":"OKR Objective","objective_title":"CI Objective "+frappe.generate_hash(length=6),"parent_plan":self.plan.name,"level":"Department","level_details":department,"department":department,"owner_user":"Administrator","status":"Draft"}).insert(ignore_permissions=True)
         self.kr=frappe.get_doc({"doctype":"OKR Key Result","key_result_title":"CI KR "+frappe.generate_hash(length=6),"objective":objective.name,"assignee":"Administrator","metric_type":"Number","metric_direction":"Increase","baseline_value":0,"current_value":25,"target_value":100,"end_date":objective.end_date,"status":"Draft"}).insert(ignore_permissions=True)
         self.employee_user=employee.user_id
+        if "OKR User" not in frappe.get_roles(self.employee_user):
+            frappe.get_doc("User", self.employee_user).add_roles("OKR User")
         self.action=frappe.get_doc({"doctype":"OKR Action Item","action_item_title":"CI Action "+frappe.generate_hash(length=6),"parent_key_result":self.kr.name,"assigned_to":employee.user_id,"due_date":self.kr.end_date}).insert(ignore_permissions=True)
 
     def activate(self):
@@ -33,6 +35,26 @@ class TestOKRCheckIn(FrappeTestCase):
         self.assertEqual(self.action.progress,60)
         self.assertEqual(self.kr.target_progress,60)
         self.assertEqual(self.kr.current_value,60)
+
+    def test_archived_action_item_still_accepts_checkin_while_plan_is_active(self):
+        self.activate()
+        self.action.status = "Archived"
+        self.action.save(ignore_permissions=True)
+        checkin = self.checkin(70)
+        self.action.reload()
+        self.assertEqual(checkin.progress, 70)
+        self.assertEqual(self.action.status, "In Progress")
+
+    def test_increase_goal_allows_overachievement_without_changing_target(self):
+        self.activate()
+        checkin = self.checkin(125)
+        self.action.reload()
+        self.kr.reload()
+        self.assertEqual(checkin.current_value, 125)
+        self.assertEqual(checkin.progress, 100)
+        self.assertEqual(self.kr.current_value, 125)
+        self.assertEqual(self.kr.target_value, 100)
+        self.assertEqual(self.kr.target_progress, 100)
 
     def test_latest_flag_is_unique(self):
         self.activate(); first=self.checkin(20); second=self.checkin(40); first.reload(); second.reload()

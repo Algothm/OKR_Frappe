@@ -11,7 +11,7 @@ from okr_management.utils.periods import add_period_labels
 
 def get_workspace_plan_names() -> list[str]:
 	scope = get_hierarchy_visibility_scope()
-	filters = {}
+	filters = {"status": ["!=", "Archived"]}
 	if scope["read_all"]:
 		return frappe.get_all("OKR Plan", filters=filters, pluck="name")
 
@@ -143,6 +143,7 @@ def get_workspace_data(
 			"progress",
 			"start_date",
 			"end_date",
+			"attachment",
 		],
 		order_by="priority desc, modified desc",
 		limit_page_length=100,
@@ -170,7 +171,7 @@ def get_workspace_data(
 		action["can_checkin"] = (
 			action.parent_plan in active_plan_names
 			and (scope["read_all"] or action.name in scope["checkin_action_items"])
-			and action.status in {"Open", "In Progress", "On Hold", "Blocked"}
+			and action.status in {"Open", "In Progress", "On Hold", "Blocked", "Archived"}
 		)
 		kr_config = kr_config_by_name.get(action.parent_key_result)
 		action["measurement_locked"] = bool(
@@ -183,16 +184,9 @@ def get_workspace_data(
 	krs_by_objective = {}
 	for kr in key_results:
 		kr["action_items"] = actions_by_kr.get(kr.name, [])
-		reporting_actions = [item for item in kr["action_items"] if item.get("history")]
-		if reporting_actions:
-			latest_values = [flt(item["history"][0].current_value) for item in reporting_actions]
-			action_progress = [flt(item.progress) for item in reporting_actions]
-			kr["target_progress"] = sum(action_progress) / len(action_progress)
-			if kr.metric_type == "Percentage":
-				kr["current_value"] = sum(latest_values) / len(latest_values)
-			elif kr.metric_type in ("Currency", "Number"):
-				kr["current_value"] = sum(latest_values)
-				kr["target_value"] = flt(kr.target_value) * len(reporting_actions)
+		# KR values and progress are already normalized and persisted by the
+		# calculation service. Do not aggregate only checked-in actions here:
+		# that excluded zero-progress actions and changed e.g. 4 / 2 into 7 / 4.
 		kr["completed_action_items"] = sum(
 			1
 			for item in kr["action_items"]
@@ -226,6 +220,7 @@ def get_filter_options() -> dict:
 
 	plans = frappe.get_all(
 		"OKR Plan",
+		filters={"status": ["!=", "Archived"]},
 		fields=["name", "plan_name", "financial_year", "status", "planned_activation_date"],
 		limit_page_length=100,
 	)
@@ -281,9 +276,6 @@ def save_workspace_checkin(
 		target = flt(key_result_config.target_value)
 
 	actual_value = flt(current_value if current_value is not None else progress)
-	lower, upper = sorted((baseline, target))
-	if metric_type != "Boolean" and not lower <= actual_value <= upper:
-		frappe.throw(_("Current value must be between {0} and {1}.").format(lower, upper))
 	if metric_type == "Boolean":
 		calculated_progress = 100.0 if actual_value else 0.0
 	elif target == baseline:
@@ -474,6 +466,7 @@ def get_key_results(objective_names: list[str]) -> list:
 			"priority",
 			"target_progress",
 			"metric_type",
+			"metric_direction",
 			"unit_of_measure",
 			"target_value",
 			"current_value",
@@ -495,7 +488,7 @@ def get_action_items(kr_names: list[str]) -> list:
 		return []
 	rows = frappe.get_all(
 		"OKR Action Item",
-		filters={"parent_key_result": ["in", kr_names], "status": ["!=", "Archived"]},
+		filters={"parent_key_result": ["in", kr_names]},
 		fields=[
 			"name",
 			"action_item_title",
@@ -512,6 +505,7 @@ def get_action_items(kr_names: list[str]) -> list:
 			"baseline_value",
 			"target_value",
 			"current_value",
+			"attachment",
 		],
 		order_by="due_date asc, modified desc",
 		limit_page_length=800,
