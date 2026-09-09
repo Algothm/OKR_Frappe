@@ -116,14 +116,11 @@ function configure_metric_value(frm) {
     const metric = frm.okr_metric || {};
     const baseline = flt(metric.baseline_value || 0, 2);
     const target = flt(metric.target_value || 0, 2);
-    const minimum = Math.min(baseline, target);
-    const maximum = Math.max(baseline, target);
     frm.set_df_property('current_value', 'label', __('Progress'));
-
-    frm.set_df_property('current_value', 'description', __('Allowed range: {0} to {1}. Completion is calculated automatically.', [minimum, maximum]));
+    frm.set_df_property('current_value', 'description', '');
     const field = frm.fields_dict.current_value;
     if (field && field.$input) {
-        field.$input.attr({ min: minimum, max: maximum, step: 0.01 });
+        field.$input.removeAttr('min max').attr({ step: 0.01 });
     }
 }
 

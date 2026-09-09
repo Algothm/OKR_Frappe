@@ -24,6 +24,11 @@
    "fieldname": "description"
   },
   {
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Attachment"
+  },
+  {
    "hidden": 1,
    "label": "Assignment",
    "fieldname": "assignment_section",
@@ -421,6 +426,7 @@
   "parent_key_result",
   "action_item_title",
   "description",
+  "attachment",
   "assigned_to",
   "due_date",
   "progress",

@@ -104,6 +104,11 @@
    "in_standard_filter": 0
   },
   {
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Attachment"
+  },
+  {
    "label": "Plan",
    "fieldname": "parent_plan",
    "options": "OKR Plan",
@@ -359,6 +364,7 @@
   "parent_plan",
   "objective_title",
   "description",
+  "attachment",
   "group",
   "department",
   "priority",

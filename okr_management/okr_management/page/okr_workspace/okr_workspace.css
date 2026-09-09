@@ -68,7 +68,7 @@
 .okr-owner span { width:24px; height:24px; border-radius:999px; background:#f3e8ff; color:#7c3aed; display:inline-flex; align-items:center; justify-content:center; font-weight:800; }
 .okr-status { display:inline-flex; align-items:center; width:max-content; padding:3px 8px; border-radius:7px; background:#dbeafe; color:#0758d8; font-weight:800; font-size:11px; line-height:1.25; }
 .okr-status.completed { background:#dcfce7; color:#166534; }
-.okr-status.archived { background:#e2e8f0; color:#475569; }
+.okr-status.archived { background:#dcfce7; color:#166534; }
 .okr-status.blocked, .okr-status.on-hold { background:#fee2e2; color:#b91c1c; }
 .okr-action-progress { display:grid; gap:5px; padding-top:5px; }
 .okr-action-progress strong { text-align:right; font-size:12px; }
@@ -471,4 +471,410 @@
 .okr-kr-redirect-btn .icon {
 	width: 12px;
 	height: 12px;
+}
+
+
+/* Final theme layer: keep the custom workspace readable in Frappe dark mode. */
+[data-theme="dark"] .okr-workspace-page {
+	background: var(--bg-color);
+	color: var(--text-color);
+	color-scheme: dark;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-ws-shell, .okr-objective-card, .okr-kr-card, .okr-summary-card, .okr-attention-panel, .okr-empty-workspace) {
+	background: var(--card-bg);
+	border-color: var(--border-color);
+	color: var(--text-color);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-ws-main, .okr-kr-head, .okr-inline-checkin, .okr-filter-popover, .okr-pop-actions, .okr-all-clear-panel) {
+	background: var(--fg-color);
+	border-color: var(--border-color);
+}
+[data-theme="dark"] .okr-workspace-page .okr-ws-rail {
+	background: var(--card-bg);
+	border-color: var(--border-color);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-ws-brand, .okr-objective-head h2, .okr-kr-head strong, .okr-action-title strong, .okr-inline-context strong, .okr-context-items-row strong, .okr-attention-item strong, .okr-all-clear-body strong, .okr-empty-workspace h3) {
+	color: var(--text-color) !important;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-rail-objective small, .okr-action-assignee, .okr-action-meta-col, .okr-action-due-date, .okr-action-last-checkin, .okr-action-title small, .okr-history-title, .okr-history-date span, .okr-attention-item small, .okr-attention-reasons li, .okr-all-clear-body small, .okr-empty-workspace p, .okr-summary-card-label, .okr-summary-card-target) {
+	color: var(--text-muted) !important;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-rail-objective:hover, .okr-rail-objective.active, .okr-icon-filter, .okr-icon-toggle-all, .okr-filter-pill.active, .okr-history-more) {
+	background: var(--subtle-fg);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-ws-active-filters span, .okr-filter-pill, .okr-history-row p, .okr-history-attachment, .okr-file-chip, .okr-close-btn, .okr-kr-redirect-btn, .okr-kr-meta .okr-signal, .okr-checkin-field .form-control) {
+	background: var(--control-bg);
+	border-color: var(--border-color);
+	color: var(--text-color);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-action-block, .okr-inline-context, .okr-attention-head, .okr-attention-item) {
+	border-color: var(--border-color);
+}
+[data-theme="dark"] .okr-workspace-page .okr-bar { background: var(--subtle-fg); }
+[data-theme="dark"] .okr-workspace-page .okr-objective-card { box-shadow: 0 8px 22px rgba(0,0,0,.22); }
+
+
+/* Dark filter interaction and empty-state polish (must follow generic dark controls). */
+[data-theme="dark"] .okr-workspace-page .okr-filter-popover {
+	background: var(--card-bg);
+	border-color: var(--border-color);
+	box-shadow: 0 22px 48px rgba(0,0,0,.48);
+}
+[data-theme="dark"] .okr-workspace-page .okr-pop-head button {
+	background: var(--control-bg);
+	border: 1px solid var(--border-color);
+	color: var(--text-color);
+}
+[data-theme="dark"] .okr-workspace-page .okr-filter-pill {
+	background: var(--control-bg) !important;
+	border-color: var(--border-color) !important;
+	color: var(--text-muted) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-filter-pill:hover {
+	background: var(--subtle-fg) !important;
+	border-color: var(--gray-600) !important;
+	color: var(--text-color) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-filter-pill.active {
+	background: color-mix(in srgb, var(--primary) 22%, var(--control-bg)) !important;
+	border-color: var(--primary) !important;
+	color: var(--primary-light, #a5b4fc) !important;
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 55%, transparent);
+}
+[data-theme="dark"] .okr-workspace-page .okr-filter-pill:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
+}
+[data-theme="dark"] .okr-workspace-page .okr-pop-actions {
+	background: var(--card-bg);
+	border-top: 1px solid var(--border-color);
+}
+[data-theme="dark"] .okr-workspace-page .okr-pop-actions .btn-default {
+	background: var(--control-bg);
+	border-color: var(--border-color);
+	color: var(--text-color);
+}
+[data-theme="dark"] .okr-workspace-page .okr-pop-actions .btn-primary {
+	background: var(--primary);
+	border-color: var(--primary);
+	color: #fff;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-icon-filter, .okr-icon-toggle-all) {
+	background: var(--control-bg);
+	border: 1px solid var(--border-color);
+	color: var(--text-muted);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-icon-filter, .okr-icon-toggle-all):hover {
+	background: var(--subtle-fg);
+	color: var(--text-color);
+}
+[data-theme="dark"] .okr-workspace-page .okr-empty-icon {
+	background: var(--control-bg);
+	border: 1px solid var(--border-color);
+	color: var(--text-muted);
+}
+[data-theme="dark"] .okr-workspace-page .okr-empty-workspace .btn-primary {
+	background: var(--primary);
+	border-color: var(--primary);
+	color: #fff;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-pill-row-wrap, .okr-pop-content) {
+	scrollbar-color: var(--gray-600) transparent;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-pill-row-wrap, .okr-pop-content)::-webkit-scrollbar-thumb {
+	background: var(--gray-600);
+	border-radius: 999px;
+}
+
+
+/* High-contrast dark palette for every workspace hierarchy and history state. */
+[data-theme="dark"] .okr-workspace-page {
+	--okr-dark-surface: #17191d;
+	--okr-dark-raised: #202329;
+	--okr-dark-hover: #292d35;
+	--okr-dark-border: #323640;
+	--okr-dark-text: #f3f4f6;
+	--okr-dark-muted: #aeb8ca;
+	--okr-dark-accent: #8b80ff;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-ws-shell, .okr-ws-rail, .okr-objective-card, .okr-kr-card, .okr-summary-card, .okr-attention-panel, .okr-empty-workspace) {
+	background: var(--okr-dark-surface);
+	border-color: var(--okr-dark-border);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-ws-main, .okr-kr-head, .okr-inline-checkin, .okr-all-clear-panel) {
+	background: var(--okr-dark-surface);
+	border-color: var(--okr-dark-border);
+}
+[data-theme="dark"] .okr-workspace-page .okr-ws-rail { border-right-color: var(--okr-dark-border); }
+[data-theme="dark"] .okr-workspace-page .okr-rail-objective {
+	color: var(--okr-dark-text) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-rail-objective strong {
+	color: var(--okr-dark-text) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-rail-objective:hover {
+	background: var(--okr-dark-hover) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-rail-objective.active {
+	background: color-mix(in srgb, var(--okr-dark-accent) 17%, var(--okr-dark-raised)) !important;
+	border-left-color: var(--okr-dark-accent);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-rail-objective small, .okr-action-assignee, .okr-owner, .okr-action-title small, .okr-action-meta-col, .okr-action-last-checkin, .okr-action-due-date, .okr-history-date span, .okr-context-items-row span) {
+	color: var(--okr-dark-muted) !important;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-history-row p, .okr-history-details, .okr-history-meta strong) {
+	color: var(--okr-dark-text) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-history-row p {
+	background: var(--okr-dark-raised);
+	border-color: var(--okr-dark-border);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-history-title, .okr-history-toggle, .okr-action-title button) {
+	color: var(--okr-dark-accent) !important;
+}
+[data-theme="dark"] .okr-workspace-page .btn-primary-light {
+	background: color-mix(in srgb, var(--okr-dark-accent) 20%, var(--okr-dark-raised)) !important;
+	border-color: color-mix(in srgb, var(--okr-dark-accent) 70%, var(--okr-dark-border)) !important;
+	color: #dcd8ff !important;
+}
+[data-theme="dark"] .okr-workspace-page .btn-primary-light:hover {
+	background: color-mix(in srgb, var(--okr-dark-accent) 32%, var(--okr-dark-raised)) !important;
+	color: #fff !important;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-all-clear-head, .okr-all-clear-head > span) {
+	color: #34d399 !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-attention-head { color: #f87171; }
+[data-theme="dark"] .okr-workspace-page .okr-bar { background: #292c32; }
+[data-theme="dark"] .okr-workspace-page .okr-period-badge {
+	background: #172554;
+	border-color: #3b82f6;
+	color: #bfdbfe;
+}
+[data-theme="dark"] .okr-workspace-page .okr-kr-redirect-btn {
+	background: var(--okr-dark-raised);
+	border-color: var(--okr-dark-border);
+	color: var(--okr-dark-muted);
+}
+[data-theme="dark"] .okr-workspace-page .okr-kr-redirect-btn:hover {
+	background: var(--okr-dark-hover);
+	border-color: var(--okr-dark-accent);
+	color: #fff;
+}
+[data-theme="dark"] .okr-workspace-page .okr-history-attachment {
+	background: var(--okr-dark-raised);
+	border-color: var(--okr-dark-border);
+	color: var(--okr-dark-muted);
+}
+
+
+/* Explicit violet filter states for reliable contrast across Frappe dark palettes. */
+[data-theme="dark"] .okr-workspace-page .okr-filter-pill.active {
+	background: #37305f !important;
+	border-color: #9185ff !important;
+	color: #f0eeff !important;
+	box-shadow: 0 0 0 1px rgba(145,133,255,.35), 0 6px 16px rgba(91,75,210,.22) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-filter-pill.active:hover {
+	background: #433a73 !important;
+	border-color: #a79eff !important;
+	color: #fff !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-pop-actions .btn-primary {
+	background: #7465e8 !important;
+	background-image: none !important;
+	border: 1px solid #9185ff !important;
+	color: #fff !important;
+	box-shadow: 0 5px 14px rgba(91,75,210,.3);
+}
+[data-theme="dark"] .okr-workspace-page .okr-pop-actions .btn-primary:hover {
+	background: #8577f2 !important;
+	border-color: #aaa2ff !important;
+}
+
+.okr-objective-actions, .okr-action-meta-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; }
+.okr-record-attachment { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; border:1px solid #dbe3ee; border-radius:8px; background:#fff; color:#635bff; cursor:pointer; flex:0 0 auto; }
+.okr-record-attachment:hover { background:#eef2ff; border-color:#a5b4fc; color:#4f46e5; }
+[data-theme="dark"] .okr-workspace-page .okr-record-attachment { background:var(--okr-dark-raised); border-color:var(--okr-dark-border); color:#b8b1ff; }
+[data-theme="dark"] .okr-workspace-page .okr-record-attachment:hover { background:#37305f; border-color:#9185ff; color:#fff; }
+
+/* Check-In form labels and controls in dark mode. */
+[data-theme="dark"] .okr-workspace-page .okr-checkin-field label,
+[data-theme="dark"] .okr-workspace-page .okr-inline-fields label,
+[data-theme="dark"] .okr-workspace-page .okr-update-field label {
+	color: var(--okr-dark-text, #f3f4f6) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-checkin-field small,
+[data-theme="dark"] .okr-workspace-page .okr-attach-line {
+	color: var(--okr-dark-muted, #aeb8ca) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-inline-checkin :is(input, select, textarea, .form-control) {
+	background: var(--okr-dark-raised, #202329) !important;
+	border-color: var(--okr-dark-border, #323640) !important;
+	color: var(--okr-dark-text, #f3f4f6) !important;
+}
+
+
+/* Stable Action Item progress/check-in column alignment. */
+.okr-action-row {
+	grid-template-columns: minmax(280px, 1fr) 110px minmax(170px, 210px) minmax(150px, 170px);
+	column-gap: 22px;
+}
+.okr-action-row .okr-action-progress { min-width: 0; width: 100%; }
+.okr-action-row .okr-action-meta-col {
+	width: 100%;
+	min-width: 150px;
+	justify-self: end;
+	align-items: center;
+}
+.okr-action-row .okr-action-meta-actions {
+	width: 100%;
+	justify-content: center;
+	flex-wrap: nowrap;
+}
+.okr-action-row .okr-history-toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	white-space: nowrap;
+	word-break: normal;
+	line-height: 1.25;
+}
+.okr-action-row .okr-action-last-checkin {
+	width: 100%;
+	padding-right: 0;
+	text-align: center;
+	white-space: nowrap;
+}
+@media (max-width: 1100px) {
+	.okr-action-row { grid-template-columns: minmax(240px, 1fr) 105px minmax(150px, 1fr) 150px; column-gap: 14px; }
+}
+@media (max-width: 800px) {
+	.okr-action-row { grid-template-columns: 1fr 1fr; }
+	.okr-action-row .okr-action-meta-col { min-width: 0; }
+}
+@media (max-width: 600px) {
+	.okr-action-row { grid-template-columns: 1fr; }
+	.okr-action-row .okr-action-meta-col { align-items: flex-start; justify-self: start; }
+	.okr-action-row .okr-action-meta-actions,
+	.okr-action-row .okr-history-toggle { justify-content: flex-start; }
+	.okr-action-row .okr-action-last-checkin { padding-right: 0; text-align: left; }
+}
+
+
+/* Compact Action Item progress bars without affecting Check-In alignment. */
+@media (min-width: 1101px) {
+	.okr-action-row {
+		grid-template-columns: minmax(280px, 1fr) 110px 160px minmax(150px, 170px);
+	}
+	.okr-action-row .okr-action-progress {
+		width: 150px;
+		justify-self: end;
+	}
+}
+@media (min-width: 801px) and (max-width: 1100px) {
+	.okr-action-row .okr-action-progress {
+		width: 135px;
+		justify-self: end;
+	}
+}
+
+
+/* Tight, balanced spacing for the Status → Progress → Check-In group. */
+@media (min-width: 1101px) {
+	.okr-action-row {
+		grid-template-columns: minmax(280px, 1fr) 120px 160px 150px;
+		column-gap: 10px;
+	}
+	.okr-action-row > .okr-status {
+		justify-self: end;
+	}
+	.okr-action-row .okr-action-progress {
+		justify-self: start;
+	}
+	.okr-action-row .okr-action-meta-col {
+		min-width: 0;
+		width: 150px;
+		justify-self: start;
+		align-items: center;
+	}
+	.okr-action-row .okr-action-meta-actions {
+		width: auto;
+		justify-content: center;
+	}
+	.okr-action-row .okr-action-last-checkin {
+		width: 100%;
+		padding-right: 0;
+		text-align: center;
+	}
+}
+@media (min-width: 801px) and (max-width: 1100px) {
+	.okr-action-row { column-gap: 10px; }
+	.okr-action-row > .okr-status { justify-self: end; }
+	.okr-action-row .okr-action-progress { justify-self: start; }
+	.okr-action-row .okr-action-meta-col { justify-self: start; align-items: center; }
+	.okr-action-row .okr-action-last-checkin { padding-right: 0; text-align: center; }
+}
+
+
+/* Anchor Check-In count and date to the exact same left edge. */
+@media (min-width: 801px) {
+	.okr-action-row .okr-action-meta-col {
+		width: max-content;
+		min-width: 0;
+		justify-self: start;
+		align-items: flex-start;
+		text-align: left;
+	}
+	.okr-action-row .okr-action-meta-actions {
+		width: max-content;
+		justify-content: flex-start;
+	}
+	.okr-action-row .okr-history-toggle {
+		justify-content: flex-start;
+	}
+	.okr-action-row .okr-action-last-checkin {
+		width: 100%;
+		padding-right: 0;
+		text-align: left;
+	}
+}
+
+
+/* Keep the compact Status/Progress/Check-In group flush with the row's right edge. */
+@media (min-width: 1101px) {
+	.okr-action-row {
+		grid-template-columns: minmax(280px, 1fr) 120px 160px max-content;
+	}
+}
+@media (min-width: 801px) and (max-width: 1100px) {
+	.okr-action-row {
+		grid-template-columns: minmax(240px, 1fr) 105px 145px max-content;
+	}
+}
+
+[data-theme="dark"] .okr-workspace-page .okr-status.archived {
+	background: rgba(34, 197, 94, .20);
+	color: #86efac;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-status.blocked, .okr-status.on-hold) {
+	background: rgba(239, 68, 68, .20);
+	color: #fca5a5;
+}
+
+/* Keep KR measurement signals recognizable in dark mode. */
+[data-theme="dark"] .okr-workspace-page .okr-kr-meta .okr-signal.good {
+	color: #16a34a;
+	border-color: #bbf7d0;
+	background: #f0fdf4;
+}
+[data-theme="dark"] .okr-workspace-page .okr-kr-meta .okr-signal.warn {
+	color: #d97706;
+	border-color: #fed7aa;
+	background: #fffbeb;
+}
+[data-theme="dark"] .okr-workspace-page .okr-kr-meta .okr-signal.risk {
+	color: #dc2626;
+	border-color: #fecaca;
+	background: #fef2f2;
 }

@@ -261,7 +261,7 @@ def get_key_results(filters: dict, plan_names: list[str] | None, objective_names
 def get_action_items(
 	filters: dict, plan_names: list[str] | None, objective_names: list[str], kr_names: list[str]
 ) -> list[dict]:
-	doc_filters = {"status": ["!=", "Archived"]}
+	doc_filters = {}
 	add_common_filters(doc_filters, {**filters, "owner": ""})
 	if filters.get("owner"):
 		employee_names = frappe.get_all("Employee", filters={"user_id": filters["owner"]}, pluck="name")

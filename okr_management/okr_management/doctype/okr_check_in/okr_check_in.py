@@ -9,7 +9,7 @@ from okr_management.hierarchy_visibility import get_hierarchy_visibility_scope
 from okr_management.permissions import is_okr_admin
 from okr_management.utils.okr_validations import ensure_percentage, ensure_required_link
 
-ACTIVE_ACTION_STATUSES = ("Open", "In Progress", "On Hold", "Blocked")
+ACTIVE_ACTION_STATUSES = ("Open", "In Progress", "On Hold", "Blocked", "Archived")
 ACTION_STATUS_MAP = {
 	"In Progress": "In Progress",
 	"On Hold": "On Hold",
@@ -58,14 +58,11 @@ class OKRCheckIn(Document):
 			target = flt(key_result.target_value)
 
 		actual = flt(self.current_value)
-		lower, upper = sorted((baseline, target))
 		if metric_type == "Boolean":
 			if actual not in (0, 1):
 				frappe.throw(_("Current Value must be 0 or 1 for a Boolean Key Result."))
 			progress = 100.0 if actual else 0.0
 		else:
-			if not lower <= actual <= upper:
-				frappe.throw(_("Current Value must be between {0} and {1}.").format(lower, upper))
 			if target == baseline:
 				progress = 0.0
 			elif metric_direction == "Decrease":
@@ -307,7 +304,7 @@ def get_assigned_action_items(doctype, txt, searchfield, start, page_len, filter
 		"from `tabOKR Action Item` ai "
 		"left join `tabOKR Key Result` kr on kr.name = ai.parent_key_result "
 		"left join `tabOKR Plan` plan on plan.name = coalesce(ai.parent_plan, kr.parent_plan) "
-		"where ai.status in ('Open', 'In Progress', 'On Hold', 'Blocked') "
+		"where ai.status in ('Open', 'In Progress', 'On Hold', 'Blocked', 'Archived') "
 		"  and (plan.status in ('Active', 'Draft') or plan.name is null) " + assignment_condition + " "
 		"  and (ai.name like %(txt)s or ai.action_item_title like %(txt)s) "
 		"order by ai.modified desc "
