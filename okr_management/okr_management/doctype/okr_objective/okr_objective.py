@@ -15,8 +15,8 @@ from okr_management.utils.okr_calculations import recalculate_objective_progress
 
 STATUS_TRANSITIONS = {
 	"Draft": {"Active"},
-	"Active": {"On Hold", "Completed"},
-	"On Hold": {"Active", "Completed"},
+	"Active": {"On Hold", "Completed", "Closed"},
+	"On Hold": {"Active", "Completed", "Closed"},
 	"Completed": {"Closed"},
 	"Closed": set(),
 }

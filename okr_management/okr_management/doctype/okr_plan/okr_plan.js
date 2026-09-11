@@ -1,5 +1,24 @@
 const okr_management = window.okr_management;
 
+function setup_auto_growing_plan_title(frm, fieldname) {
+	const input = frm.fields_dict[fieldname]?.$wrapper?.find("textarea").first();
+	if (!input?.length) return;
+	input.off("input.okr-title-resize").on("input.okr-title-resize", () => resize_auto_growing_plan_title(frm, fieldname));
+	resize_auto_growing_plan_title(frm, fieldname);
+}
+
+function resize_auto_growing_plan_title(frm, fieldname) {
+	const input = frm.fields_dict[fieldname]?.$wrapper?.find("textarea").first();
+	if (!input?.length) return;
+	const textarea = input[0];
+	textarea.style.setProperty("height", "auto", "important");
+	textarea.style.setProperty("min-height", "38px", "important");
+	textarea.style.setProperty("max-height", "none", "important");
+	textarea.style.setProperty("overflow-y", "hidden", "important");
+	textarea.style.setProperty("resize", "none", "important");
+	textarea.style.setProperty("height", Math.max(38, textarea.scrollHeight) + "px", "important");
+}
+
 frappe.dom.set_style(`
 	.form-section[data-fieldname="plan_details_row_2"] .frappe-control[data-fieldname="description"] textarea {
 		height: 194px !important;
@@ -26,6 +45,7 @@ frappe.ui.form.on("OKR Plan", {
 		}
 		apply_plan_locks(frm);
 		fix_okr_plan_layout(frm);
+		setup_auto_growing_plan_title(frm, "plan_name");
 		match_plan_description_height(frm);
 		style_add_member_button(frm);
 		render_plan_context_preview(frm);
@@ -74,6 +94,7 @@ frappe.ui.form.on("OKR Plan", {
 	},
 	onload_post_render(frm) {
 		fix_okr_plan_layout(frm);
+		setup_auto_growing_plan_title(frm, "plan_name");
 		match_plan_description_height(frm);
 		style_add_member_button(frm);
 		render_plan_context_preview(frm);

@@ -9,7 +9,7 @@
   {
    "label": "Title",
    "reqd": 1,
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "fieldname": "action_item_title",
    "in_list_view": 1
   },
@@ -68,7 +68,7 @@
   {
    "fieldtype": "Select",
    "in_list_view": 1,
-   "options": "Open\nIn Progress\nOn Hold\nBlocked\nCompleted\nArchived",
+   "options": "Open\nIn Progress\nOn Hold\nBlocked\nCompleted\nDone",
    "label": "Status",
    "fieldname": "status",
    "reqd": 1,
@@ -325,7 +325,7 @@
   {
    "label": "Key Result",
    "hidden": 1,
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "fieldname": "key_result_title",
    "read_only": 1
   },
@@ -337,7 +337,7 @@
   },
   {
    "fieldname": "objective_title",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "read_only": 1,
    "label": "Objective",
    "hidden": 1
@@ -346,7 +346,7 @@
    "label": "Plan",
    "read_only": 1,
    "fieldname": "plan_title",
-   "fieldtype": "Data"
+   "fieldtype": "Small Text"
   },
   {
    "label": "Plan Description",
@@ -365,10 +365,10 @@
    "default": "0",
    "fieldname": "customize_measurement",
    "fieldtype": "Check",
-   "label": "Customize My Measurement"
+   "hidden": 1,
+   "label": "Customize Measurement"
   },
   {
-   "depends_on": "eval:doc.customize_measurement==1",
    "fieldname": "measurement_section",
    "fieldtype": "Section Break",
    "label": "Measurement"
