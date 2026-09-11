@@ -9,7 +9,7 @@
   {
    "label": "Title",
    "reqd": 1,
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "fieldname": "action_item_title",
    "in_list_view": 1
   },
@@ -22,6 +22,11 @@
    "label": "Description",
    "fieldtype": "Small Text",
    "fieldname": "description"
+  },
+  {
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Attachment"
   },
   {
    "hidden": 1,
@@ -63,7 +68,7 @@
   {
    "fieldtype": "Select",
    "in_list_view": 1,
-   "options": "Open\nIn Progress\nOn Hold\nBlocked\nCompleted\nArchived",
+   "options": "Open\nIn Progress\nOn Hold\nBlocked\nCompleted\nDone",
    "label": "Status",
    "fieldname": "status",
    "reqd": 1,
@@ -89,7 +94,7 @@
    "fieldname": "assigned_to",
    "fieldtype": "Link",
    "label": "Assigned To",
-   "options": "Employee",
+   "options": "User",
    "reqd": 1,
    "in_list_view": 1,
    "in_standard_filter": 1
@@ -255,6 +260,14 @@
    "read_only": 1
   },
   {
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "label": "Group",
+   "options": "Group",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
    "label": "Department",
    "options": "Department",
    "hidden": 1,
@@ -285,7 +298,7 @@
   {
    "fieldtype": "HTML",
    "fieldname": "context_preview_html",
-   "label": "Context Preview",
+   "label": "Context and Preview of Plan, Objective and Key Result",
    "hidden": 0
   },
   {
@@ -312,7 +325,7 @@
   {
    "label": "Key Result",
    "hidden": 1,
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "fieldname": "key_result_title",
    "read_only": 1
   },
@@ -324,7 +337,7 @@
   },
   {
    "fieldname": "objective_title",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "read_only": 1,
    "label": "Objective",
    "hidden": 1
@@ -333,13 +346,69 @@
    "label": "Plan",
    "read_only": 1,
    "fieldname": "plan_title",
-   "fieldtype": "Data"
+   "fieldtype": "Small Text"
   },
   {
    "label": "Plan Description",
    "read_only": 1,
    "fieldtype": "Small Text",
    "fieldname": "plan_description"
+  },
+  {
+   "fieldname": "measurement_customization_status",
+   "fieldtype": "Data",
+   "label": "Measurement Customization",
+   "read_only": 1,
+   "default": "Locked"
+  },
+  {
+   "default": "0",
+   "fieldname": "customize_measurement",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Customize Measurement"
+  },
+  {
+   "fieldname": "measurement_section",
+   "fieldtype": "Section Break",
+   "label": "Measurement"
+  },
+  {
+   "default": "Percentage",
+   "fieldname": "metric_type",
+   "fieldtype": "Select",
+   "label": "Measurement Type",
+   "options": "Percentage\nNumber\nCurrency"
+  },
+  {
+   "default": "Increase",
+   "fieldname": "metric_direction",
+   "fieldtype": "Select",
+   "label": "Goal Direction",
+   "options": "Increase\nDecrease"
+  },
+  {
+   "fieldname": "measurement_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": 0,
+   "fieldname": "baseline_value",
+   "fieldtype": "Float",
+   "label": "Starting Value"
+  },
+  {
+   "default": 100,
+   "fieldname": "target_value",
+   "fieldtype": "Float",
+   "label": "Target Value"
+  },
+  {
+   "default": 0,
+   "fieldname": "current_value",
+   "fieldtype": "Float",
+   "label": "Current Value",
+   "read_only": 0
   }
  ],
  "creation": "2026-06-24 00:00:00.000000",
@@ -357,12 +426,22 @@
   "parent_key_result",
   "action_item_title",
   "description",
+  "attachment",
   "assigned_to",
   "due_date",
   "progress",
+  "measurement_customization_status",
+  "customize_measurement",
   "details_col_break",
   "context_preview_heading",
   "context_preview_html",
+  "measurement_section",
+  "metric_type",
+  "metric_direction",
+  "measurement_col_break",
+  "baseline_value",
+  "target_value",
+  "current_value",
   "plan_title",
   "plan_description",
   "company",
@@ -379,6 +458,7 @@
   "status",
   "owner_user",
   "reviewer",
+  "group",
   "department",
   "progress_visualization_html",
   "execution_progress_section",
@@ -404,64 +484,31 @@
  ],
  "name": "OKR Action Item",
  "actions": [],
-"title_field":"action_item_title",
+ "title_field": "action_item_title",
  "permissions": [
   {
-   "export": 1,
-   "delete": 1,
-   "write": 1,
-   "read": 1,
-   "report": 1,
-   "role": "OKR Admin",
-   "email": 1,
-   "create": 1,
-   "print": 1
-  },
-  {
-   "write": 1,
-   "delete": 1,
-   "export": 0,
-   "report": 0,
-   "read": 1,
-   "role": "Team Lead",
-   "email": 0,
-   "create": 1,
-   "print": 0
-  },
-  {
-   "write": 1,
-   "export": 0,
-   "delete": 1,
-   "print": 0,
-   "create": 1,
-   "email": 0,
-   "role": "Employee",
-   "report": 0,
-   "read": 1
-  },
-{
-   "write": 1,
-   "export": 0,
-   "delete": 1,
-   "print": 0,
-   "create": 1,
-   "email": 0,
    "role": "OKR User",
-   "report": 0,
-   "read": 1
-  },
-{
+   "read": 1,
    "write": 1,
-   "export": 0,
-   "delete": 1,
-   "print": 0,
    "create": 1,
-   "email": 0,
-   "role": "Guest",
-   "report": 0,
-   "read": 1
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
   }
-],
+ ],
  "autoname": "naming_series:",
  "istable": 0,
  "engine": "InnoDB",

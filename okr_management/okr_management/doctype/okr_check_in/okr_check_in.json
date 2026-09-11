@@ -14,6 +14,7 @@
   "progress",
   "action_status",
   "current_value",
+  "checkin_date",
   "achievements",
   "attachment",
   "context_preview_col_break",
@@ -37,9 +38,9 @@
   "objective",
   "parent_plan",
   "reported_by",
-  "checkin_date",
   "financial_year",
   "company",
+  "group",
   "department",
   "confidence",
   "next_steps",
@@ -142,8 +143,8 @@
    "label": "Check-In Date",
    "reqd": 1,
    "default": "Today",
-   "read_only": 1,
-   "hidden": 1,
+   "read_only": 0,
+   "hidden": 0,
    "in_list_view": 0
   },
   {
@@ -164,6 +165,14 @@
    "ignore_user_permissions": 1,
    "read_only": 1,
    "hidden": 1
+  },
+  {
+   "fieldname": "group",
+   "fieldtype": "Link",
+   "label": "Group",
+   "options": "Group",
+   "hidden": 1,
+   "read_only": 1
   },
   {
    "fieldname": "department",
@@ -216,7 +225,7 @@
    "fieldtype": "Small Text",
    "label": "Progress Update",
    "description": "",
-   "reqd": 1,
+   "reqd": 0,
    "hidden": 0
   },
   {
@@ -429,7 +438,7 @@
    "fieldname": "action_status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "In Progress\nOn Hold\nBlocked\nArchived",
+   "options": "In Progress\nOn Hold\nDone\nBlocked",
    "default": "In Progress",
    "reqd": 1
   },
@@ -445,7 +454,7 @@
   },
   {
    "fieldname": "action_item_title_context",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Action Item",
    "read_only": 1,
    "hidden": 1
@@ -529,7 +538,8 @@
   },
   {
    "fieldname": "context_preview_html",
-   "fieldtype": "HTML"
+   "fieldtype": "HTML",
+   "label": "Context and Preview"
   },
   {
    "fieldname": "is_latest",
@@ -554,61 +564,28 @@
  "owner": "Administrator",
  "permissions": [
   {
-   "create": 1,
-   "delete": 0,
-   "email": 0,
-   "export": 0,
-   "print": 0,
-   "read": 1,
-   "report": 0,
-   "role": "System Manager",
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 0,
-   "email": 0,
-   "export": 0,
-   "print": 0,
-   "read": 1,
-   "report": 0,
-   "role": "OKR Admin",
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 0,
-   "email": 0,
-   "export": 0,
-   "print": 0,
-   "read": 1,
-   "report": 0,
-   "role": "Employee",
-   "write": 1
-  },
-{
-   "create": 1,
-   "delete": 0,
-   "email": 0,
-   "export": 0,
-   "print": 0,
-   "read": 1,
-   "report": 0,
    "role": "OKR User",
-   "write": 1
-  },
-{
-   "create": 1,
-   "delete": 0,
-   "email": 0,
-   "export": 0,
-   "print": 0,
    "read": 1,
-   "report": 0,
-   "role": "Guest",
-   "write": 1
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
   }
-],
+ ],
  "sort_field": "modified",
  "sort_order": "DESC",
  "track_changes": 1

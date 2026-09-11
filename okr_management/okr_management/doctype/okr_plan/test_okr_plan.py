@@ -2,7 +2,13 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, nowdate
 
-from okr_management.okr_management.doctype.okr_plan.okr_plan import get_derived_periods, get_period_label
+from frappe.utils import getdate
+from okr_management.okr_management.doctype.okr_plan.okr_plan import (
+    get_derived_periods,
+    get_period_label,
+    get_default_objective_dates,
+    get_plan_context,
+)
 
 
 class TestOKRPlanPhase1(FrappeTestCase):
@@ -12,6 +18,14 @@ class TestOKRPlanPhase1(FrappeTestCase):
         if not self.company:
             self.skipTest("No Company exists on this site.")
         self.fiscal_year = self.ensure_fiscal_year()
+        if not frappe.db.exists("Fiscal Year", "2026-2027"):
+            frappe.get_doc({
+                "doctype": "Fiscal Year",
+                "year": "2026-2027",
+                "year_start_date": "2026-04-01",
+                "year_end_date": "2027-03-31",
+                "companies": [{"company": self.company}],
+            }).insert(ignore_permissions=True)
         frappe.db.delete("OKR Objective")
         frappe.db.delete("OKR Plan")
 
@@ -280,3 +294,141 @@ class TestOKRPlanPhase1(FrappeTestCase):
             "role": "Plan Coordinator"
         })
         self.assertRaises(frappe.ValidationError, plan.save)
+
+    def test_default_objective_dates_quarterly_standard_fy(self):
+        """
+        Requirements A, B, C:
+        A. Quarterly 2026-09-04 -> 2026-09-04 to 2026-09-30 (Q2)
+        B. Quarterly Q1 2026-05-15 -> 2026-05-15 to 2026-06-30 (Q1)
+        C. Quarterly Jan-Mar rollover 2027-02-15 -> 2027-02-15 to 2027-03-31 (Q4)
+        """
+        plan = self.make_plan(
+            financial_year="2026-2027",
+            sprint_frequency="Quarterly",
+            planned_activation_date="2026-09-04",
+        )
+        start, end = get_default_objective_dates(plan)
+        self.assertEqual(start, getdate("2026-09-04"))
+        self.assertEqual(end, getdate("2026-09-30"))
+
+        start, end = get_default_objective_dates(plan, activation_date="2026-04-01")
+        self.assertEqual(start, getdate("2026-04-01"))
+        self.assertEqual(end, getdate("2026-06-30"))
+
+        start, end = get_default_objective_dates(plan, activation_date="2026-05-15")
+        self.assertEqual(start, getdate("2026-05-15"))
+        self.assertEqual(end, getdate("2026-06-30"))
+
+        start, end = get_default_objective_dates(plan, activation_date="2026-06-30")
+        self.assertEqual(start, getdate("2026-06-30"))
+        self.assertEqual(end, getdate("2026-06-30"))
+
+        start, end = get_default_objective_dates(plan, activation_date="2026-07-01")
+        self.assertEqual(start, getdate("2026-07-01"))
+        self.assertEqual(end, getdate("2026-09-30"))
+
+        start, end = get_default_objective_dates(plan, activation_date="2027-01-10")
+        self.assertEqual(start, getdate("2027-01-10"))
+        self.assertEqual(end, getdate("2027-03-31"))
+
+        start, end = get_default_objective_dates(plan, activation_date="2027-02-15")
+        self.assertEqual(start, getdate("2027-02-15"))
+        self.assertEqual(end, getdate("2027-03-31"))
+
+    def test_default_objective_dates_monthly(self):
+        """
+        Requirements D, E:
+        D. Monthly 2026-09-04 -> 2026-09-04 to 2026-09-30
+        E. Monthly February non-leap: 2027-02-15 -> 2027-02-15 to 2027-02-28
+        """
+        plan = self.make_plan(
+            financial_year="2026-2027",
+            sprint_frequency="Monthly",
+            planned_activation_date="2026-09-04",
+        )
+        start, end = get_default_objective_dates(plan)
+        self.assertEqual(start, getdate("2026-09-04"))
+        self.assertEqual(end, getdate("2026-09-30"))
+
+        start, end = get_default_objective_dates(plan, activation_date="2027-02-15")
+        self.assertEqual(start, getdate("2027-02-15"))
+        self.assertEqual(end, getdate("2027-02-28"))
+
+    def test_default_objective_dates_non_april_and_leap_year(self):
+        """
+        Requirement F and leap year February:
+        Non-April FY: Calendar year 2028 (2028-01-01 to 2028-12-31)
+        """
+        fy_name = "_Test Fiscal Year 2028"
+        if not frappe.db.exists("Fiscal Year", fy_name):
+            self.skipTest(f"{fy_name} does not exist")
+
+        plan_monthly = {
+            "financial_year": fy_name,
+            "sprint_frequency": "Monthly",
+            "planned_activation_date": "2028-02-15",
+        }
+        start, end = get_default_objective_dates(plan_monthly)
+        self.assertEqual(start, getdate("2028-02-15"))
+        self.assertEqual(end, getdate("2028-02-29"))
+
+        plan_quarterly = {
+            "financial_year": fy_name,
+            "sprint_frequency": "Quarterly",
+            "planned_activation_date": "2028-05-10",
+        }
+        start, end = get_default_objective_dates(plan_quarterly)
+        self.assertEqual(start, getdate("2028-05-10"))
+        self.assertEqual(end, getdate("2028-06-30"))
+
+        start, end = get_default_objective_dates(plan_quarterly, activation_date="2028-01-15")
+        self.assertEqual(start, getdate("2028-01-15"))
+        self.assertEqual(end, getdate("2028-03-31"))
+
+        start, end = get_default_objective_dates(plan_quarterly, activation_date="2028-11-20")
+        self.assertEqual(start, getdate("2028-11-20"))
+        self.assertEqual(end, getdate("2028-12-31"))
+
+    def test_plan_context_api_includes_default_objective_dates(self):
+        plan = self.make_plan(
+            financial_year="2026-2027",
+            sprint_frequency="Quarterly",
+            planned_activation_date="2026-09-04",
+            status="Active",
+        )
+        context = get_plan_context(plan.name)
+        self.assertEqual(context.get("default_start_date"), getdate("2026-09-04"))
+        self.assertEqual(context.get("default_end_date"), getdate("2026-09-30"))
+        self.assertEqual(context.get("planned_activation_date"), getdate("2026-09-04"))
+
+    def test_period_label_supports_multi_quarter_ranges(self):
+        plan = self.make_plan(
+            financial_year="2026-2027",
+            sprint_frequency="Quarterly",
+            planned_activation_date="2026-04-01",
+        )
+        # 1. Q1: 01-04-2026 -> 30-06-2026
+        self.assertEqual(get_period_label("2026-04-01", plan, end_date="2026-06-30"), "Q1")
+
+        # 2. Q2: 01-07-2026 -> 30-09-2026
+        self.assertEqual(get_period_label("2026-07-01", plan, end_date="2026-09-30"), "Q2")
+
+        # 3. Q1–Q2: 01-04-2026 -> 30-09-2026
+        self.assertEqual(get_period_label("2026-04-01", plan, end_date="2026-09-30"), "Q1–Q2")
+
+        # 4. Q2–Q3: 15-07-2026 -> 31-12-2026
+        self.assertEqual(get_period_label("2026-07-15", plan, end_date="2026-12-31"), "Q2–Q3")
+
+        # 5. Q3–Q4: 01-10-2026 -> 31-03-2027
+        self.assertEqual(get_period_label("2026-10-01", plan, end_date="2027-03-31"), "Q3–Q4")
+
+        # 6. Q1–Q4: 01-04-2026 -> 31-03-2027
+        self.assertEqual(get_period_label("2026-04-01", plan, end_date="2027-03-31"), "Q1–Q4")
+
+        # Non-April FY (CY-2028: 2028-01-01 to 2028-12-31)
+        fy_name = "_Test Fiscal Year 2028"
+        if frappe.db.exists("Fiscal Year", fy_name):
+            plan_cy = {"financial_year": fy_name, "sprint_frequency": "Monthly"}
+            self.assertEqual(get_period_label("2028-01-01", plan_cy, end_date="2028-06-30"), "Q1–Q2")
+            self.assertEqual(get_period_label("2028-04-15", plan_cy, end_date="2028-09-30"), "Q2–Q3")
+            self.assertEqual(get_period_label("2028-01-01", plan_cy, end_date="2028-12-31"), "Q1–Q4")

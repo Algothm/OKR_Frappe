@@ -763,7 +763,8 @@
 .okr-status-pill--warning,
 .okr-status-pill--overdue { background: var(--warning-bg); color: var(--warning); }
 .okr-status-pill--good,
-.okr-status-pill--ontrack { background: var(--good-bg); color: var(--good); }
+.okr-status-pill--ontrack,
+.okr-status-pill--archived { background: var(--good-bg); color: var(--good); }
 .okr-status-pill--info,
 .okr-status-pill--draft,
 .okr-status-pill--inprogress { background: var(--info-bg); color: var(--info); }
@@ -1047,7 +1048,7 @@
 }
 
 /* Key Results Section */
-.okr-kr-card {
+.okr-admin-page .okr-kr-card {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
@@ -1565,7 +1566,7 @@
 }
 .okr-admin-page * { font-family: inherit; }
 .okr-cmd-shell { gap: 32px; padding-top: 24px; }
-.okr-exec-band,.okr-filter-card,.okr-health-strip,.okr-plan-card,.okr-attention-card,.okr-detail-head-card,.okr-kr-card {
+.okr-exec-band,.okr-filter-card,.okr-health-strip,.okr-plan-card,.okr-attention-card,.okr-detail-head-card,.okr-admin-page .okr-kr-card {
   border-color: var(--admin-border); border-radius: var(--admin-radius); box-shadow: var(--admin-shadow);
 }
 .okr-filter-card { padding: 20px 24px; background: #fff; }
@@ -1601,7 +1602,7 @@
 .okr-status-pill,.okr-kr-target-pill,.okr-dept-tag { min-height:26px; padding:5px 10px; border:1px solid transparent; border-radius:999px; font-family:var(--admin-font); font-size:11px; font-weight:700; letter-spacing:.02em; line-height:1.2; text-transform:capitalize; }
 .okr-status-pill--critical,.okr-status-pill--blocked { color:#b53020; background:#fff0ed; border-color:#f5c8bf; }
 .okr-status-pill--warning,.okr-status-pill--overdue { color:#9a6208; background:#fff8e8; border-color:#eed9a6; }
-.okr-status-pill--good,.okr-status-pill--ontrack { color:#1f704f; background:#eaf7f1; border-color:#bfe3d1; }
+.okr-status-pill--good,.okr-status-pill--ontrack,.okr-status-pill--archived { color:#1f704f; background:#eaf7f1; border-color:#bfe3d1; }
 .okr-status-pill--info,.okr-status-pill--draft,.okr-status-pill--inprogress { color:#3157b7; background:#edf2ff; border-color:#cad6fa; }
 .okr-status-pill--muted { color:#667085; background:#f2f4f7; border-color:#e4e7ec; }
 .okr-progress-bar { height:8px; overflow:hidden; border-radius:999px; background:#edf0f6; } .okr-progress-bar__fill { border-radius:inherit; }
@@ -1615,7 +1616,7 @@
 .okr-detail-head__bottom { color:var(--admin-muted); }
 .okr-dept-owner-pill,.okr-detail-head__bottom strong { font-family:var(--admin-font); }
 .okr-kr-list { margin-left:24px; }
-.okr-kr-card { margin-bottom:20px; border-left:4px solid #8fa8f8; background:#fff; }
+.okr-admin-page .okr-kr-card { margin-bottom:20px; border-left:4px solid #8fa8f8; background:#fff; }
 .okr-kr-header { min-height:76px; padding:20px 24px; }
 .okr-kr-title { font-family:var(--admin-font); font-size:16px; font-weight:700; }
 .okr-kr-badge,.okr-ai-badge { border-radius:8px; font-family:var(--admin-font); font-size:11px; font-weight:800; }
@@ -1888,3 +1889,36 @@
 .okr-plan-tree-card:not(.expanded) .okr-plan-progress { margin-top: auto; }
 .okr-plan-tree-card.expanded { height: auto; align-self: start; }
 .okr-plan-tree-card.expanded > .okr-plan-card { height: auto; }
+
+
+/* Final dark-theme layer: placed last so later component rules cannot restore light surfaces. */
+[data-theme="dark"] .okr-admin-page {
+	--paper: var(--bg-color);
+	--surface: var(--card-bg);
+	--line: var(--border-color);
+	--ink: var(--text-color);
+	--ink-soft: var(--text-muted);
+	--muted: var(--text-muted);
+	background: var(--bg-color);
+	color: var(--text-color);
+	color-scheme: dark;
+}
+[data-theme="dark"] .okr-admin-page :is(.okr-filter-card, .okr-health-strip__metric-col, .okr-plan-card, .okr-plan-tree-body, .okr-objective-row, .okr-plan-objective, .okr-plan-action, .okr-progress-legend, .okr-detail-head-card, .okr-kr-card, .okr-kr-body, .okr-details-card, .okr-init-row, .okr-trail-notes, .okr-trail-note-item) {
+	background: var(--card-bg) !important;
+	border-color: var(--border-color) !important;
+	color: var(--text-color) !important;
+}
+[data-theme="dark"] .okr-admin-page :is(.okr-exec-band, .okr-plan-stats div, .okr-filter-field select, .okr-btn-clear, .okr-btn-white) {
+	background: var(--control-bg) !important;
+	border-color: var(--border-color) !important;
+	color: var(--text-color) !important;
+}
+[data-theme="dark"] .okr-admin-page :is(.okr-section-title, .okr-filter-card__summary, .okr-plan-card__head strong, .okr-plan-objective__title strong, .okr-detail-head__title, .okr-kr-title, .okr-trail-note-item__text) {
+	color: var(--text-color) !important;
+}
+[data-theme="dark"] .okr-admin-page :is(.okr-filter-field label, .okr-metric-label, .okr-section-hint, .okr-plan-card__head span:not(.okr-status-pill), .okr-plan-progress span, .okr-plan-stats span, .okr-plan-card__foot span, .okr-detail-head__bottom, .okr-init-meta, small) {
+	color: var(--text-muted);
+}
+[data-theme="dark"] .okr-admin-page :is(.okr-progress-bar, .okr-plan-progress__track) { background: var(--subtle-fg); }
+
+[data-theme="dark"] .okr-admin-page .okr-admin-progress-ring::after { background: var(--card-bg); }

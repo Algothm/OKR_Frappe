@@ -42,7 +42,7 @@ frappe.ui.form.on('OKR Check In', {
 
 function configure_form(frm) {
     const is_submitted = !frm.is_new() && frm.doc.status === 'Submitted';
-    ['action_item', 'current_value', 'action_status', 'achievements', 'attachment'].forEach(
+    ['action_item', 'current_value', 'action_status', 'checkin_date', 'achievements', 'attachment'].forEach(
         (fieldname) => frm.set_df_property(fieldname, 'read_only', is_submitted)
     );
     if (is_submitted) frm.disable_save();
@@ -54,12 +54,11 @@ function configure_form(frm) {
     frm.set_df_property('action_status', 'reqd', 1);
     frm.set_df_property('achievements', 'reqd', 1);
     frm.set_df_property('checkin_update_heading', 'hidden', 1);
-    frm.set_df_property('context_preview_html', 'label', '');
+    frm.set_df_property('context_preview_html', 'label', __('Context and Preview'));
     frm.toggle_display('context_preview_html', 1);
 
     const field = frm.fields_dict.action_item;
     if (field) {
-        field.df.only_select = 1;
         field.df.show_title_field_in_link = 1;
     }
 
@@ -93,6 +92,7 @@ function load_action_item_context(frm) {
         freeze: false,
         callback(r) {
             const context = r.message || {};
+            frm._action_item_context = context;
             frm.okr_metric = context.metric || {};
             configure_metric_value(frm);
             const updates = {};
@@ -116,14 +116,11 @@ function configure_metric_value(frm) {
     const metric = frm.okr_metric || {};
     const baseline = flt(metric.baseline_value || 0, 2);
     const target = flt(metric.target_value || 0, 2);
-    const minimum = Math.min(baseline, target);
-    const maximum = Math.max(baseline, target);
     frm.set_df_property('current_value', 'label', __('Progress'));
-
-    frm.set_df_property('current_value', 'description', __('Allowed range: {0} to {1}. Completion is calculated automatically.', [minimum, maximum]));
+    frm.set_df_property('current_value', 'description', '');
     const field = frm.fields_dict.current_value;
     if (field && field.$input) {
-        field.$input.attr({ min: minimum, max: maximum, step: 0.01 });
+        field.$input.removeAttr('min max').attr({ step: 0.01 });
     }
 }
 
@@ -143,6 +140,7 @@ function clear_context(frm) {
 function render_context_preview(frm) {
     const field = frm.fields_dict.context_preview_html;
     if (!field) return;
+    const ctx = frm._action_item_context || {};
 
     const icons = {
         chart:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
@@ -151,6 +149,7 @@ function render_context_preview(frm) {
         flag:     '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
         notes:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
         plan:     '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+        group:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
         building: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M3 9h6"/><path d="M3 15h6"/><path d="M15 3v18"/><path d="M15 9h6"/><path d="M15 15h6"/></svg>',
         calendar: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
     };
@@ -164,19 +163,19 @@ function render_context_preview(frm) {
         { icon: icons.notes,    label: __('Objective Description'),    value: frm.doc.objective_description_context, wide: true },
         { icon: icons.plan,     label: __('Plan'),                     value: frm.doc.plan_name_context },
         { icon: icons.building, label: __('Organization'),             value: frm.doc.organization_context },
+        { icon: icons.group,    label: __('Group'),                    value: frm.doc.group },
         { icon: icons.notes,    label: __('Plan Description'),         value: frm.doc.plan_description_context, wide: true },
-        { icon: icons.calendar, label: __('Financial Year'),           value: frm.doc.financial_year_context }
+        { icon: icons.calendar, label: __('Financial Year'),           value: frm.doc.financial_year_context },
+        { icon: icons.calendar, label: __('Timeline'),                  value: frm.doc.timeline_preview_context || ctx.timeline_preview_context || '', wide: true }
     ], __('No context available.'));
 }
 
-function render_preview_cards(field, cards, empty_message) {
-    if (window.okr_management && window.okr_management.ui && window.okr_management.ui.render_preview_cards) {
-        window.okr_management.ui.render_preview_cards(field, cards, empty_message);
-        return;
-    }
+function render_preview_cards(field, cards, empty_message, title) {
     if (!field || !field.$wrapper) return;
     const visible_cards = cards || [];
     const escape_html = (val) => frappe.utils.escape_html(String(val ?? "—"));
+    const header_title = title || __("Context and Preview");
+
     const card_html = visible_cards.length
         ? visible_cards.map((card) => {
             if (!card) return "";
@@ -204,25 +203,34 @@ function render_preview_cards(field, cards, empty_message) {
             + escape_html(empty_message || __("No context available."))
             + '</div>';
 
-    const full_html =
-        '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;'
-        + 'letter-spacing:0.08em;margin-bottom:12px;padding-bottom:8px;'
-        + 'border-bottom:1px solid #e2e8f0;">'
-        + __('Context and Preview')
-        + '</div>'
-        + '<div style="display:flex;flex-wrap:wrap;gap:12px;">' + card_html + '</div>';
+    const title_html = '<div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:10px;">'
+        + escape_html(header_title)
+        + '</div>';
 
-    field.$wrapper[0].innerHTML = full_html;
-    if (field.df) field.df.options = full_html;
+    const cards_box_html = '<div style="border:1.5px solid #cbd5e0;border-radius:10px;background:#fafbff;padding:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,0.06);display:flex;flex-wrap:wrap;gap:12px;">'
+        + card_html
+        + '</div>';
 
-    field.$wrapper.css({
-        'border': '1.5px solid #cbd5e0',
-        'border-radius': '10px',
-        'background': '#fafbff',
-        'padding': '16px 18px',
-        'box-shadow': '0 1px 6px rgba(0,0,0,0.06)',
-        'display': 'block'
-    });
+    field.$wrapper.prev('.okr-context-heading').remove();
+    $(title_html).addClass('okr-context-heading').insertBefore(field.$wrapper);
+    const full_html = cards_box_html;
+
+    if (field.$wrapper && field.$wrapper[0]) {
+        field.$wrapper[0].innerHTML = full_html;
+    } else if (typeof field.set_value === 'function') {
+        field.set_value(full_html);
+    }
+
+    if (field.$wrapper) {
+        field.$wrapper.css({
+            'border': 'none',
+            'border-radius': '0',
+            'background': 'transparent',
+            'padding': '0',
+            'box-shadow': 'none',
+            'display': 'block'
+        });
+    }
 }
 
 

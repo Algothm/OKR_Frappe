@@ -6,7 +6,7 @@
 .okr-ws-rail-title { color: #94a3b8; text-transform: uppercase; font-size: 11px; font-weight: 800; letter-spacing: .04em; padding: 10px 18px; }
 .okr-rail-objective { display: block; position: relative; padding: 12px 16px 12px 25px; color: #111827; text-decoration: none; border-left: 3px solid transparent; }
 .okr-rail-objective:hover, .okr-rail-objective.active { background: #eef3ff; border-left-color: #635bff; text-decoration: none; }
-.okr-rail-objective span { position:absolute; left:11px; top:18px; width:8px; height:8px; border-radius:50%; background:#635bff; }
+.okr-rail-objective > .okr-rail-dot, .okr-rail-objective > span:first-child { position:absolute; left:11px; top:18px; width:8px; height:8px; border-radius:50%; background:#635bff; }
 .okr-rail-objective strong { display:block; font-size:13px; line-height:1.25; }
 .okr-rail-objective small { display:block; margin-top:5px; color:#64748b; }
 .okr-rail-empty { color:#9ca3af; padding:18px; font-size:13px; }
@@ -27,9 +27,10 @@
 .okr-filter-pill.active { border-color:#635bff; background:#eef2ff; color:#635bff; }
 .okr-pop-actions { flex:0 0 auto; position:sticky; bottom:0; z-index:1; display:flex; justify-content:flex-end; gap:8px; padding-top:12px; margin-top:4px; background:#fff; }
 .okr-objective-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; margin-bottom:14px; box-shadow:0 8px 22px rgba(15,23,42,.05); overflow:hidden; }
-.okr-objective-head { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:18px 20px; cursor:pointer; }
-.okr-objective-head > div:first-child { display:flex; align-items:center; gap:10px; min-width:0; }
+.okr-objective-head { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; padding:18px 20px; cursor:default; }
+.okr-objective-head > div:first-child, .okr-objective-head-left { display:flex; align-items:flex-start; gap:10px; min-width:0; }
 .okr-objective-head h2 { margin:0; font-size:21px; font-weight:850; }
+.okr-objective-head .okr-status { margin-top: 2px; flex-shrink: 0; }
 .okr-type-dot, .okr-kr-icon, .okr-ai-icon { display:inline-flex; align-items:center; justify-content:center; border-radius:6px; color:#fff; font-size:10px; font-weight:850; flex:0 0 auto; }
 .okr-type-dot { width:24px; height:24px; background:#635bff; border-radius:999px; }
 .okr-kr-icon { width:24px; height:20px; background:#2563eb; }
@@ -40,12 +41,13 @@
 .okr-collapse { display:none; }
 .okr-collapse.open { display:block; animation: okrFade .14s ease; }
 @keyframes okrFade { from { opacity:.45; transform:translateY(-3px); } to { opacity:1; transform:none; } }
-.okr-kr-card { margin:0 16px 12px; border:1px solid #e8edf5; border-radius:10px; background:#fff; overflow:hidden; }
+.okr-kr-card { margin:0 16px 12px; border:none; border-left:none; border-radius:10px; background:#fff; overflow:hidden; box-shadow:none; }
+.okr-workspace-page .okr-kr-card { border:none !important; border-left:none !important; box-shadow:none !important; outline:none !important; }
 .okr-kr-head { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:13px 14px; background:#f8fafc; cursor:pointer; }
 .okr-kr-head > div:first-child { display:flex; align-items:center; gap:9px; min-width:0; }
 .okr-kr-head strong { font-weight:800; }
 .okr-kr-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
-.okr-kr-meta span { background:#fff; border:1px solid #e5e7eb; color:#64748b; border-radius:999px; padding:3px 8px; font-size:11px; font-weight:800; }
+.okr-kr-meta .okr-signal { background:#fff; border:1px solid #e5e7eb; color:#64748b; border-radius:999px; padding:3px 8px; font-size:11px; font-weight:800; cursor:pointer; }
 .okr-signal.good { color:#16a34a; border-color:#bbf7d0; background:#f0fdf4; }
 .okr-signal.warn { color:#d97706; border-color:#fed7aa; background:#fffbeb; }
 .okr-signal.risk { color:#dc2626; border-color:#fecaca; background:#fef2f2; }
@@ -66,10 +68,17 @@
 .okr-owner span { width:24px; height:24px; border-radius:999px; background:#f3e8ff; color:#7c3aed; display:inline-flex; align-items:center; justify-content:center; font-weight:800; }
 .okr-status { display:inline-flex; align-items:center; width:max-content; padding:3px 8px; border-radius:7px; background:#dbeafe; color:#0758d8; font-weight:800; font-size:11px; line-height:1.25; }
 .okr-status.completed { background:#dcfce7; color:#166534; }
-.okr-status.archived { background:#e2e8f0; color:#475569; }
+.okr-status.archived { background:#dcfce7; color:#166534; }
 .okr-status.blocked, .okr-status.on-hold { background:#fee2e2; color:#b91c1c; }
 .okr-action-progress { display:grid; gap:5px; padding-top:5px; }
 .okr-action-progress strong { text-align:right; font-size:12px; }
+.okr-action-progress.is-editable { cursor:pointer; border-radius:8px; padding:6px 8px; transition:background .15s, box-shadow .15s; }
+.okr-action-progress.is-editable:hover { background:#f8fafc; box-shadow:0 0 0 1px #c7d2fe; }
+.okr-action-progress.is-editable:focus { outline:2px solid #818cf8; outline-offset:2px; }
+.okr-action-progress.is-locked { cursor:not-allowed; opacity:.82; }
+.okr-inline-measurement { border-left-color:#2563eb; }
+.okr-measurement-grid { display:grid; grid-template-columns:repeat(5,minmax(130px,1fr)); gap:12px; }
+.okr-measurement-grid label span { display:block; font-size:11px; font-weight:800; color:#64748b; }
 .btn-primary-light { border:1px solid #c7d2fe; background:#eef2ff; color:#4f46e5; border-radius:999px; font-weight:800; }
 .okr-action-row .btn-primary-light { min-height:30px; height:30px; padding:4px 10px; font-size:12px; line-height:1.2; margin-top:0; }
 .okr-inline-checkin { margin:0 14px 14px 72px; border-left:3px solid #8b5cf6; background:#fbfcff; border-radius:0 10px 10px 0; padding:14px; }
@@ -78,8 +87,7 @@
 .okr-inline-context strong { display:block; color:#111827; }
 .okr-inline-fields { display:grid; grid-template-columns:1fr 1.5fr; gap:12px; }
 .okr-quick-checkin-form { grid-template-columns:1fr; gap:12px; }
-.okr-checkin-row { display:grid; grid-template-columns:minmax(120px, 180px) minmax(160px, 220px); gap:12px; align-items:end; }
-.okr-checkin-row .form-control { height:34px; }
+
 .okr-update-field textarea { min-height:112px; }
 .okr-inline-fields label { font-weight:700; }
 .okr-inline-fields .form-control { margin-top:5px; }
@@ -348,3 +356,525 @@
 
 .okr-summary-card:nth-child(3) { background:#fef2f2; border-color:#fecaca; }
 .okr-summary-card:nth-child(3) .okr-summary-card-label { color:#991b1b; }
+
+.okr-inline-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.okr-inline-header .okr-inline-context { margin-bottom: 0; flex: 1 1 auto; }
+.okr-close-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; font-size: 11px; font-weight: 700; color: #64748b; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; transition: all 0.15s ease; flex: 0 0 auto; }
+.okr-close-btn:hover { background: #e2e8f0; color: #1e293b; border-color: #94a3b8; }
+.okr-collapse-arrow { font-size: 9px; }
+.okr-checkin-row { display: flex; align-items: flex-start; gap: 18px; }
+.okr-checkin-field { display: flex; flex-direction: column; flex: 1 1 240px; max-width: 320px; }
+.okr-checkin-field label { font-weight: 700; font-size: 12px; color: #334155; margin-bottom: 5px; }
+.okr-checkin-field .form-control { height: 36px; width: 100%; }
+.okr-checkin-field small { margin-top: 4px; font-size: 11px; color: #64748b; }
+@media (max-width: 1100px) {
+	.okr-measurement-grid { grid-template-columns:repeat(2,minmax(160px,1fr)); }
+	.okr-measurement-grid label:last-child { grid-column:1 / -1; }
+}
+
+/* Checkin Form & Context Polish */
+.okr-inline-context { display: flex !important; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #edf2f7; }
+.okr-context-items-row { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 24px; flex: 1 1 auto; }
+.okr-context-items-row > div { display: flex; flex-direction: column; gap: 2px; }
+.okr-context-items-row span { display: block; color: #94a3b8; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+.okr-context-items-row strong { display: block; color: #1e293b; font-size: 13px; font-weight: 600; }
+.okr-context-collapse-wrap { flex: 0 0 auto; }
+.okr-close-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; font-size: 12px; font-weight: 700; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; transition: all 0.15s ease; }
+.okr-close-btn:hover { background: #e2e8f0; color: #0f172a; border-color: #94a3b8; }
+.okr-collapse-arrow { font-size: 10px; }
+.okr-checkin-row { display: flex !important; align-items: flex-start !important; gap: 16px !important; margin-bottom: 12px; flex-wrap: wrap; }
+.okr-checkin-field { display: flex; flex-direction: column; flex: 1 1 180px; min-width: 140px; max-width: 320px; }
+.okr-checkin-field label { font-weight: 700; font-size: 12px; color: #334155; margin-bottom: 6px; }
+.okr-checkin-field .form-control { height: 38px !important; width: 100% !important; border-radius: 6px; border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 13px; margin-top: 0 !important; }
+.okr-checkin-field small { margin-top: 5px; font-size: 11px; color: #64748b; }
+
+.okr-close-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; font-size: 12px; font-weight: 600; color: #475569; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; transition: all 0.15s ease; }
+.okr-close-btn:hover { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+.okr-close-icon { font-size: 11px; font-weight: bold; }
+
+.okr-overview-summary { display:grid; grid-template-columns:minmax(220px,.72fr) minmax(0,1.8fr); gap:18px; margin:0 16px 18px; }
+.okr-overview-summary .okr-completion-card { min-height:190px; }
+.okr-attention-panel { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px 18px; min-width:0; }
+.okr-attention-head { display:flex; align-items:center; justify-content:space-between; padding-bottom:11px; border-bottom:1px solid #e5e7eb; color:#991b1b; font-size:12px; font-weight:850; text-transform:uppercase; letter-spacing:.03em; }
+.okr-attention-head strong { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; border-radius:999px; background:#fee2e2; color:#b91c1c; }
+.okr-attention-list { display:flex; flex-direction:column; }
+.okr-attention-item { display:grid; grid-template-columns:10px minmax(0,1fr) auto; align-items:start; gap:10px; padding:12px 2px; border-bottom:1px solid #eef2f7; }
+.okr-attention-item:last-child { border-bottom:0; }
+.okr-attention-item strong { display:block; color:#1e293b; font-size:13px; }
+.okr-attention-item small { display:block; margin-top:3px; color:#64748b; font-size:11px; }
+.okr-attention-reasons { max-height:88px; margin:6px 0 0; padding-left:18px; padding-right:6px; overflow-y:auto; }
+.okr-attention-reasons li { margin:3px 0; color:#64748b; font-size:11px; font-weight:500; line-height:1.4; }
+.okr-attention-dot { width:8px; height:8px; border-radius:999px; background:#22c55e; }
+.okr-attention-item.blocked .okr-attention-dot { background:#dc2626; }
+.okr-attention-item.risk .okr-attention-dot { background:#f59e0b; }
+.okr-attention-status { border-radius:999px; padding:4px 8px; background:#dcfce7; color:#166534; font-size:10px; font-weight:800; white-space:nowrap; }
+.okr-attention-item.blocked .okr-attention-status { background:#fee2e2; color:#b91c1c; }
+.okr-attention-item.risk .okr-attention-status { background:#fef3c7; color:#92400e; }
+.okr-attention-empty { padding:24px 0; color:#94a3b8; text-align:center; }
+@media (max-width:900px) { .okr-overview-summary { grid-template-columns:1fr; } }
+
+.okr-overview-summary > .okr-completion-card { grid-area:auto !important; width:auto; min-width:0; min-height:190px; align-self:stretch; }
+.okr-overview-summary .okr-donut-chart { width:120px !important; height:120px !important; }
+.okr-overview-summary .okr-donut-number { font-size:24px !important; }
+.okr-overview-summary > .okr-attention-panel { min-height:190px; align-self:stretch; }
+
+.okr-all-clear-panel { background:#f8fbff; }
+.okr-all-clear-head { display:flex; align-items:center; gap:10px; color:#065f46; font-size:12px; font-weight:850; text-transform:uppercase; letter-spacing:.03em; }
+.okr-all-clear-head > span { color:#16a34a; font-size:18px; }
+.okr-all-clear-body { display:flex; align-items:center; gap:16px; margin-top:24px; }
+.okr-all-clear-check { display:inline-flex; align-items:center; justify-content:center; flex:0 0 42px; width:42px; height:42px; border:2px solid #16a34a; border-radius:999px; color:#16a34a; font-size:26px; line-height:1; }
+.okr-all-clear-body strong { display:block; color:#172033; font-size:16px; }
+.okr-all-clear-body small { display:block; margin-top:5px; color:#475569; font-size:12px; }
+
+.okr-attention-actions { display:inline-flex; align-items:center; gap:7px; }
+
+/* Global Collapse/Expand All Button in Topbar */
+.okr-icon-toggle-all {
+	width: 32px;
+	height: 32px;
+	border: 0;
+	border-radius: 999px;
+	background: #eef2ff;
+	color: #635bff;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+.okr-icon-toggle-all:hover {
+	background: #e0e7ff;
+	color: #4f46e5;
+}
+
+/* Key Result Redirect Icon */
+.okr-kr-redirect-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	border: 1px solid #e2e8f0;
+	border-radius: 6px;
+	background: #fff;
+	color: #64748b;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	flex: 0 0 auto;
+}
+.okr-kr-redirect-btn:hover {
+	background: #eef2ff;
+	color: #4f46e5;
+	border-color: #c7d2fe;
+}
+.okr-kr-redirect-btn .icon {
+	width: 12px;
+	height: 12px;
+}
+
+
+/* Final theme layer: keep the custom workspace readable in Frappe dark mode. */
+[data-theme="dark"] .okr-workspace-page {
+	background: var(--bg-color);
+	color: var(--text-color);
+	color-scheme: dark;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-ws-shell, .okr-objective-card, .okr-kr-card, .okr-summary-card, .okr-attention-panel, .okr-empty-workspace) {
+	background: var(--card-bg);
+	border-color: var(--border-color);
+	color: var(--text-color);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-ws-main, .okr-kr-head, .okr-inline-checkin, .okr-filter-popover, .okr-pop-actions, .okr-all-clear-panel) {
+	background: var(--fg-color);
+	border-color: var(--border-color);
+}
+[data-theme="dark"] .okr-workspace-page .okr-ws-rail {
+	background: var(--card-bg);
+	border-color: var(--border-color);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-ws-brand, .okr-objective-head h2, .okr-kr-head strong, .okr-action-title strong, .okr-inline-context strong, .okr-context-items-row strong, .okr-attention-item strong, .okr-all-clear-body strong, .okr-empty-workspace h3) {
+	color: var(--text-color) !important;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-rail-objective small, .okr-action-assignee, .okr-action-meta-col, .okr-action-due-date, .okr-action-last-checkin, .okr-action-title small, .okr-history-title, .okr-history-date span, .okr-attention-item small, .okr-attention-reasons li, .okr-all-clear-body small, .okr-empty-workspace p, .okr-summary-card-label, .okr-summary-card-target) {
+	color: var(--text-muted) !important;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-rail-objective:hover, .okr-rail-objective.active, .okr-icon-filter, .okr-icon-toggle-all, .okr-filter-pill.active, .okr-history-more) {
+	background: var(--subtle-fg);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-ws-active-filters span, .okr-filter-pill, .okr-history-row p, .okr-history-attachment, .okr-file-chip, .okr-close-btn, .okr-kr-redirect-btn, .okr-kr-meta .okr-signal, .okr-checkin-field .form-control) {
+	background: var(--control-bg);
+	border-color: var(--border-color);
+	color: var(--text-color);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-action-block, .okr-inline-context, .okr-attention-head, .okr-attention-item) {
+	border-color: var(--border-color);
+}
+[data-theme="dark"] .okr-workspace-page .okr-bar { background: var(--subtle-fg); }
+[data-theme="dark"] .okr-workspace-page .okr-objective-card { box-shadow: 0 8px 22px rgba(0,0,0,.22); }
+
+
+/* Dark filter interaction and empty-state polish (must follow generic dark controls). */
+[data-theme="dark"] .okr-workspace-page .okr-filter-popover {
+	background: var(--card-bg);
+	border-color: var(--border-color);
+	box-shadow: 0 22px 48px rgba(0,0,0,.48);
+}
+[data-theme="dark"] .okr-workspace-page .okr-pop-head button {
+	background: var(--control-bg);
+	border: 1px solid var(--border-color);
+	color: var(--text-color);
+}
+[data-theme="dark"] .okr-workspace-page .okr-filter-pill {
+	background: var(--control-bg) !important;
+	border-color: var(--border-color) !important;
+	color: var(--text-muted) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-filter-pill:hover {
+	background: var(--subtle-fg) !important;
+	border-color: var(--gray-600) !important;
+	color: var(--text-color) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-filter-pill.active {
+	background: color-mix(in srgb, var(--primary) 22%, var(--control-bg)) !important;
+	border-color: var(--primary) !important;
+	color: var(--primary-light, #a5b4fc) !important;
+	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 55%, transparent);
+}
+[data-theme="dark"] .okr-workspace-page .okr-filter-pill:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
+}
+[data-theme="dark"] .okr-workspace-page .okr-pop-actions {
+	background: var(--card-bg);
+	border-top: 1px solid var(--border-color);
+}
+[data-theme="dark"] .okr-workspace-page .okr-pop-actions .btn-default {
+	background: var(--control-bg);
+	border-color: var(--border-color);
+	color: var(--text-color);
+}
+[data-theme="dark"] .okr-workspace-page .okr-pop-actions .btn-primary {
+	background: var(--primary);
+	border-color: var(--primary);
+	color: #fff;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-icon-filter, .okr-icon-toggle-all) {
+	background: var(--control-bg);
+	border: 1px solid var(--border-color);
+	color: var(--text-muted);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-icon-filter, .okr-icon-toggle-all):hover {
+	background: var(--subtle-fg);
+	color: var(--text-color);
+}
+[data-theme="dark"] .okr-workspace-page .okr-empty-icon {
+	background: var(--control-bg);
+	border: 1px solid var(--border-color);
+	color: var(--text-muted);
+}
+[data-theme="dark"] .okr-workspace-page .okr-empty-workspace .btn-primary {
+	background: var(--primary);
+	border-color: var(--primary);
+	color: #fff;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-pill-row-wrap, .okr-pop-content) {
+	scrollbar-color: var(--gray-600) transparent;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-pill-row-wrap, .okr-pop-content)::-webkit-scrollbar-thumb {
+	background: var(--gray-600);
+	border-radius: 999px;
+}
+
+
+/* High-contrast dark palette for every workspace hierarchy and history state. */
+[data-theme="dark"] .okr-workspace-page {
+	--okr-dark-surface: #17191d;
+	--okr-dark-raised: #202329;
+	--okr-dark-hover: #292d35;
+	--okr-dark-border: #323640;
+	--okr-dark-text: #f3f4f6;
+	--okr-dark-muted: #aeb8ca;
+	--okr-dark-accent: #8b80ff;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-ws-shell, .okr-ws-rail, .okr-objective-card, .okr-kr-card, .okr-summary-card, .okr-attention-panel, .okr-empty-workspace) {
+	background: var(--okr-dark-surface);
+	border-color: var(--okr-dark-border);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-ws-main, .okr-kr-head, .okr-inline-checkin, .okr-all-clear-panel) {
+	background: var(--okr-dark-surface);
+	border-color: var(--okr-dark-border);
+}
+[data-theme="dark"] .okr-workspace-page .okr-ws-rail { border-right-color: var(--okr-dark-border); }
+[data-theme="dark"] .okr-workspace-page .okr-rail-objective {
+	color: var(--okr-dark-text) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-rail-objective strong {
+	color: var(--okr-dark-text) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-rail-objective:hover {
+	background: var(--okr-dark-hover) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-rail-objective.active {
+	background: color-mix(in srgb, var(--okr-dark-accent) 17%, var(--okr-dark-raised)) !important;
+	border-left-color: var(--okr-dark-accent);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-rail-objective small, .okr-action-assignee, .okr-owner, .okr-action-title small, .okr-action-meta-col, .okr-action-last-checkin, .okr-action-due-date, .okr-history-date span, .okr-context-items-row span) {
+	color: var(--okr-dark-muted) !important;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-history-row p, .okr-history-details, .okr-history-meta strong) {
+	color: var(--okr-dark-text) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-history-row p {
+	background: var(--okr-dark-raised);
+	border-color: var(--okr-dark-border);
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-history-title, .okr-history-toggle, .okr-action-title button) {
+	color: var(--okr-dark-accent) !important;
+}
+[data-theme="dark"] .okr-workspace-page .btn-primary-light {
+	background: color-mix(in srgb, var(--okr-dark-accent) 20%, var(--okr-dark-raised)) !important;
+	border-color: color-mix(in srgb, var(--okr-dark-accent) 70%, var(--okr-dark-border)) !important;
+	color: #dcd8ff !important;
+}
+[data-theme="dark"] .okr-workspace-page .btn-primary-light:hover {
+	background: color-mix(in srgb, var(--okr-dark-accent) 32%, var(--okr-dark-raised)) !important;
+	color: #fff !important;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-all-clear-head, .okr-all-clear-head > span) {
+	color: #34d399 !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-attention-head { color: #f87171; }
+[data-theme="dark"] .okr-workspace-page .okr-bar { background: #292c32; }
+[data-theme="dark"] .okr-workspace-page .okr-period-badge {
+	background: #172554;
+	border-color: #3b82f6;
+	color: #bfdbfe;
+}
+[data-theme="dark"] .okr-workspace-page .okr-kr-redirect-btn {
+	background: var(--okr-dark-raised);
+	border-color: var(--okr-dark-border);
+	color: var(--okr-dark-muted);
+}
+[data-theme="dark"] .okr-workspace-page .okr-kr-redirect-btn:hover {
+	background: var(--okr-dark-hover);
+	border-color: var(--okr-dark-accent);
+	color: #fff;
+}
+[data-theme="dark"] .okr-workspace-page .okr-history-attachment {
+	background: var(--okr-dark-raised);
+	border-color: var(--okr-dark-border);
+	color: var(--okr-dark-muted);
+}
+
+
+/* Explicit violet filter states for reliable contrast across Frappe dark palettes. */
+[data-theme="dark"] .okr-workspace-page .okr-filter-pill.active {
+	background: #37305f !important;
+	border-color: #9185ff !important;
+	color: #f0eeff !important;
+	box-shadow: 0 0 0 1px rgba(145,133,255,.35), 0 6px 16px rgba(91,75,210,.22) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-filter-pill.active:hover {
+	background: #433a73 !important;
+	border-color: #a79eff !important;
+	color: #fff !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-pop-actions .btn-primary {
+	background: #7465e8 !important;
+	background-image: none !important;
+	border: 1px solid #9185ff !important;
+	color: #fff !important;
+	box-shadow: 0 5px 14px rgba(91,75,210,.3);
+}
+[data-theme="dark"] .okr-workspace-page .okr-pop-actions .btn-primary:hover {
+	background: #8577f2 !important;
+	border-color: #aaa2ff !important;
+}
+
+.okr-objective-actions, .okr-action-meta-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; }
+.okr-record-attachment { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; border:1px solid #dbe3ee; border-radius:8px; background:#fff; color:#635bff; cursor:pointer; flex:0 0 auto; }
+.okr-record-attachment:hover { background:#eef2ff; border-color:#a5b4fc; color:#4f46e5; }
+[data-theme="dark"] .okr-workspace-page .okr-record-attachment { background:var(--okr-dark-raised); border-color:var(--okr-dark-border); color:#b8b1ff; }
+[data-theme="dark"] .okr-workspace-page .okr-record-attachment:hover { background:#37305f; border-color:#9185ff; color:#fff; }
+
+/* Check-In form labels and controls in dark mode. */
+[data-theme="dark"] .okr-workspace-page .okr-checkin-field label,
+[data-theme="dark"] .okr-workspace-page .okr-inline-fields label,
+[data-theme="dark"] .okr-workspace-page .okr-update-field label {
+	color: var(--okr-dark-text, #f3f4f6) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-checkin-field small,
+[data-theme="dark"] .okr-workspace-page .okr-attach-line {
+	color: var(--okr-dark-muted, #aeb8ca) !important;
+}
+[data-theme="dark"] .okr-workspace-page .okr-inline-checkin :is(input, select, textarea, .form-control) {
+	background: var(--okr-dark-raised, #202329) !important;
+	border-color: var(--okr-dark-border, #323640) !important;
+	color: var(--okr-dark-text, #f3f4f6) !important;
+}
+
+
+/* Stable Action Item progress/check-in column alignment. */
+.okr-action-row {
+	grid-template-columns: minmax(280px, 1fr) 110px minmax(170px, 210px) minmax(150px, 170px);
+	column-gap: 22px;
+}
+.okr-action-row .okr-action-progress { min-width: 0; width: 100%; }
+.okr-action-row .okr-action-meta-col {
+	width: 100%;
+	min-width: 150px;
+	justify-self: end;
+	align-items: center;
+}
+.okr-action-row .okr-action-meta-actions {
+	width: 100%;
+	justify-content: center;
+	flex-wrap: nowrap;
+}
+.okr-action-row .okr-history-toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	white-space: nowrap;
+	word-break: normal;
+	line-height: 1.25;
+}
+.okr-action-row .okr-action-last-checkin {
+	width: 100%;
+	padding-right: 0;
+	text-align: center;
+	white-space: nowrap;
+}
+@media (max-width: 1100px) {
+	.okr-action-row { grid-template-columns: minmax(240px, 1fr) 105px minmax(150px, 1fr) 150px; column-gap: 14px; }
+}
+@media (max-width: 800px) {
+	.okr-action-row { grid-template-columns: 1fr 1fr; }
+	.okr-action-row .okr-action-meta-col { min-width: 0; }
+}
+@media (max-width: 600px) {
+	.okr-action-row { grid-template-columns: 1fr; }
+	.okr-action-row .okr-action-meta-col { align-items: flex-start; justify-self: start; }
+	.okr-action-row .okr-action-meta-actions,
+	.okr-action-row .okr-history-toggle { justify-content: flex-start; }
+	.okr-action-row .okr-action-last-checkin { padding-right: 0; text-align: left; }
+}
+
+
+/* Compact Action Item progress bars without affecting Check-In alignment. */
+@media (min-width: 1101px) {
+	.okr-action-row {
+		grid-template-columns: minmax(280px, 1fr) 110px 160px minmax(150px, 170px);
+	}
+	.okr-action-row .okr-action-progress {
+		width: 150px;
+		justify-self: end;
+	}
+}
+@media (min-width: 801px) and (max-width: 1100px) {
+	.okr-action-row .okr-action-progress {
+		width: 135px;
+		justify-self: end;
+	}
+}
+
+
+/* Tight, balanced spacing for the Status → Progress → Check-In group. */
+@media (min-width: 1101px) {
+	.okr-action-row {
+		grid-template-columns: minmax(280px, 1fr) 120px 160px 150px;
+		column-gap: 10px;
+	}
+	.okr-action-row > .okr-status {
+		justify-self: end;
+	}
+	.okr-action-row .okr-action-progress {
+		justify-self: start;
+	}
+	.okr-action-row .okr-action-meta-col {
+		min-width: 0;
+		width: 150px;
+		justify-self: start;
+		align-items: center;
+	}
+	.okr-action-row .okr-action-meta-actions {
+		width: auto;
+		justify-content: center;
+	}
+	.okr-action-row .okr-action-last-checkin {
+		width: 100%;
+		padding-right: 0;
+		text-align: center;
+	}
+}
+@media (min-width: 801px) and (max-width: 1100px) {
+	.okr-action-row { column-gap: 10px; }
+	.okr-action-row > .okr-status { justify-self: end; }
+	.okr-action-row .okr-action-progress { justify-self: start; }
+	.okr-action-row .okr-action-meta-col { justify-self: start; align-items: center; }
+	.okr-action-row .okr-action-last-checkin { padding-right: 0; text-align: center; }
+}
+
+
+/* Anchor Check-In count and date to the exact same left edge. */
+@media (min-width: 801px) {
+	.okr-action-row .okr-action-meta-col {
+		width: max-content;
+		min-width: 0;
+		justify-self: start;
+		align-items: flex-start;
+		text-align: left;
+	}
+	.okr-action-row .okr-action-meta-actions {
+		width: max-content;
+		justify-content: flex-start;
+	}
+	.okr-action-row .okr-history-toggle {
+		justify-content: flex-start;
+	}
+	.okr-action-row .okr-action-last-checkin {
+		width: 100%;
+		padding-right: 0;
+		text-align: left;
+	}
+}
+
+
+/* Keep the compact Status/Progress/Check-In group flush with the row's right edge. */
+@media (min-width: 1101px) {
+	.okr-action-row {
+		grid-template-columns: minmax(280px, 1fr) 120px 160px max-content;
+	}
+}
+@media (min-width: 801px) and (max-width: 1100px) {
+	.okr-action-row {
+		grid-template-columns: minmax(240px, 1fr) 105px 145px max-content;
+	}
+}
+
+[data-theme="dark"] .okr-workspace-page .okr-status.archived {
+	background: rgba(34, 197, 94, .20);
+	color: #86efac;
+}
+[data-theme="dark"] .okr-workspace-page :is(.okr-status.blocked, .okr-status.on-hold) {
+	background: rgba(239, 68, 68, .20);
+	color: #fca5a5;
+}
+
+/* Keep KR measurement signals recognizable in dark mode. */
+[data-theme="dark"] .okr-workspace-page .okr-kr-meta .okr-signal.good {
+	color: #16a34a;
+	border-color: #bbf7d0;
+	background: #f0fdf4;
+}
+[data-theme="dark"] .okr-workspace-page .okr-kr-meta .okr-signal.warn {
+	color: #d97706;
+	border-color: #fed7aa;
+	background: #fffbeb;
+}
+[data-theme="dark"] .okr-workspace-page .okr-kr-meta .okr-signal.risk {
+	color: #dc2626;
+	border-color: #fecaca;
+	background: #fef2f2;
+}

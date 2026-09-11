@@ -31,7 +31,7 @@ A Frappe v15 / ERPNext custom app for managing Objectives and Key Results across
 From your bench folder:
 
 ```bash
-bench get-app https://github.com/Algothm/OKR_Frappe.git
+bench get-app https://github.com/utsavmodi777-f1/frappe-okr-management.git
 bench --site your-site.local install-app okr_management
 bench --site your-site.local migrate
 bench build --app okr_management

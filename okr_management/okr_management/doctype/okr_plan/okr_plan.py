@@ -1,16 +1,21 @@
 from __future__ import annotations
 
 from datetime import timedelta
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import add_months, flt, get_last_day, getdate
+from frappe.utils import add_months, flt, get_last_day, getdate, today
 
 from okr_management.utils.okr_calculations import recalculate_plan_progress
 from okr_management.utils.okr_validations import ensure_date_range, ensure_required_link
 
-
-LOCKED_AFTER_ACTIVE_FIELDS = ("financial_year", "company", "owner_user", "sprint_frequency", "planned_activation_date")
+LOCKED_AFTER_ACTIVE_FIELDS = (
+	"financial_year",
+	"company",
+	"owner_user",
+	"sprint_frequency",
+)
 STATUS_TRANSITIONS = {
 	"Draft": {"Active", "Archived"},
 	"Active": {"Draft", "Archived"},
@@ -21,15 +26,15 @@ SPRINT_FREQUENCIES = {"Monthly", "Quarterly"}
 
 class OKRPlan(Document):
 	def before_validate(self) -> None:
+		if self.status == "Active" and not self.planned_activation_date:
+			self.planned_activation_date = today()
+
 		if not self.owner_user:
 			self.owner_user = frappe.session.user
 
 		# Automatically add the current Plan Coordinator as the first coordinator row if table is empty
 		if self.owner_user and not self.get("members"):
-			self.append("members", {
-				"member_user": self.owner_user,
-				"role": "Plan Coordinator"
-			})
+			self.append("members", {"member_user": self.owner_user, "role": "Plan Coordinator"})
 
 		self.preserve_system_calculated_progress()
 
@@ -70,7 +75,9 @@ class OKRPlan(Document):
 			if not member.member_user:
 				continue
 			if member.member_user in seen_users:
-				frappe.throw(_("User {0} is added more than once in the Plan Team.").format(member.member_user))
+				frappe.throw(
+					_("User {0} is added more than once in the Plan Team.").format(member.member_user)
+				)
 			seen_users.add(member.member_user)
 
 		# Filter Plan Coordinator roles
@@ -130,7 +137,8 @@ class OKRPlan(Document):
 			locked_fields = LOCKED_AFTER_ACTIVE_FIELDS
 			if previous.status == "Active":
 				locked_fields = tuple(
-					fieldname for fieldname in locked_fields
+					fieldname
+					for fieldname in locked_fields
 					if fieldname not in {"financial_year", "sprint_frequency"}
 				)
 			self.validate_fields_unchanged(previous, locked_fields)
@@ -202,10 +210,22 @@ def get_plan_timeline(plan: Document | str) -> tuple:
 	return _fiscal_year_dates(plan.financial_year)
 
 
-def get_derived_periods(plan: Document | str) -> list[dict]:
-	plan = frappe.get_doc("OKR Plan", plan) if isinstance(plan, str) else plan
-	start, fiscal_end = _fiscal_year_dates(plan.financial_year)
-	step = 1 if plan.sprint_frequency == "Monthly" else 3
+def get_derived_periods(plan: Document | str | dict) -> list[dict]:
+	if isinstance(plan, str):
+		plan = frappe.db.get_value("OKR Plan", plan, ["financial_year", "sprint_frequency"], as_dict=True)
+		if not plan:
+			return []
+	elif isinstance(plan, Document):
+		plan = {
+			"financial_year": plan.financial_year,
+			"sprint_frequency": plan.sprint_frequency,
+		}
+	financial_year = plan.get("financial_year")
+	if not financial_year:
+		return []
+	sprint_frequency = plan.get("sprint_frequency") or "Quarterly"
+	start, fiscal_end = _fiscal_year_dates(financial_year)
+	step = 1 if sprint_frequency == "Monthly" else 3
 	periods = []
 	cursor = start
 	index = 1
@@ -218,16 +238,102 @@ def get_derived_periods(plan: Document | str) -> list[dict]:
 	return periods
 
 
-def get_period_label(item_date, plan: Document | str) -> str:
-	"""Return the derived fiscal period containing item_date, or an empty label."""
-	if not item_date:
+def get_default_objective_dates(
+	plan: Document | str | dict, activation_date: str | None = None
+) -> tuple:
+	"""Calculate default Objective start and end dates based on the Plan's:
+	1. Financial Year (boundary)
+	2. Planned Activation Date
+	3. Sprint Frequency (Monthly / Quarterly)
+	"""
+	if isinstance(plan, str):
+		plan = frappe.db.get_value(
+			"OKR Plan",
+			plan,
+			["financial_year", "planned_activation_date", "sprint_frequency"],
+			as_dict=True,
+		)
+		if not plan:
+			return None, None
+	elif isinstance(plan, Document):
+		plan = {
+			"financial_year": plan.financial_year,
+			"planned_activation_date": plan.planned_activation_date,
+			"sprint_frequency": plan.sprint_frequency,
+		}
+
+	financial_year = plan.get("financial_year")
+	if not financial_year:
+		return None, None
+
+	activation_date = activation_date or plan.get("planned_activation_date")
+	if not activation_date:
+		return None, None
+
+	activation_date = getdate(activation_date)
+	plan_start, plan_end = _fiscal_year_dates(financial_year)
+	if activation_date < plan_start or activation_date > plan_end:
+		return None, None
+
+	sprint_frequency = plan.get("sprint_frequency")
+	if sprint_frequency == "Monthly":
+		start = activation_date
+		end = min(getdate(get_last_day(activation_date)), plan_end)
+		return start, end
+
+	if sprint_frequency == "Quarterly":
+		for period in get_derived_periods(plan):
+			period_start = getdate(period["start_date"])
+			period_end = getdate(period["end_date"])
+			if period_start <= activation_date <= period_end:
+				return activation_date, period_end
+
+	return None, None
+
+
+def get_period_label(item_date, plan: Document | str | dict, end_date=None) -> str:
+	"""Return the derived fiscal period containing item_date, or a range label if end_date is given."""
+	if not item_date and not end_date:
 		return ""
 
-	item_date = getdate(item_date)
-	for period in get_derived_periods(plan):
-		if getdate(period["start_date"]) <= item_date <= getdate(period["end_date"]):
-			return period["label"]
-	return ""
+	if not end_date:
+		item_date = getdate(item_date)
+		for period in get_derived_periods(plan):
+			if getdate(period["start_date"]) <= item_date <= getdate(period["end_date"]):
+				return period["label"]
+		return ""
+
+	start = getdate(item_date) if item_date else None
+	end = getdate(end_date) if end_date else None
+	if start and end and start > end:
+		return ""
+
+	if isinstance(plan, str):
+		financial_year = frappe.db.get_value("OKR Plan", plan, "financial_year")
+	elif isinstance(plan, Document):
+		financial_year = plan.financial_year
+	elif isinstance(plan, dict):
+		financial_year = plan.get("financial_year")
+	else:
+		financial_year = None
+
+	if not financial_year:
+		return ""
+
+	quarters = get_derived_periods({"financial_year": financial_year, "sprint_frequency": "Quarterly"})
+	start_q = None
+	end_q = None
+	for q in quarters:
+		q_start = getdate(q["start_date"])
+		q_end = getdate(q["end_date"])
+		if start and q_start <= start <= q_end:
+			start_q = q["label"]
+		if end and q_start <= end <= q_end:
+			end_q = q["label"]
+
+	if start_q and end_q:
+		return start_q if start_q == end_q else f"{start_q}–{end_q}"
+	return start_q or end_q or ""
 
 
 @frappe.whitelist()
@@ -236,8 +342,9 @@ def get_plan_context(plan_name: str) -> dict:
 
 	if not (is_okr_admin() or is_okr_user()):
 		frappe.throw(_("Only an OKR User or OKR Admin can access OKR Plan context."), frappe.PermissionError)
-	plan = frappe.get_doc("OKR Plan", plan_name)
+	plan = frappe.get_doc("OKR Plan", plan_name, ignore_permissions=True)
 	start_date, end_date = get_plan_timeline(plan)
+	default_start, default_end = get_default_objective_dates(plan)
 	members = [
 		{
 			"user": row.member_user,
@@ -258,6 +365,8 @@ def get_plan_context(plan_name: str) -> dict:
 		"sprint_frequency": plan.sprint_frequency,
 		"start_date": start_date,
 		"end_date": end_date,
+		"default_start_date": default_start,
+		"default_end_date": default_end,
 		"periods": get_derived_periods(plan),
 		"members": members,
 	}

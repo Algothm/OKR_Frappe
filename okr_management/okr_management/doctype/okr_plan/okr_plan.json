@@ -1,4 +1,7 @@
 {
+ "title_field": "plan_name",
+ "show_title_field_in_link": 1,
+ "search_fields": "plan_name,name,company,financial_year,status",
  "actions": [],
  "allow_rename": 1,
  "autoname": "naming_series:",
@@ -17,14 +20,12 @@
   "plan_details_col_break",
   "status",
   "planned_activation_date",
+  "sprint_frequency",
   "plan_details_col_break_3",
   "description",
   "owner_user",
   "context_preview_heading",
   "context_preview_html",
-  "sprint_configuration_section",
-  "sprint_frequency",
-  "sprint_config_col_2",
   "plan_team_section",
   "members",
   "technical_section",
@@ -40,7 +41,7 @@
   },
   {
    "fieldname": "plan_name",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Plan Name",
    "reqd": 1,
    "in_list_view": 1,
@@ -104,8 +105,8 @@
    "label": "Planned Activation Date",
    "description": "The Draft Plan activates automatically on this date.",
    "mandatory_depends_on": "eval:doc.status=='Draft'",
-   "in_list_view": 1,
-   "in_standard_filter": 1
+   "in_list_view": 0,
+   "in_standard_filter": 0
   },
   {
    "fieldname": "objective_count",
@@ -121,8 +122,7 @@
   {
    "fieldname": "description",
    "fieldtype": "Small Text",
-   "label": "Description",
-   "max_height": "104px"
+   "label": "Description"
   },
   {
    "fieldname": "context_preview_heading",
@@ -206,26 +206,37 @@
  "owner": "Administrator",
  "permissions": [
   {
+   "role": "OKR Admin",
    "read": 1,
-   "role": "OKR User",
-   "select": 1
-  },
-  {
+   "write": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
+   "report": 1
+  },
+  {
+   "role": "System Manager",
    "read": 1,
-   "report": 1,
-   "role": "OKR Admin",
-   "write": 1
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "OKR User",
+   "select": 1,
+   "read": 0,
+   "write": 0,
+   "create": 0,
+   "delete": 0
   }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "track_changes": 1,
- "title_field": "plan_name",
- "search_fields": "plan_name,name,financial_year,company,status",
- "show_title_field_in_link": 1
+ "track_changes": 1
 }
