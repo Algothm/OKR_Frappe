@@ -6,6 +6,7 @@ from frappe.utils import flt, getdate, nowdate, today
 
 from okr_management.hierarchy_visibility import get_hierarchy_visibility_scope
 from okr_management.permissions import is_okr_user
+from okr_management.utils.okr_calculations import calculate_action_item_progress, calculate_metric_progress
 from okr_management.utils.periods import add_period_labels
 
 
@@ -171,12 +172,12 @@ def get_workspace_data(
 		action["can_checkin"] = (
 			action.parent_plan in active_plan_names
 			and (scope["read_all"] or action.name in scope["checkin_action_items"])
-			and action.status in {"Open", "In Progress", "On Hold", "Blocked", "Archived"}
+			and action.status in {"Open", "In Progress", "On Hold", "Done", "Blocked", "Archived"}
 		)
 		kr_config = kr_config_by_name.get(action.parent_key_result)
 		action["measurement_locked"] = bool(
 			kr_config
-			and kr_config.get("lock_measurement_fields_for_action_item_assignees") not in (0, "0")
+			and kr_config.get("lock_measurement_fields_for_action_item_assignees") in (0, "0", None)
 		)
 		action["can_edit_measurement"] = action["can_checkin"] and not action["measurement_locked"]
 		actions_by_kr.setdefault(action.parent_key_result, []).append(action)
@@ -263,8 +264,8 @@ def save_workspace_checkin(
 		["name", "metric_type", "metric_direction", "baseline_value", "current_value", "target_value"],
 		as_dict=True,
 	)
-	is_custom = bool(action.customize_measurement)
-	if is_custom:
+	has_action_measurement = bool(action.metric_type) and action.target_value is not None
+	if has_action_measurement:
 		metric_type = action.metric_type or "Percentage"
 		metric_direction = action.metric_direction or "Increase"
 		baseline = flt(action.baseline_value)
@@ -276,18 +277,11 @@ def save_workspace_checkin(
 		target = flt(key_result_config.target_value)
 
 	actual_value = flt(current_value if current_value is not None else progress)
-	if metric_type == "Boolean":
-		calculated_progress = 100.0 if actual_value else 0.0
-	elif target == baseline:
-		calculated_progress = 0.0
-	elif metric_direction == "Decrease":
-		calculated_progress = ((baseline - actual_value) / (baseline - target)) * 100.0
-	else:
-		calculated_progress = ((actual_value - baseline) / (target - baseline)) * 100.0
-	calculated_progress = min(100.0, max(0.0, calculated_progress))
-
-	if not is_custom:
-		frappe.db.set_value("OKR Key Result", key_result_config.name, "current_value", actual_value)
+	calculated_progress = (
+		min(100.0, max(0.0, actual_value))
+		if metric_type == "Percentage"
+		else calculate_metric_progress(baseline, actual_value, target, metric_direction, metric_type)
+	)
 	frappe.db.set_value("OKR Action Item", action.name, "current_value", actual_value)
 	doc = frappe.new_doc("OKR Check In")
 	doc.action_item = action_item
@@ -384,7 +378,7 @@ def save_action_measurement(
 		action.parent_key_result,
 		"lock_measurement_fields_for_action_item_assignees",
 	)
-	if locked not in (0, "0", None):
+	if locked in (0, "0", None):
 		frappe.throw(_("Measurement customization is locked by the Key Result owner."), frappe.PermissionError)
 
 	if metric_type not in {"Percentage", "Number", "Currency", "Boolean"}:
@@ -511,6 +505,8 @@ def get_action_items(kr_names: list[str]) -> list:
 		limit_page_length=800,
 	)
 	for row in rows:
+		if row.get("status") == "Archived":
+			row["status"] = "Done"
 		if row.get("customize_measurement"):
 			row["progress"] = calculate_effective_action_progress(row)
 	return add_user_full_names(rows, "owner_user", "owner_full_name")
@@ -584,6 +580,8 @@ def get_checkin_history(action_item_names: list[str]) -> dict:
 	)
 	out = {}
 	for row in rows:
+		if row.get("action_status") == "Archived":
+			row["action_status"] = "Done"
 		assignee = action_assignees.get(row.action_item)
 		row["delegated_by_name"] = (
 			reporter_names.get(row.reported_by, row.reported_by or "")
@@ -595,17 +593,4 @@ def get_checkin_history(action_item_names: list[str]) -> dict:
 
 
 def calculate_effective_action_progress(item: dict) -> float:
-	actual = flt(item.get("current_value"))
-	baseline = flt(item.get("baseline_value"))
-	target = flt(item.get("target_value"))
-	m_type = item.get("metric_type") or "Percentage"
-	direction = item.get("metric_direction") or "Increase"
-	if m_type == "Boolean":
-		return 100.0 if actual else 0.0
-	if target == baseline:
-		return 0.0
-	if direction == "Decrease":
-		prog = ((baseline - actual) / (baseline - target)) * 100.0
-	else:
-		prog = ((actual - baseline) / (target - baseline)) * 100.0
-	return min(100.0, max(0.0, round(prog, 2)))
+	return calculate_action_item_progress(item)

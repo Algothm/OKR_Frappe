@@ -5,11 +5,15 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt, getdate, today
 
+from okr_management.utils.okr_calculations import calculate_action_item_progress
 from okr_management.utils.okr_validations import ensure_percentage, ensure_required_link
 
 
 class OKRActionItem(Document):
 	def before_validate(self) -> None:
+		# Normalize the legacy stored label without requiring a destructive data migration.
+		if self.status == "Archived":
+			self.status = "Done"
 		self.status = self.status or "Open"
 		self.priority = self.priority or "Medium"
 		self.progress = flt(self.progress or 0.0)
@@ -19,6 +23,7 @@ class OKRActionItem(Document):
 		self.set_parent_key_result_from_child_context()
 		self.inherit_context_from_key_result()
 		self.update_measurement_customization_status()
+		self.progress = calculate_action_item_progress(self)
 
 	def validate(self) -> None:
 		ensure_required_link(self.action_item_title, "Action Item Title")
@@ -82,11 +87,23 @@ class OKRActionItem(Document):
 			if not self.reviewer:
 				self.reviewer = parent_kr.reviewer
 
+			measurement_locked = parent_kr.lock_measurement_fields_for_action_item_assignees in (0, "0", None)
 			if not self.customize_measurement:
-				self.metric_type = parent_kr.metric_type or "Percentage"
-				self.metric_direction = parent_kr.metric_direction or "Increase"
-				self.baseline_value = flt(parent_kr.baseline_value)
-				self.target_value = flt(parent_kr.target_value)
+				if self.is_new() or measurement_locked:
+					self.metric_type = parent_kr.metric_type or "Percentage"
+					self.metric_direction = parent_kr.metric_direction or "Increase"
+					self.baseline_value = flt(parent_kr.baseline_value)
+					self.target_value = flt(parent_kr.target_value)
+				elif not self.metric_type or not self.metric_direction:
+					# Preserve populated legacy values; fill only genuinely missing configuration.
+					self.metric_type = self.metric_type or parent_kr.metric_type or "Percentage"
+					self.metric_direction = self.metric_direction or parent_kr.metric_direction or "Increase"
+				if not measurement_locked:
+					# Initialize once; later Action Item values remain independent of KR changes.
+					if self.is_new():
+						self.current_value = flt(parent_kr.baseline_value)
+					self.customize_measurement = 1
+					self.flags.measurement_initialized_from_parent = True
 
 	def update_measurement_customization_status(self) -> None:
 		if not self.parent_key_result:
@@ -95,7 +112,7 @@ class OKRActionItem(Document):
 		lock_val = frappe.db.get_value(
 			"OKR Key Result", self.parent_key_result, "lock_measurement_fields_for_action_item_assignees"
 		)
-		self.measurement_customization_status = "Locked" if lock_val not in (0, "0") else "Allowed"
+		self.measurement_customization_status = "Allowed" if lock_val not in (0, "0", None) else "Locked"
 
 	def validate_measurement_customization(self) -> None:
 		if not self.parent_key_result:
@@ -120,7 +137,7 @@ class OKRActionItem(Document):
 			return
 
 		lock_val = parent_kr.lock_measurement_fields_for_action_item_assignees
-		self.measurement_customization_status = "Locked" if lock_val not in (0, "0") else "Allowed"
+		self.measurement_customization_status = "Allowed" if lock_val not in (0, "0", None) else "Locked"
 
 		if not self.customize_measurement:
 			self.metric_type = parent_kr.metric_type or "Percentage"
@@ -154,8 +171,12 @@ class OKRActionItem(Document):
 			or bool({"System Manager", "OKR Admin"} & set(frappe.get_roles(user)))
 		)
 
-		if customization_modified and not is_admin:
-			if lock_val not in (0, "0"):
+		if (
+			customization_modified
+			and not is_admin
+			and not getattr(self.flags, "measurement_initialized_from_parent", False)
+		):
+			if lock_val in (0, "0", None):
 				frappe.throw(
 					_("Measurement customization is locked by the Key Result owner."),
 					frappe.PermissionError,
@@ -186,21 +207,6 @@ class OKRActionItem(Document):
 					_("Measurement customization is only permitted for active Action Items."),
 					frappe.ValidationError,
 				)
-
-		# Recalculate progress using custom measurement
-		actual = flt(self.current_value)
-		baseline = flt(self.baseline_value)
-		target = flt(self.target_value)
-		if self.metric_type == "Boolean":
-			progress = 100.0 if actual else 0.0
-		elif target == baseline:
-			progress = 0.0
-		elif self.metric_direction == "Decrease":
-			progress = ((baseline - actual) / (baseline - target)) * 100.0
-		else:
-			progress = ((actual - baseline) / (target - baseline)) * 100.0
-
-		self.progress = min(100.0, max(0.0, round(progress, 2)))
 
 	def sync_assigned_to_owner(self) -> None:
 		if not self.assigned_to:

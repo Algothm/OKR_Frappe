@@ -109,6 +109,8 @@ class TestOKRActionItem(FrappeTestCase):
 					"gender": "Female",
 					"date_of_birth": "1990-01-01",
 					"date_of_joining": "2020-01-01",
+					"custom_company_date_of_joining": "2020-01-01",
+					"holiday_list": frappe.db.get_value("Holiday List", {}, "name"),
 				}
 			).insert(ignore_permissions=True)
 		return email
@@ -141,7 +143,7 @@ class TestOKRActionItem(FrappeTestCase):
 
 	def test_workspace_measurement_shortcut_respects_key_result_lock(self):
 		action = self.make_action(assigned_to=self.user_a)
-		self.kr.lock_measurement_fields_for_action_item_assignees = 0
+		self.kr.lock_measurement_fields_for_action_item_assignees = 1
 		self.kr.save(ignore_permissions=True)
 
 		frappe.set_user(self.user_a)
@@ -165,7 +167,7 @@ class TestOKRActionItem(FrappeTestCase):
 		self.assertEqual(flt(self.kr.target_value), 100000)
 
 		frappe.set_user("Administrator")
-		self.kr.lock_measurement_fields_for_action_item_assignees = 1
+		self.kr.lock_measurement_fields_for_action_item_assignees = 0
 		self.kr.save(ignore_permissions=True)
 		frappe.set_user(self.user_a)
 		with self.assertRaises(frappe.PermissionError):
@@ -180,7 +182,7 @@ class TestOKRActionItem(FrappeTestCase):
 
 	def test_workspace_measurement_shortcut_rejects_unauthorized_user(self):
 		action = self.make_action(assigned_to=self.user_a)
-		self.kr.lock_measurement_fields_for_action_item_assignees = 0
+		self.kr.lock_measurement_fields_for_action_item_assignees = 1
 		self.kr.save(ignore_permissions=True)
 		frappe.set_user(self.user_b)
 		with self.assertRaises(frappe.PermissionError):
@@ -212,7 +214,7 @@ class TestOKRActionItem(FrappeTestCase):
 
 	def test_1_kr_locked_blocks_own_ai_customization(self):
 		# 1. KR locked -> own AI customization DENIED.
-		self.kr.lock_measurement_fields_for_action_item_assignees = 1
+		self.kr.lock_measurement_fields_for_action_item_assignees = 0
 		self.kr.save(ignore_permissions=True)
 
 		action = self.make_action(assigned_to=self.user_a)
@@ -225,7 +227,7 @@ class TestOKRActionItem(FrappeTestCase):
 
 	def test_2_kr_unlocked_allows_own_ai_customization(self):
 		# 2. KR unlocked -> own AI customization PASS.
-		self.kr.lock_measurement_fields_for_action_item_assignees = 0
+		self.kr.lock_measurement_fields_for_action_item_assignees = 1
 		self.kr.save(ignore_permissions=True)
 
 		action = self.make_action(assigned_to=self.user_a)
@@ -245,7 +247,7 @@ class TestOKRActionItem(FrappeTestCase):
 	def test_3_and_4_parent_kr_and_sibling_ai_remain_unchanged(self):
 		# 3. Parent KR unchanged.
 		# 4. Sibling AI unchanged.
-		self.kr.lock_measurement_fields_for_action_item_assignees = 0
+		self.kr.lock_measurement_fields_for_action_item_assignees = 1
 		self.kr.save(ignore_permissions=True)
 
 		ai_1 = self.make_action(assigned_to=self.user_a)
@@ -272,12 +274,12 @@ class TestOKRActionItem(FrappeTestCase):
 		self.assertEqual(self.kr.target_value, 100000)
 
 		ai_1.reload()
-		self.assertEqual(ai_1.customize_measurement, 0)
+		self.assertEqual(ai_1.customize_measurement, 1)
 		self.assertEqual(ai_1.metric_type, "Currency")
 		self.assertEqual(ai_1.target_value, 100000)
 
 		ai_3.reload()
-		self.assertEqual(ai_3.customize_measurement, 0)
+		self.assertEqual(ai_3.customize_measurement, 1)
 		self.assertEqual(ai_3.metric_type, "Currency")
 		self.assertEqual(ai_3.target_value, 100000)
 
@@ -288,7 +290,7 @@ class TestOKRActionItem(FrappeTestCase):
 
 	def test_5_same_user_with_two_ais_independent_customization(self):
 		# 5. Same user with two AIs -> independent customization.
-		self.kr.lock_measurement_fields_for_action_item_assignees = 0
+		self.kr.lock_measurement_fields_for_action_item_assignees = 1
 		self.kr.save(ignore_permissions=True)
 
 		ai_a1 = self.make_action(assigned_to=self.user_a)
@@ -303,13 +305,13 @@ class TestOKRActionItem(FrappeTestCase):
 		doc_1.save()
 
 		doc_2 = frappe.get_doc("OKR Action Item", ai_a2.name)
-		self.assertEqual(doc_2.customize_measurement, 0)
+		self.assertEqual(doc_2.customize_measurement, 1)
 		self.assertEqual(doc_2.metric_type, "Currency")
 		self.assertEqual(doc_2.target_value, 100000)
 
 	def test_6_user_a_cannot_edit_user_b_ai_customization(self):
 		# 6. User A cannot edit User B's AI customization.
-		self.kr.lock_measurement_fields_for_action_item_assignees = 0
+		self.kr.lock_measurement_fields_for_action_item_assignees = 1
 		self.kr.save(ignore_permissions=True)
 
 		ai_b = self.make_action(assigned_to=self.user_b)
@@ -321,13 +323,13 @@ class TestOKRActionItem(FrappeTestCase):
 		self.assertRaises(frappe.PermissionError, ai_b_doc.save)
 
 	def test_7_and_8_customize_toggle_inherits_or_uses_own_fields(self):
-		# 7. Customize OFF -> inherits KR.
-		# 8. Customize ON -> uses own 5-field measurement.
-		self.kr.lock_measurement_fields_for_action_item_assignees = 0
+		# 7. Unlocked Action Item is automatically initialized from the KR.
+		# 8. It then uses its own five-field measurement.
+		self.kr.lock_measurement_fields_for_action_item_assignees = 1
 		self.kr.save(ignore_permissions=True)
 
 		action = self.make_action(assigned_to=self.user_a)
-		self.assertEqual(action.customize_measurement, 0)
+		self.assertEqual(action.customize_measurement, 1)
 		self.assertEqual(action.metric_type, self.kr.metric_type)
 		self.assertEqual(action.target_value, self.kr.target_value)
 
@@ -346,16 +348,17 @@ class TestOKRActionItem(FrappeTestCase):
 		self.assertEqual(ai_doc.baseline_value, 100)
 		self.assertEqual(ai_doc.target_value, 10)
 
-		# Turn OFF again -> inherits KR
+		# A legacy/internal OFF value is automatically enabled without losing populated values
 		ai_doc.customize_measurement = 0
 		ai_doc.save()
 		ai_doc.reload()
-		self.assertEqual(ai_doc.metric_type, "Currency")
-		self.assertEqual(ai_doc.target_value, 100000)
+		self.assertEqual(ai_doc.customize_measurement, 1)
+		self.assertEqual(ai_doc.metric_type, "Percentage")
+		self.assertEqual(ai_doc.target_value, 10)
 
 	def test_9_relock_blocks_further_editing_but_keeps_stored_values(self):
 		# 9. Re-lock -> further editing denied.
-		self.kr.lock_measurement_fields_for_action_item_assignees = 0
+		self.kr.lock_measurement_fields_for_action_item_assignees = 1
 		self.kr.save(ignore_permissions=True)
 
 		action = self.make_action(assigned_to=self.user_a)
@@ -368,7 +371,7 @@ class TestOKRActionItem(FrappeTestCase):
 
 		# Owner re-locks KR
 		frappe.set_user("Administrator")
-		self.kr.lock_measurement_fields_for_action_item_assignees = 1
+		self.kr.lock_measurement_fields_for_action_item_assignees = 0
 		self.kr.save(ignore_permissions=True)
 
 		# Values remain stored
@@ -384,7 +387,7 @@ class TestOKRActionItem(FrappeTestCase):
 
 	def test_10_workspace_and_checkin_uses_effective_ai_measurement(self):
 		# 10. Workspace/Check-In uses effective AI measurement.
-		self.kr.lock_measurement_fields_for_action_item_assignees = 0
+		self.kr.lock_measurement_fields_for_action_item_assignees = 1
 		self.kr.save(ignore_permissions=True)
 
 		action = self.make_action(assigned_to=self.user_a)
@@ -410,9 +413,9 @@ class TestOKRActionItem(FrappeTestCase):
 		self.assertEqual(action.current_value, 60)
 		self.assertEqual(action.progress, 60)
 
-		# Parent KR current_value must NOT be overwritten with 60
+		# Parent KR current_value maps the 60% child average into its 0 -> 100000 range.
 		self.kr.reload()
-		self.assertEqual(self.kr.current_value, 0)
+		self.assertEqual(self.kr.current_value, 60000)
 		# Parent KR target_progress reflects average of its action items (60%)
 		self.assertEqual(self.kr.target_progress, 60)
 
@@ -435,9 +438,58 @@ class TestOKRActionItem(FrappeTestCase):
 		self.assertEqual(self.kr.current_value, 25000)
 		self.assertEqual(self.kr.target_progress, 25.0)
 
+	def test_unlocked_new_action_prefills_all_measurement_defaults_without_user_toggle(self):
+		self.kr.lock_measurement_fields_for_action_item_assignees = 1
+		self.kr.calculation_mode = "Manual"
+		self.kr.baseline_value = 20
+		self.kr.current_value = 20
+		self.kr.target_value = 100
+		self.kr.save(ignore_permissions=True)
+
+		action = self.make_action(assigned_to=self.user_a)
+		self.assertEqual(action.customize_measurement, 1)
+		self.assertEqual(action.metric_type, "Currency")
+		self.assertEqual(action.metric_direction, "Increase")
+		self.assertEqual(action.baseline_value, 20)
+		self.assertEqual(action.target_value, 100)
+		self.assertEqual(action.current_value, 20)
+
+	def test_unlocked_legacy_action_is_initialized_once_without_overwriting_later_changes(self):
+		action = self.make_action(assigned_to=self.user_a)
+		frappe.db.set_value("OKR Action Item", action.name, {
+			"customize_measurement": 0,
+			"metric_type": "Number",
+			"metric_direction": "Increase",
+			"baseline_value": 5,
+			"target_value": 55,
+			"current_value": 15,
+		})
+		self.kr.lock_measurement_fields_for_action_item_assignees = 1
+		self.kr.save(ignore_permissions=True)
+
+		action.reload()
+		action.save(ignore_permissions=True)
+		action.reload()
+		self.assertEqual(action.customize_measurement, 1)
+		self.assertEqual(action.metric_type, "Number")
+		self.assertEqual(action.baseline_value, 5)
+		self.assertEqual(action.target_value, 55)
+		self.assertEqual(action.current_value, 15)
+
+		action.metric_type = "Number"
+		action.target_value = 50
+		action.save(ignore_permissions=True)
+		self.kr.target_value = 200000
+		self.kr.save(ignore_permissions=True)
+		action.reload()
+		action.save(ignore_permissions=True)
+		action.reload()
+		self.assertEqual(action.metric_type, "Number")
+		self.assertEqual(action.target_value, 50)
+
 	def test_12_no_parent_kr_delegated_write_permission_remains(self):
 		# 12. No parent KR delegated write permission remains.
-		self.kr.lock_measurement_fields_for_action_item_assignees = 0
+		self.kr.lock_measurement_fields_for_action_item_assignees = 1
 		self.kr.save(ignore_permissions=True)
 
 		self.make_action(assigned_to=self.user_a)
@@ -454,12 +506,12 @@ class TestOKRActionItem(FrappeTestCase):
 		self.kr.metric_direction = "Increase"
 		self.kr.baseline_value = 0
 		self.kr.target_value = 5
-		self.kr.lock_measurement_fields_for_action_item_assignees = 0
+		self.kr.lock_measurement_fields_for_action_item_assignees = 1
 		self.kr.save(ignore_permissions=True)
 		frappe.db.set_value("OKR Key Result", self.kr.name, "current_value", 2)
 
 		# 1. Custom measurement ON: assigned user can edit current_value. Save + reload persists.
-		# 4. Custom Percentage: Start 20, Target 100, Current 40 -> expected normalized completion = 25%.
+		# 4. Custom Percentage: Start 20, Target 100, Current 40 -> expected normalized completion = 40%.
 		ai_2 = self.make_action(assigned_to=self.user_b)
 		frappe.set_user(self.user_b)
 		ai_2_doc = frappe.get_doc("OKR Action Item", ai_2.name)
@@ -473,12 +525,12 @@ class TestOKRActionItem(FrappeTestCase):
 
 		ai_2_doc.reload()
 		self.assertEqual(ai_2_doc.current_value, 40)
-		self.assertEqual(ai_2_doc.progress, 25.0)
+		self.assertEqual(ai_2_doc.progress, 40.0)
 
 		# 2. Lock CHECKED: current_value customization denied.
 		frappe.set_user("Administrator")
 		self.kr.reload()
-		self.kr.lock_measurement_fields_for_action_item_assignees = 1
+		self.kr.lock_measurement_fields_for_action_item_assignees = 0
 		self.kr.save(ignore_permissions=True)
 
 		frappe.set_user(self.user_b)
@@ -489,12 +541,12 @@ class TestOKRActionItem(FrappeTestCase):
 		# Unlock for subsequent multi-AI tests
 		frappe.set_user("Administrator")
 		self.kr.reload()
-		self.kr.lock_measurement_fields_for_action_item_assignees = 0
+		self.kr.lock_measurement_fields_for_action_item_assignees = 1
 		self.kr.save(ignore_permissions=True)
 
 		# 3. Customize OFF: Action Item inherits KR measurement.
 		ai_1 = self.make_action(assigned_to=self.user_a)
-		self.assertEqual(ai_1.customize_measurement, 0)
+		self.assertEqual(ai_1.customize_measurement, 1)
 		self.assertEqual(ai_1.metric_type, "Number")
 		self.assertEqual(ai_1.baseline_value, 0)
 		self.assertEqual(ai_1.target_value, 5)
@@ -527,7 +579,7 @@ class TestOKRActionItem(FrappeTestCase):
 		# 5. Workspace displays that Action Item's 25% progress.
 		ws_items = get_action_items([self.kr.name])
 		ws_map = {item["name"]: item for item in ws_items}
-		self.assertEqual(ws_map[ai_2.name]["progress"], 25.0)
+		self.assertEqual(ws_map[ai_2.name]["progress"], 40.0)
 		self.assertEqual(ws_map[ai_3.name]["progress"], 50.0)
 		self.assertEqual(ws_map[ai_1.name]["progress"], 20.0)
 
@@ -537,9 +589,9 @@ class TestOKRActionItem(FrappeTestCase):
 		self.assertEqual(self.kr.metric_type, "Number")
 		self.assertEqual(self.kr.baseline_value, 0)
 		self.assertEqual(self.kr.target_value, 5)
-		# 11. Mixed-unit child progress aggregates normalized %: (20% + 25% + 50%) / 3 = 31.67%
+		# 11. Mixed-unit child progress aggregates normalized %: (20% + 40% + 50%) / 3 = 36.67%
 		# Never aggregates raw values (₹50000 + 40% + 1 unit)
-		self.assertEqual(self.kr.target_progress, 31.67)
+		self.assertEqual(self.kr.target_progress, 36.67)
 
 		# 7. Sibling Action Items remain unchanged when one is modified.
 		# 8. Different Action Items under same KR simultaneously use Number, Percentage, Currency.
@@ -551,22 +603,33 @@ class TestOKRActionItem(FrappeTestCase):
 		self.assertEqual(ai_2_doc.metric_type, "Percentage")
 		self.assertEqual(ai_3_doc.metric_type, "Currency")
 		self.assertEqual(ai_1.progress, 20.0)
-		self.assertEqual(ai_2_doc.progress, 25.0)
+		self.assertEqual(ai_2_doc.progress, 40.0)
 		self.assertEqual(ai_3_doc.progress, 50.0)
 
 		# 10. Check-In uses the exact Action Item effective measurement.
 		frappe.set_user(self.user_b)
 		save_workspace_checkin(
 			action_item=ai_2.name,
-			current_value=60, # for 20->100, 60 is (60-20)/(100-20)*100 = 50%
+			current_value=60, # Percentage current is progress directly: 60 means 60%
 			update="AI-2 updated to 60",
 			status="In Progress",
 		)
 		ai_2_doc.reload()
 		self.assertEqual(ai_2_doc.current_value, 60)
-		self.assertEqual(ai_2_doc.progress, 50.0)
+		self.assertEqual(ai_2_doc.progress, 60.0)
 		# Parent KR canonical measurement fields remain unchanged
 		self.kr.reload()
 		self.assertEqual(self.kr.metric_type, "Number")
 		self.assertEqual(self.kr.baseline_value, 0)
 		self.assertEqual(self.kr.target_value, 5)
+		# Only AI-2 changed: siblings retain their independent completion and the
+		# hierarchy averages normalized percentages, never mixed raw units.
+		ai_1.reload()
+		ai_3_doc.reload()
+		self.assertEqual(ai_1.progress, 20.0)
+		self.assertEqual(ai_3_doc.progress, 50.0)
+		self.assertEqual(self.kr.target_progress, 43.33)
+		self.objective.reload()
+		self.plan.reload()
+		self.assertEqual(self.objective.progress, 43.33)
+		self.assertEqual(self.plan.progress, 43.33)
