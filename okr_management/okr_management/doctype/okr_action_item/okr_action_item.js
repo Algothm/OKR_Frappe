@@ -1,6 +1,26 @@
+function setup_auto_growing_title(frm, fieldname) {
+    const input = frm.fields_dict[fieldname]?.$wrapper?.find('textarea').first();
+    if (!input?.length) return;
+    input.off('input.okr-title-resize').on('input.okr-title-resize', () => resize_auto_growing_title(frm, fieldname));
+    resize_auto_growing_title(frm, fieldname);
+}
+
+function resize_auto_growing_title(frm, fieldname) {
+    const input = frm.fields_dict[fieldname]?.$wrapper?.find('textarea').first();
+    if (!input?.length) return;
+    const textarea = input[0];
+    textarea.style.setProperty('height', 'auto', 'important');
+    textarea.style.setProperty('min-height', '38px', 'important');
+    textarea.style.setProperty('max-height', 'none', 'important');
+    textarea.style.setProperty('overflow-y', 'hidden', 'important');
+    textarea.style.setProperty('resize', 'none', 'important');
+    textarea.style.setProperty('height', Math.max(38, textarea.scrollHeight) + 'px', 'important');
+}
+
 frappe.ui.form.on('OKR Action Item', {
     setup(frm) {
         frm.set_query('assigned_to', () => ({ filters: { enabled: 1, user_type: 'System User' } }));
+        set_measurement_type_options(frm);
     },
     onload(frm) {
         apply_route_context(frm);
@@ -8,6 +28,7 @@ frappe.ui.form.on('OKR Action Item', {
     onload_post_render(frm) {
         if (frm.doc.parent_key_result) fetch_parent_key_result_context(frm);
         else render_context_preview(frm, {});
+        setup_auto_growing_title(frm, 'action_item_title');
     },
     refresh(frm) {
         apply_action_item_ui(frm);
@@ -15,6 +36,8 @@ frappe.ui.form.on('OKR Action Item', {
         if (frm.doc.parent_key_result) fetch_parent_key_result_context(frm);
         else render_context_preview(frm, {});
         if (frm.doc.action_item_title && !frm.is_new()) frm.page.set_title(frm.doc.action_item_title);
+        render_action_completion(frm, flt(frm.doc.progress || 0, 2));
+        setup_auto_growing_title(frm, 'action_item_title');
     },
     parent_key_result(frm) {
         fetch_parent_key_result_context(frm);
@@ -22,9 +45,6 @@ frappe.ui.form.on('OKR Action Item', {
     due_date(frm) {
         validate_due_date_against_target(frm);
         render_context_preview(frm, frm._kr_context);
-    },
-    customize_measurement(frm) {
-        handle_customize_measurement_change(frm);
     },
     current_value(frm) {
         recalculate_form_action_progress(frm);
@@ -99,6 +119,7 @@ function apply_route_context(frm) {
 }
 
 function apply_action_item_ui(frm) {
+    set_measurement_type_options(frm);
     [
         'parent_plan', 'plan_title', 'plan_description', 'company', 'financial_year',
         'sprint_frequency', 'context_start_date', 'context_end_date',
@@ -230,9 +251,10 @@ function fetch_parent_key_result_context(frm) {
             frm.refresh_field('financial_year');
             frm.set_value(values);
             load_plan_context(frm, kr_data.parent_plan, kr_data);
-            const is_locked = Boolean(kr_data.lock_measurement_fields_for_action_item_assignees !== 0 && kr_data.lock_measurement_fields_for_action_item_assignees !== '0');
+            const is_locked = Boolean(kr_data.lock_measurement_fields_for_action_item_assignees === 0 || kr_data.lock_measurement_fields_for_action_item_assignees === '0');
             frm.set_value('measurement_customization_status', is_locked ? 'Locked' : 'Allowed');
             update_measurement_customization_ui(frm, is_locked, kr_data);
+            render_action_completion(frm, flt(frm.doc.progress || 0, 2));
         };
 
         if ((!kr.objective_owner || !kr.group) && kr.objective) {
@@ -399,22 +421,17 @@ function render_preview_cards(field, cards, empty_message, title) {
     }
 }
 
-function handle_customize_measurement_change(frm) {
-    const kr_data = (frm._kr_context && frm._kr_context.kr) || {};
-    const is_locked = Boolean(kr_data.lock_measurement_fields_for_action_item_assignees !== 0 && kr_data.lock_measurement_fields_for_action_item_assignees !== '0');
-    if (frm.doc.customize_measurement) {
-        if (!frm.doc.metric_type && kr_data.metric_type) {
-            frm.set_value('metric_type', kr_data.metric_type || 'Percentage');
-            frm.set_value('metric_direction', kr_data.metric_direction || 'Increase');
-            frm.set_value('baseline_value', flt(kr_data.baseline_value, 2));
-            frm.set_value('target_value', flt(kr_data.target_value, 2));
-        }
-    }
-    update_measurement_customization_ui(frm, is_locked, kr_data);
+function set_measurement_type_options(frm) {
+    frm.set_df_property('metric_type', 'options', [
+        { label: __('Percentage'), value: 'Percentage' },
+        { label: __('Number'), value: 'Number' },
+        { label: __('Amount'), value: 'Currency' }
+    ]);
 }
 
 function update_measurement_customization_ui(frm, is_locked, kr_data) {
     frm.set_df_property('measurement_customization_status', 'read_only', 1);
+    frm.set_df_property('customize_measurement', 'hidden', 1);
 
     const user = frappe.session.user;
     const is_admin = (user === 'Administrator' || (frappe.user_roles && (frappe.user_roles.includes('System Manager') || frappe.user_roles.includes('OKR Admin'))));
@@ -422,23 +439,18 @@ function update_measurement_customization_ui(frm, is_locked, kr_data) {
     const is_editable_status = ['Open', 'In Progress', 'On Hold', 'Blocked'].includes(frm.doc.status || 'Open');
     const can_customize = !is_locked && is_assignee && is_editable_status;
 
-    if (is_locked) {
-        frm.set_df_property('customize_measurement', 'hidden', 1);
-        frm.set_df_property('customize_measurement', 'read_only', 1);
-        frm.set_df_property('measurement_section', 'hidden', !frm.doc.customize_measurement);
-        ['metric_type', 'metric_direction', 'baseline_value', 'target_value', 'current_value'].forEach((f) => {
-            frm.set_df_property(f, 'read_only', 1);
-        });
-    } else {
-        frm.set_df_property('customize_measurement', 'hidden', 0);
-        frm.set_df_property('customize_measurement', 'read_only', can_customize ? 0 : 1);
-        const show_section = Boolean(frm.doc.customize_measurement);
-        frm.set_df_property('measurement_section', 'hidden', !show_section);
-        const can_edit_fields = can_customize && show_section;
-        ['metric_type', 'metric_direction', 'baseline_value', 'target_value', 'current_value'].forEach((f) => {
-            frm.set_df_property(f, 'read_only', can_edit_fields ? 0 : 1);
-        });
+    frm.set_df_property('measurement_section', 'hidden', 0);
+    if (!is_locked && !frm.doc.customize_measurement) {
+        frm.set_value('metric_type', kr_data.metric_type || 'Percentage');
+        frm.set_value('metric_direction', kr_data.metric_direction || 'Increase');
+        frm.set_value('baseline_value', flt(kr_data.baseline_value, 2));
+        frm.set_value('target_value', flt(kr_data.target_value, 2));
+        frm.set_value('current_value', flt(frm.is_new() ? kr_data.baseline_value : (frm.doc.current_value ?? kr_data.baseline_value), 2));
+        frm.set_value('customize_measurement', 1);
     }
+    ['metric_type', 'metric_direction', 'baseline_value', 'target_value', 'current_value'].forEach((f) => {
+        frm.set_df_property(f, 'read_only', can_customize ? 0 : 1);
+    });
 }
 
 function recalculate_form_action_progress(frm) {
@@ -447,15 +459,43 @@ function recalculate_form_action_progress(frm) {
     const baseline = flt(frm.doc.baseline_value);
     const target = flt(frm.doc.target_value);
     let progress = 0;
-    if (frm.doc.metric_type === 'Boolean') {
+    if (frm.doc.metric_type === 'Percentage') {
+        progress = Math.min(100, Math.max(0, actual));
+    } else if (frm.doc.metric_type === 'Boolean') {
         progress = actual ? 100 : 0;
     } else if (target !== baseline) {
         if (frm.doc.metric_direction === 'Decrease') {
-            progress = ((baseline - actual) / (baseline - target)) * 100;
+            progress = actual < target
+                ? 0
+                : ((baseline - actual) / (baseline - target)) * 100;
         } else {
             progress = ((actual - baseline) / (target - baseline)) * 100;
         }
         progress = Math.min(100, Math.max(0, Math.round(progress * 100) / 100));
     }
     frm.set_value('progress', progress);
+    render_action_completion(frm, progress);
+}
+
+function render_action_completion(frm, progress_value) {
+    const field = frm.fields_dict.current_value;
+    if (!field || !field.$wrapper) return;
+
+    const progress = Math.min(100, Math.max(0, flt(progress_value || 0, 2)));
+    const progress_text = Number.isInteger(progress) ? String(progress) : String(flt(progress, 2));
+    field.$wrapper.find('.okr-live-completion').remove();
+    const preview = $(`
+        <div class="okr-live-completion" style="margin-top:10px;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--subtle-fg);">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:7px;font-size:12px;">
+                <span style="color:var(--text-muted);font-weight:600;">${__('Calculated completion')}</span>
+                <strong style="color:var(--text-color);">${progress_text}%</strong>
+            </div>
+            <div style="height:6px;border-radius:999px;background:var(--gray-200);overflow:hidden;">
+                <div style="height:100%;width:${progress}%;border-radius:inherit;background:var(--primary);transition:width .2s ease;"></div>
+            </div>
+        </div>
+    `);
+    const description = field.$wrapper.find('.help-box').last();
+    if (description.length) preview.insertAfter(description);
+    else field.$wrapper.append(preview);
 }

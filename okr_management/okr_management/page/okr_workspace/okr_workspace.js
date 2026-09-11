@@ -275,11 +275,12 @@ class OKRWorkspace {
 			const metricType = $input.data("metric-type");
 			const direction = $input.data("direction");
 			let completion = 0;
-			if (metricType === "Boolean") completion = actual ? 100 : 0;
+			if (metricType === "Percentage") completion = actual;
+			else if (metricType === "Boolean") completion = actual ? 100 : 0;
 			else if (target !== baseline)
 				completion =
 					direction === "Decrease"
-						? ((baseline - actual) / (baseline - target)) * 100
+						? (actual < target ? 0 : ((baseline - actual) / (baseline - target)) * 100)
 						: ((actual - baseline) / (target - baseline)) * 100;
 			completion = Math.min(100, Math.max(0, completion));
 			$input
@@ -685,7 +686,7 @@ class OKRWorkspace {
 			if (!action.due_date) continue;
 			const due = moment(action.due_date);
 			const complete =
-				action.status === "Completed" || action.status === "Archived" || progress >= 100;
+				action.status === "Completed" || action.status === "Done" || action.status === "Archived" || progress >= 100;
 			if (due.isBefore(today, "day") && !complete) {
 				const overdueDays = today.diff(due, "days");
 				reasons.push(
@@ -778,6 +779,7 @@ class OKRWorkspace {
 	action_row(ai, kr) {
 		const meas = this.get_effective_action_measurement(ai, kr);
 		const progress = flt(meas.progress, 2);
+		const statusDisplay = ai.status === "Archived" ? "Done" : (ai.status || "");
 		const historyOpen = this.state.action_history[ai.name];
 		const checkinOpen = this.state.action_checkin === ai.name;
 		const historyCount = (ai.history || []).length;
@@ -817,9 +819,7 @@ class OKRWorkspace {
 														}
                                                 </div>
                                         </div>
-                                        <span class="okr-status ${frappe.scrub(
-											ai.status || ""
-										)}">${frappe.utils.escape_html(ai.status || "")}</span>
+                                        <span class="okr-status ${frappe.scrub(statusDisplay)}">${frappe.utils.escape_html(statusDisplay)}</span>
                                         <div class="okr-action-progress ${actionProgressTone}"><div class="okr-bar"><i style="width:${Math.min(
 			100,
 			progress
@@ -848,26 +848,30 @@ class OKRWorkspace {
 
 
 	checkin_panel(ai, kr) {
-		const currentStatus = ai.status || "In Progress";
-		const isCustom = Boolean(ai.customize_measurement);
+		const currentStatus = ai.status === "Archived" ? "Done" : (ai.status || "In Progress");
+		const isCustom = Boolean(ai && ai.metric_type && ai.target_value !== undefined && ai.target_value !== null);
 		const metricType = isCustom && ai.metric_type ? ai.metric_type : (kr.metric_type || "Percentage");
 		const baseline = flt(isCustom ? ai.baseline_value : (kr.baseline_value || 0), 2);
 		const target = flt(isCustom ? ai.target_value : (kr.target_value || 0), 2);
 		const direction = isCustom && ai.metric_direction ? ai.metric_direction : (kr.metric_direction || "Increase");
 		const latestCheckin = (ai.history || [])[0];
-		const actual = flt(
+		const completionDisplay = flt(ai.progress || 0, 2);
+		const rawActual = flt(
 			isCustom
 				? (ai.current_value !== undefined && ai.current_value !== null ? ai.current_value : baseline)
 				: (latestCheckin && latestCheckin.current_value !== undefined ? latestCheckin.current_value : baseline),
 			2
 		);
+		// Percentage Action Items are updated in completion-percent terms in the
+		// Workspace. Their underlying KR metric value (for example 0.7) is an
+		// implementation detail and must not appear as the Action's progress.
+		const actual = metricType === "Percentage" ? completionDisplay : rawActual;
 		const valueLabel =
 			metricType === "Currency"
 				? __("Current Amount ({0})", [isCustom ? "" : (kr.currency || "")])
 				: metricType === "Number"
 				? __("Current Value")
-				: __("Current Percentage (%)");
-		const completionDisplay = flt(ai.progress || 0, 2);
+				: __("Current Progress (%)");
 		return `
 			<div class="okr-inline-checkin">
 				<div class="okr-inline-context">
@@ -895,9 +899,9 @@ class OKRWorkspace {
 			"In Progress"
 		)}</option>
 								<option value="On Hold" ${currentStatus === "On Hold" ? "selected" : ""}>${__("On Hold")}</option>
-								<option value="Blocked" ${currentStatus === "Blocked" ? "selected" : ""}>${__("Blocked")}</option>
-								<option value="Archived" ${currentStatus === "Archived" ? "selected" : ""}>${__(
-			"Archived"
+								<option value="Done" ${currentStatus === "Done" ? "selected" : ""}>${__("Done")}</option>
+								<option value="Blocked" ${currentStatus === "Blocked" ? "selected" : ""}>${__(
+			"Blocked"
 		)}</option>
 							</select>
 						</div>
@@ -1000,7 +1004,7 @@ class OKRWorkspace {
 			.join("")}${historyToggle}</div>`;
 	}
 	get_effective_action_measurement(ai, kr) {
-		const isCustom = Boolean(ai && ai.customize_measurement);
+		const isCustom = Boolean(ai && ai.metric_type && ai.target_value !== undefined && ai.target_value !== null);
 		if (isCustom) {
 			const metricType = ai.metric_type || "Percentage";
 			const direction = ai.metric_direction || "Increase";
@@ -1012,7 +1016,9 @@ class OKRWorkspace {
 				progress = current ? 100.0 : 0.0;
 			} else if (target !== baseline) {
 				if (direction === "Decrease") {
-					progress = ((baseline - current) / (baseline - target)) * 100.0;
+					progress = current < target
+						? 0
+						: ((baseline - current) / (baseline - target)) * 100.0;
 				} else {
 					progress = ((current - baseline) / (target - baseline)) * 100.0;
 				}
@@ -1051,23 +1057,24 @@ class OKRWorkspace {
 		if (metricType === "percentage") {
 			return `${this.format_kr_number(meas.progress)}%`;
 		}
-		const latest = (ai.history || [])[0];
-		const value = latest && latest.current_value !== undefined && latest.current_value !== null
-			? latest.current_value
-			: meas.current_value;
-		if (metricType === "currency") {
-			return this.format_kr_currency(value, meas.currency);
+		if (metricType === "boolean") {
+			return meas.current_value ? __("Achieved") : __("Not Achieved");
 		}
-		const unit = (meas.unit_of_measure || "").trim();
-		const display = this.format_kr_number(value);
-		return unit && unit !== "%" ? `${display} ${frappe.utils.escape_html(unit)}` : display;
+		const directionArrow = String.fromCharCode(8594);
+		if (metricType === "currency") {
+			const currency = meas.currency || (kr && kr.currency) || "";
+			return `${this.format_kr_currency(meas.current_value, currency)} ${directionArrow} ${this.format_kr_currency(meas.target_value, currency)}`;
+		}
+		const value = `${this.format_kr_number(meas.current_value)} ${directionArrow} ${this.format_kr_number(meas.target_value)}`;
+		const unit = (meas.unit_of_measure || (kr && kr.unit_of_measure) || "").trim();
+		return unit && unit !== "%" ? `${value} ${unit}` : value;
 	}
 
 	format_checkin_value(row, measurement_or_kr) {
 		const metricType = ((measurement_or_kr && measurement_or_kr.metric_type) || "Percentage").toLowerCase();
 		if (metricType === "currency")
 			return this.format_kr_currency(row.current_value, measurement_or_kr.currency);
-		if (metricType === "percentage") return `${this.format_kr_number(row.current_value)}%`;
+		if (metricType === "percentage") return `${this.format_kr_number(row.progress)}%`;
 		return this.format_kr_number(row.current_value);
 	}
 
@@ -1080,7 +1087,10 @@ class OKRWorkspace {
 			)}`;
 		}
 		if (metricType === "percentage") {
-			return `${this.format_kr_number(kr.target_progress || kr.current_value || 0)}%`;
+			const completion = (kr.action_items || []).length
+				? kr.target_progress || 0
+				: kr.target_progress || kr.current_value || 0;
+			return `${this.format_kr_number(completion)}%`;
 		}
 		const directionArrow = "→";
 		if (metricType === "currency") {
@@ -1161,6 +1171,7 @@ class OKRWorkspace {
 					const isOverdue = due.isBefore(today, "day");
 					const isCompleted =
 						ai.status === "Completed" ||
+						ai.status === "Done" ||
 						ai.status === "Archived" ||
 						flt(ai.progress || 0) >= 100;
 					if (isOverdue && !isCompleted) return true;
@@ -1226,7 +1237,13 @@ class OKRWorkspace {
 		const $panel = this.$body.find(".okr-inline-checkin");
 		const $button = $panel.find("[data-save-checkin]");
 		const $value = $panel.find("[data-ws-progress]");
-		const currentValue = flt($value.val(), 2);
+		const enteredValue = flt($value.val(), 2);
+		const metricType = $value.data("metric-type");
+		const baseline = flt($value.data("baseline"), 2);
+		const target = flt($value.data("target"), 2);
+		// Percentage Actions are entered as completion (0-100) in the Workspace.
+		// Convert back to the configured raw metric only for persistence/calculation.
+		const currentValue = enteredValue;
 		const update = ($panel.find("[data-ws-update]").val() || "").trim();
 		const checkinDate = ($panel.find("[data-ws-checkin-date]").val() || "").trim();
 		const args = {
@@ -1241,8 +1258,10 @@ class OKRWorkspace {
 		};
 
 		if (!action) return frappe.msgprint(__("Please select an Action Item."));
-		if (isNaN(currentValue))
+		if (isNaN(enteredValue))
 			return frappe.msgprint(__("Please enter a valid Current Value."));
+		if (metricType === "Percentage" && (enteredValue < 0 || enteredValue > 100))
+			return frappe.msgprint(__("Current Progress must be between 0 and 100."));
 
 		this.saving_checkin = true;
 		$button.prop("disabled", true).text(__("Saving..."));

@@ -1,9 +1,13 @@
 frappe.ui.form.on("OKR Key Result", {
+	setup(frm) {
+		set_measurement_type_options(frm);
+	},
 	onload_post_render(frm) {
 		if (frm.doc.objective) {
 			populate_objective_context(frm);
 		} else render_key_result_context_preview(frm, {});
 		match_description_heights(frm);
+		setup_auto_growing_key_result_title(frm);
 		hide_section_headers(frm);
 		setup_realtime_inputs(frm);
 		sync_key_result_owner(frm);
@@ -14,10 +18,12 @@ frappe.ui.form.on("OKR Key Result", {
 		if (frm.doc.objective) populate_objective_context(frm);
 		else render_key_result_context_preview(frm, {});
 		match_description_heights(frm);
+		setup_auto_growing_key_result_title(frm);
 		hide_section_headers(frm);
 		calculate_target_progress(frm);
 		setup_realtime_inputs(frm);
 		sync_key_result_owner(frm);
+		setup_action_item_connection_route(frm);
 	},
 	objective(frm) {
 		populate_objective_context(frm);
@@ -39,15 +45,41 @@ frappe.ui.form.on("OKR Key Result", {
 		calculate_target_progress(frm);
 	},
 	baseline_value(frm) {
+		initialize_new_current_from_baseline(frm);
 		calculate_target_progress(frm);
 	},
 	target_value(frm) {
 		calculate_target_progress(frm);
 	},
 	current_value(frm) {
+		if (!frm.__setting_initial_current) frm.__current_value_was_edited = true;
 		calculate_target_progress(frm);
 	},
 });
+
+function setup_action_item_connection_route(frm) {
+	if (frm.is_new()) return;
+	setTimeout(() => {
+		const link = frm.dashboard?.transactions_area?.find(
+			'.document-link[data-doctype="OKR Action Item"] .badge-link'
+		);
+		if (!link?.length) return;
+		link.off("click").on("click.okr-new-action", (event) => {
+			event.preventDefault();
+			event.stopImmediatePropagation();
+			frappe.route_options = { parent_key_result: frm.doc.name };
+			frappe.new_doc("OKR Action Item");
+		});
+	}, 0);
+}
+
+function set_measurement_type_options(frm) {
+	frm.set_df_property("metric_type", "options", [
+		{ label: __("Percentage"), value: "Percentage" },
+		{ label: __("Number"), value: "Number" },
+		{ label: __("Amount"), value: "Currency" },
+	]);
+}
 
 function sync_key_result_owner(frm) {
 	if (frm.doc.assignee && frm.doc.owner_user !== frm.doc.assignee) {
@@ -221,7 +253,7 @@ function apply_key_result_ui(frm) {
 	frm.set_df_property("target_progress", "hidden", 1);
 
 	frm.set_df_property("current_value", "hidden", 0);
-	frm.set_df_property("current_value", "read_only", frm.doc.calculation_mode === "Automatic");
+	frm.set_df_property("current_value", "read_only", 0);
 	frm.toggle_display("currency", 0);
 
 	const metric_type = frm.doc.metric_type;
@@ -297,11 +329,12 @@ function measurement_guidance(frm) {
 	return __("Enter the actual measured value, not the completion percentage.");
 }
 
-function render_measurement_guidance(frm) {
+function render_measurement_guidance(frm, preview_progress = null) {
 	const field = frm.fields_dict.current_value;
 	if (!field || !field.$wrapper) return;
 
-	const progress = Math.min(100, Math.max(0, flt(frm.doc.target_progress || 0, 2)));
+	const source_progress = preview_progress === null ? frm.doc.target_progress || 0 : preview_progress;
+	const progress = Math.min(100, Math.max(0, flt(source_progress, 2)));
 	const progress_text = Number.isInteger(progress) ? String(progress) : String(flt(progress, 2));
 	field.$wrapper.find(".okr-measurement-info").remove();
 	field.$wrapper.find(".okr-live-completion").remove();
@@ -507,6 +540,33 @@ function render_preview_cards(field, cards, empty_message, title) {
 	}
 }
 
+function setup_auto_growing_key_result_title(frm) {
+	const input = frm.fields_dict.key_result_title?.$wrapper?.find("textarea").first();
+	if (!input?.length) return;
+	input.off("input.okr-title-resize").on("input.okr-title-resize", () => resize_key_result_title(frm));
+	resize_key_result_title(frm);
+}
+
+function resize_key_result_title(frm) {
+	const input = frm.fields_dict.key_result_title?.$wrapper?.find("textarea").first();
+	if (!input?.length) return;
+	const textarea = input[0];
+	textarea.style.setProperty("height", "auto", "important");
+	textarea.style.setProperty("min-height", "38px", "important");
+	textarea.style.setProperty("max-height", "none", "important");
+	textarea.style.setProperty("overflow-y", "hidden", "important");
+	textarea.style.setProperty("resize", "none", "important");
+	textarea.style.setProperty("height", Math.max(38, textarea.scrollHeight) + "px", "important");
+}
+
+function initialize_new_current_from_baseline(frm) {
+	if (!frm.is_new() || frm.__current_value_was_edited) return;
+	frm.__setting_initial_current = true;
+	frm.set_value("current_value", flt(frm.doc.baseline_value || 0)).then(() => {
+		frm.__setting_initial_current = false;
+	});
+}
+
 function match_description_heights(frm) {
 	const field = frm.fields_dict.description;
 	if (!field || !field.$wrapper) return;
@@ -539,7 +599,7 @@ function calculate_target_progress(frm) {
 		progress = current >= target ? 100 : 0;
 	} else {
 		if (direction === "Decrease") {
-			if (target === baseline) {
+			if (target === baseline || current < target) {
 				progress = 0;
 			} else {
 				progress = ((baseline - current) / (baseline - target)) * 100;
@@ -554,9 +614,15 @@ function calculate_target_progress(frm) {
 		progress = Math.min(100, Math.max(0, progress));
 	}
 
+	if (cint(frm.doc.action_item_count || 0) > 0) {
+		// Preview the KR's own measurement live without replacing the persisted
+		// Action Item average stored in target_progress.
+		render_measurement_guidance(frm, progress);
+		return;
+	}
 	frm.set_value("target_progress", flt(progress, 2));
 	frm.set_value("score", flt(progress, 2));
-	render_measurement_guidance(frm);
+	render_measurement_guidance(frm, progress);
 }
 
 function setup_realtime_inputs(frm) {
@@ -566,6 +632,10 @@ function setup_realtime_inputs(frm) {
 			.on("input", "input", function () {
 				const val = flt($(this).val());
 				frm.doc.baseline_value = val;
+				if (frm.is_new() && !frm.__current_value_was_edited) {
+					frm.doc.current_value = val;
+					frm.fields_dict.current_value?.set_input(val);
+				}
 				calculate_target_progress(frm);
 			});
 	}
@@ -583,9 +653,10 @@ function setup_realtime_inputs(frm) {
 		frm.fields_dict.current_value.$wrapper
 			.off("input.okr-measurement", "input")
 			.on("input.okr-measurement", "input", function () {
+				frm.__current_value_was_edited = true;
 				frm.doc.current_value = flt($(this).val());
 				calculate_target_progress(frm);
 			});
 	}
-	render_measurement_guidance(frm);
+	calculate_target_progress(frm);
 }
