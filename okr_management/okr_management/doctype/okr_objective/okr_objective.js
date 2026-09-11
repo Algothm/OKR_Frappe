@@ -21,6 +21,7 @@ frappe.ui.form.on("OKR Objective", {
 	},
 	refresh(frm) {
 		configure_objective_form(frm);
+		configure_key_result_connection(frm);
 		frm.doc.parent_plan ? load_plan_context(frm, false) : clear_plan_context(frm);
 		layout_summary_fields(frm);
 		layout_timeline_fields(frm);
@@ -42,6 +43,22 @@ frappe.ui.form.on("OKR Objective", {
 		if (frm.is_new() && !frm.doc.group) frappe.throw(__("Group is required."));
 	},
 });
+
+function configure_key_result_connection(frm) {
+	if (frm.is_new() || !frm.dashboard || frm.dashboard._okr_key_result_direct_add) return;
+
+	const open_document_list = frm.dashboard.open_document_list.bind(frm.dashboard);
+	frm.dashboard.open_document_list = function ($link, show_open) {
+		const doctype = $link?.attr("data-doctype");
+		if (doctype === "OKR Key Result" && frm.can_create(doctype)) {
+			frappe.new_doc(doctype, { objective: frm.doc.name });
+			return;
+		}
+
+		return open_document_list($link, show_open);
+	};
+	frm.dashboard._okr_key_result_direct_add = true;
+}
 
 function hide_destructive_objective_actions(frm) {
 	[__("Archive"), __("Delete"), __("Remove")].forEach((label) => {

@@ -32,6 +32,7 @@ frappe.ui.form.on('OKR Action Item', {
     },
     refresh(frm) {
         apply_action_item_ui(frm);
+        configure_check_in_connection(frm);
         apply_route_context(frm);
         if (frm.doc.parent_key_result) fetch_parent_key_result_context(frm);
         else render_context_preview(frm, {});
@@ -93,6 +94,22 @@ frappe.ui.form.on('OKR Action Item', {
         }
     }
 });
+
+function configure_check_in_connection(frm) {
+    if (frm.is_new() || !frm.dashboard || frm.dashboard._okr_check_in_direct_add) return;
+
+    const open_document_list = frm.dashboard.open_document_list.bind(frm.dashboard);
+    frm.dashboard.open_document_list = function ($link, show_open) {
+        const doctype = $link?.attr('data-doctype');
+        if (doctype === 'OKR Check In' && frm.can_create(doctype)) {
+            frappe.new_doc(doctype, { action_item: frm.doc.name });
+            return;
+        }
+
+        return open_document_list($link, show_open);
+    };
+    frm.dashboard._okr_check_in_direct_add = true;
+}
 
 function apply_route_context(frm) {
     if (!frm.is_new() || !frappe.route_options) return;
