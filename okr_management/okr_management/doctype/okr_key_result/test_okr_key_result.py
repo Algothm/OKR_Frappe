@@ -140,14 +140,24 @@ class TestOKRKeyResult(FrappeTestCase):
 			50,
 		)
 
-	def test_manual_metric_value_remains_authoritative_with_actions(self):
+	def test_actions_are_authoritative_even_when_legacy_mode_is_manual(self):
 		kr = self.make_kr(current_value=25)
-		self.make_action(kr, 20)
-		self.make_action(kr, 80)
+		action_a = self.make_action(kr)
+		action_b = self.make_action(kr)
+		frappe.db.set_value("OKR Action Item", action_a.name, {"current_value": 20, "progress": 20})
+		frappe.db.set_value("OKR Action Item", action_b.name, {"current_value": 80, "progress": 80})
 		recalculate_key_result_progress(kr.name)
 		kr.reload()
-		self.assertEqual(kr.target_progress, 25)
-		self.assertEqual(kr.current_value, 25)
+		self.assertEqual(kr.target_progress, 50)
+		# The child average is mapped into the KR's configured 0 -> 100 range.
+		self.assertEqual(kr.current_value, 50)
+
+	def test_authorized_owner_can_update_current_value_in_automatic_mode(self):
+		kr = self.make_kr(calculation_mode="Automatic", current_value=0)
+		kr.current_value = 40
+		kr.save(ignore_permissions=True)
+		kr.reload()
+		self.assertEqual(kr.current_value, 40)
 
 	def test_assignee_is_canonical_owner(self):
 		kr = self.make_kr()

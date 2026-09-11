@@ -9,12 +9,14 @@ from okr_management.hierarchy_visibility import get_hierarchy_visibility_scope
 from okr_management.permissions import is_okr_admin
 from okr_management.utils.okr_validations import ensure_percentage, ensure_required_link
 
-ACTIVE_ACTION_STATUSES = ("Open", "In Progress", "On Hold", "Blocked", "Archived")
+ACTIVE_ACTION_STATUSES = ("Open", "In Progress", "On Hold", "Done", "Blocked", "Archived")
 ACTION_STATUS_MAP = {
 	"In Progress": "In Progress",
 	"On Hold": "On Hold",
+	"Done": "Done",
 	"Blocked": "Blocked",
-	"Archived": "Archived",
+	# Accept legacy clients/records but persist the new user-facing value.
+	"Archived": "Done",
 }
 
 
@@ -31,6 +33,8 @@ class OKRCheckIn(Document):
 			self.progress_percent = self.progress
 
 	def set_metric_progress(self) -> None:
+		from okr_management.utils.okr_calculations import calculate_metric_progress
+
 		ai_data = frappe.db.get_value(
 			"OKR Action Item",
 			self.action_item,
@@ -38,7 +42,7 @@ class OKRCheckIn(Document):
 			as_dict=True,
 		) if self.action_item else None
 
-		if ai_data and ai_data.customize_measurement:
+		if ai_data and ai_data.metric_type and ai_data.target_value is not None:
 			metric_type = ai_data.metric_type or "Percentage"
 			metric_direction = ai_data.metric_direction or "Increase"
 			baseline = flt(ai_data.baseline_value)
@@ -58,19 +62,13 @@ class OKRCheckIn(Document):
 			target = flt(key_result.target_value)
 
 		actual = flt(self.current_value)
-		if metric_type == "Boolean":
-			if actual not in (0, 1):
-				frappe.throw(_("Current Value must be 0 or 1 for a Boolean Key Result."))
-			progress = 100.0 if actual else 0.0
-		else:
-			if target == baseline:
-				progress = 0.0
-			elif metric_direction == "Decrease":
-				progress = ((baseline - actual) / (baseline - target)) * 100.0
-			else:
-				progress = ((actual - baseline) / (target - baseline)) * 100.0
-
-		self.progress = min(100.0, max(0.0, progress))
+		if metric_type == "Boolean" and actual not in (0, 1):
+			frappe.throw(_("Current Value must be 0 or 1 for a Boolean Key Result."))
+		self.progress = (
+			min(100.0, max(0.0, actual))
+			if metric_type == "Percentage"
+			else calculate_metric_progress(baseline, actual, target, metric_direction, metric_type)
+		)
 		self.progress_percent = self.progress
 
 	def validate(self) -> None:
@@ -194,10 +192,8 @@ class OKRCheckIn(Document):
 			frappe.throw(_("Submitted Check-ins cannot be deleted."))
 
 	def on_update(self) -> None:
-		ai_custom = 0
 		if self.action_item and frappe.db.exists("OKR Action Item", self.action_item):
 			action_status = ACTION_STATUS_MAP[self.action_status]
-			ai_custom = frappe.db.get_value("OKR Action Item", self.action_item, "customize_measurement") or 0
 			frappe.db.set_value(
 				"OKR Action Item",
 				self.action_item,
@@ -210,8 +206,6 @@ class OKRCheckIn(Document):
 			)
 
 		if self.key_result:
-			if not ai_custom:
-				frappe.db.set_value("OKR Key Result", self.key_result, "current_value", flt(self.current_value))
 			from okr_management.utils.okr_calculations import recalculate_key_result_progress
 
 			recalculate_key_result_progress(self.key_result)
@@ -221,7 +215,6 @@ class OKRCheckIn(Document):
 
 	def after_delete(self) -> None:
 		if self.key_result:
-			frappe.db.set_value("OKR Key Result", self.key_result, "current_value", flt(self.current_value))
 			from okr_management.utils.okr_calculations import recalculate_key_result_progress
 
 			recalculate_key_result_progress(self.key_result)
@@ -304,7 +297,7 @@ def get_assigned_action_items(doctype, txt, searchfield, start, page_len, filter
 		"from `tabOKR Action Item` ai "
 		"left join `tabOKR Key Result` kr on kr.name = ai.parent_key_result "
 		"left join `tabOKR Plan` plan on plan.name = coalesce(ai.parent_plan, kr.parent_plan) "
-		"where ai.status in ('Open', 'In Progress', 'On Hold', 'Blocked', 'Archived') "
+		"where ai.status in ('Open', 'In Progress', 'On Hold', 'Done', 'Blocked', 'Archived') "
 		"  and (plan.status in ('Active', 'Draft') or plan.name is null) " + assignment_condition + " "
 		"  and (ai.name like %(txt)s or ai.action_item_title like %(txt)s) "
 		"order by ai.modified desc "

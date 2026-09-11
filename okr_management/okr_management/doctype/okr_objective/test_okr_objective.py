@@ -84,6 +84,13 @@ class TestOKRObjectivePlanContext(FrappeTestCase):
 		self.assertEqual(getdate(objective.start_date), getdate(fiscal_year.year_start_date))
 		self.assertEqual(getdate(objective.end_date), get_last_day(fiscal_year.year_start_date))
 
+	def test_objective_title_accepts_more_than_140_characters_without_clipping(self):
+		long_title = "Long Objective Title " + ("measurable business outcome " * 10)
+		self.assertGreater(len(long_title), 209)
+		objective = self.make_objective(objective_title=long_title)
+		objective.reload()
+		self.assertEqual(objective.objective_title, long_title)
+
 	def test_manual_dates_preserved_on_save(self):
 		plan = self.make_plan()
 		custom_start = "2026-05-01"
@@ -229,6 +236,14 @@ class TestOKRObjectivePlanContext(FrappeTestCase):
 		active_objective.status = "Active"
 		active_objective.save(ignore_permissions=True)
 		self.assertEqual(active_objective.status, "Active")
+
+	def test_active_objective_can_close_directly_and_persists_closed_label(self):
+		plan = self.make_plan(status="Active")
+		objective = self.make_objective(plan, status="Active")
+		objective.status = "Closed"
+		objective.save(ignore_permissions=True)
+		objective.reload()
+		self.assertEqual(objective.status, "Closed")
 
 	def test_objective_scope_is_always_department(self):
 		objective = self.make_objective(level="Team")

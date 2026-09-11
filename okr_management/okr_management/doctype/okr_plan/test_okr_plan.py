@@ -18,6 +18,14 @@ class TestOKRPlanPhase1(FrappeTestCase):
         if not self.company:
             self.skipTest("No Company exists on this site.")
         self.fiscal_year = self.ensure_fiscal_year()
+        if not frappe.db.exists("Fiscal Year", "2026-2027"):
+            frappe.get_doc({
+                "doctype": "Fiscal Year",
+                "year": "2026-2027",
+                "year_start_date": "2026-04-01",
+                "year_end_date": "2027-03-31",
+                "companies": [{"company": self.company}],
+            }).insert(ignore_permissions=True)
         frappe.db.delete("OKR Objective")
         frappe.db.delete("OKR Plan")
 

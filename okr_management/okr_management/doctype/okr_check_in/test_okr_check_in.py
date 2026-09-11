@@ -14,7 +14,7 @@ class TestOKRCheckIn(FrappeTestCase):
         fy=frappe.db.get_value("Fiscal Year",fiscal_year,["year_start_date","year_end_date"],as_dict=True)
         self.plan=frappe.get_doc({"doctype":"OKR Plan","plan_name":"CI Test "+frappe.generate_hash(length=6),"financial_year":fiscal_year,"company":company,"owner_user":"Administrator","sprint_frequency":"Monthly","planned_activation_date":today(),"status":"Draft"}).insert(ignore_permissions=True)
         objective=frappe.get_doc({"doctype":"OKR Objective","objective_title":"CI Objective "+frappe.generate_hash(length=6),"parent_plan":self.plan.name,"level":"Department","level_details":department,"department":department,"owner_user":"Administrator","status":"Draft"}).insert(ignore_permissions=True)
-        self.kr=frappe.get_doc({"doctype":"OKR Key Result","key_result_title":"CI KR "+frappe.generate_hash(length=6),"objective":objective.name,"assignee":"Administrator","metric_type":"Number","metric_direction":"Increase","baseline_value":0,"current_value":25,"target_value":100,"end_date":objective.end_date,"status":"Draft"}).insert(ignore_permissions=True)
+        self.kr=frappe.get_doc({"doctype":"OKR Key Result","key_result_title":"CI KR "+frappe.generate_hash(length=6),"objective":objective.name,"assignee":"Administrator","metric_type":"Number","metric_direction":"Increase","calculation_mode":"Automatic","baseline_value":0,"current_value":0,"target_value":100,"end_date":objective.end_date,"status":"Draft"}).insert(ignore_permissions=True)
         self.employee_user=employee.user_id
         if "OKR User" not in frappe.get_roles(self.employee_user):
             frappe.get_doc("User", self.employee_user).add_roles("OKR User")
@@ -52,7 +52,7 @@ class TestOKRCheckIn(FrappeTestCase):
         self.kr.reload()
         self.assertEqual(checkin.current_value, 125)
         self.assertEqual(checkin.progress, 100)
-        self.assertEqual(self.kr.current_value, 125)
+        self.assertEqual(self.kr.current_value, 100)
         self.assertEqual(self.kr.target_value, 100)
         self.assertEqual(self.kr.target_progress, 100)
 

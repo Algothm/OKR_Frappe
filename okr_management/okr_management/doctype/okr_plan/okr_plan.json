@@ -41,7 +41,7 @@
   },
   {
    "fieldname": "plan_name",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Plan Name",
    "reqd": 1,
    "in_list_view": 1,

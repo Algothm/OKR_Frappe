@@ -49,7 +49,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "reqd": 1,
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Key Result Title",
    "fieldname": "key_result_title"
   },
@@ -142,7 +142,7 @@
    "default": "1",
    "fieldname": "lock_measurement_fields_for_action_item_assignees",
    "fieldtype": "Check",
-   "label": "Lock Measurement Fields for Action Item Assignees"
+   "label": "Allow Assignees to Edit Their Action Item Measurement"
   },
   {
    "fieldtype": "Column Break",
@@ -177,7 +177,7 @@
    "in_standard_filter": 0,
    "fieldtype": "Select",
    "label": "Calculation Mode",
-   "default": "Manual",
+   "default": "Automatic",
    "fieldname": "calculation_mode",
    "hidden": 1
   },
@@ -326,7 +326,7 @@
    "read_only": 1,
    "fieldname": "objective_title",
    "label": "Objective Name",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "in_list_view": 1
   },
   {

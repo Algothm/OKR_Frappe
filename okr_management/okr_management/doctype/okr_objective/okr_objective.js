@@ -17,6 +17,7 @@ frappe.ui.form.on("OKR Objective", {
 		layout_summary_fields(frm);
 		layout_timeline_fields(frm);
 		match_description_heights(frm);
+		setup_auto_growing_title(frm);
 	},
 	refresh(frm) {
 		configure_objective_form(frm);
@@ -24,6 +25,11 @@ frappe.ui.form.on("OKR Objective", {
 		layout_summary_fields(frm);
 		layout_timeline_fields(frm);
 		match_description_heights(frm);
+		setup_auto_growing_title(frm);
+		hide_destructive_objective_actions(frm);
+	},
+	objective_title(frm) {
+		resize_objective_title(frm);
 	},
 	parent_plan(frm) {
 		load_plan_context(frm, true);
@@ -37,12 +43,41 @@ frappe.ui.form.on("OKR Objective", {
 	},
 });
 
+function hide_destructive_objective_actions(frm) {
+	[__("Archive"), __("Delete"), __("Remove")].forEach((label) => {
+		frm.page.remove_menu_item(label);
+	});
+}
+
 function configure_objective_status(frm, plan_status) {
 	const statuses = ["Draft", "Active", "On Hold", "Completed", "Closed"];
 	frm.set_df_property("status", "options", statuses.join("\n"));
 	if (!frm.is_new()) return;
 	const required_status = plan_status === "Active" ? "Active" : "Draft";
 	if (frm.doc.status !== required_status) frm.set_value("status", required_status);
+}
+
+function setup_auto_growing_title(frm) {
+	const input = frm.fields_dict.objective_title?.$wrapper?.find("textarea").first();
+	if (!input?.length) return;
+
+	input.off("input.okr-title-resize").on("input.okr-title-resize", () => {
+		resize_objective_title(frm);
+	});
+	resize_objective_title(frm);
+}
+
+function resize_objective_title(frm) {
+	const input = frm.fields_dict.objective_title?.$wrapper?.find("textarea").first();
+	if (!input?.length) return;
+
+	const textarea = input[0];
+	textarea.style.setProperty("height", "auto", "important");
+	textarea.style.setProperty("min-height", "38px", "important");
+	textarea.style.setProperty("max-height", "none", "important");
+	textarea.style.setProperty("overflow-y", "hidden", "important");
+	textarea.style.setProperty("resize", "none", "important");
+	textarea.style.setProperty("height", Math.max(38, textarea.scrollHeight) + "px", "important");
 }
 
 function match_description_heights(frm) {
@@ -111,7 +146,10 @@ function configure_objective_form(frm) {
 	if (!is_closed) {
 		frm.enable_save();
 	}
-	setTimeout(() => match_description_heights(frm), 0);
+	setTimeout(() => {
+		match_description_heights(frm);
+		setup_auto_growing_title(frm);
+	}, 0);
 
 	if (
 		window.okr_management &&

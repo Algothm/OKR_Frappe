@@ -40,7 +40,7 @@ class OKRKeyResult(Document):
 			self.assignee = self.owner_user
 		self.priority = self.priority or "Medium"
 		self.status = self.status or "Draft"
-		self.calculation_mode = self.calculation_mode or "Manual"
+		self.calculation_mode = self.calculation_mode or "Automatic"
 		self.metric_type = self.metric_type or "Percentage"
 		self.metric_direction = self.metric_direction or "Increase"
 
@@ -278,7 +278,7 @@ class OKRKeyResult(Document):
 		if self.calculation_mode not in VALID_CALCULATION_MODES:
 			frappe.throw(_("Calculation Mode must be Manual or Automatic."))
 		if self.metric_type not in VALID_MEASUREMENT_TYPES:
-			frappe.throw(_("Measurement Type must be Percentage, Number, Currency, or Boolean."))
+			frappe.throw(_("Measurement Type must be Percentage, Number, Amount, or Boolean."))
 		if self.metric_direction not in VALID_MEASUREMENT_DIRECTIONS:
 			frappe.throw(_("Goal Direction must be Increase or Decrease."))
 
@@ -288,13 +288,6 @@ class OKRKeyResult(Document):
 
 		if self.metric_type in ["Percentage", "Boolean"] and self.target_value is None:
 			frappe.throw(_("Target Value is required for Measurement Type {0}.").format(self.metric_type))
-
-		if self.calculation_mode == "Automatic" and self.get_doc_before_save():
-			if self.has_value_changed("current_value"):
-				frappe.throw(_("Current Value is editable only when Calculation Mode is Manual."))
-
-		if self.calculation_mode == "Automatic" and self.is_new() and self.current_value:
-			frappe.throw(_("Current Value is editable only when Calculation Mode is Manual."))
 
 	def validate_inherited_fields_locked(self) -> None:
 		if self.is_new():
