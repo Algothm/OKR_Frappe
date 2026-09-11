@@ -34,9 +34,6 @@ frappe.ui.form.on('OKR Check In', {
         if (!frm.doc.action_item) {
             frappe.throw(__('Action Item is required.'));
         }
-        if (!frm.doc.achievements) {
-            frappe.throw(__('Progress Update is required.'));
-        }
     }
 });
 
@@ -52,7 +49,7 @@ function configure_form(frm) {
     frm.set_df_property('current_value', 'reqd', 1);
     frm.set_df_property('progress', 'hidden', 1);
     frm.set_df_property('action_status', 'reqd', 1);
-    frm.set_df_property('achievements', 'reqd', 1);
+    frm.set_df_property('achievements', 'reqd', 0);
     frm.set_df_property('checkin_update_heading', 'hidden', 1);
     frm.set_df_property('context_preview_html', 'label', __('Context and Preview'));
     frm.toggle_display('context_preview_html', 1);
