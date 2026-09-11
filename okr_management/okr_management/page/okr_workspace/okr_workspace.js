@@ -29,7 +29,7 @@ class OKRWorkspace {
 		const saved_view_state = this.load_saved_view_state();
 		this.state = {
 			objectives: saved_view_state.objectives || {},
-			key_results: saved_view_state.key_results || {},
+			key_results: {},
 			action_history: saved_view_state.action_history || {},
 			action_history_all: saved_view_state.action_history_all || {},
 			action_checkin: null,
@@ -364,7 +364,7 @@ class OKRWorkspace {
 					}
 					(obj.key_results || []).forEach((kr) => {
 						if (this.state.key_results[kr.name] === undefined) {
-							this.state.key_results[kr.name] = true;
+							this.state.key_results[kr.name] = false;
 						}
 					});
 				});
@@ -440,7 +440,7 @@ class OKRWorkspace {
 		}
 		(selected.key_results || []).forEach((kr) => {
 			if (this.state.key_results[kr.name] === undefined) {
-				this.state.key_results[kr.name] = true;
+				this.state.key_results[kr.name] = false;
 			}
 		});
 		this.persist_view_state();
@@ -455,30 +455,40 @@ class OKRWorkspace {
 		const selected =
 			objectives.find((obj) => obj.name === this.state.selected_objective) || objectives[0];
 		if (!selected) return;
+
 		const krs = selected.key_results || [];
 		if (!krs.length) return;
+		const actions = krs.flatMap((kr) => kr.action_items || []);
+		const allActionsVisible = krs.every((kr) => this.state.key_results[kr.name] === true);
+		const allActionHistoriesOpen =
+			actions.length > 0 && actions.every((action) => this.state.action_history[action.name] === true);
 
-		const anyOpen = krs.some((kr) => this.state.key_results[kr.name] !== false);
-		const targetState = !anyOpen;
-
-		krs.forEach((kr) => {
-			this.state.key_results[kr.name] = targetState;
-		});
-		this.persist_view_state();
-
-		const $cards = this.$body.find(".okr-kr-card");
-		const $collapses = $cards.find("> .okr-collapse");
-		const $chevrons = $cards.find(".okr-kr-chevron");
-
-		if (targetState) {
-			$collapses.stop(true, true).slideDown(180).addClass("open");
-			$chevrons.removeClass("collapsed").addClass("expanded");
+		if (!allActionsVisible) {
+			// Stage 1: show every Action Item under the already-visible Key Results.
+			krs.forEach((kr) => {
+				this.state.key_results[kr.name] = true;
+				(kr.action_items || []).forEach((action) => {
+					this.state.action_history[action.name] = false;
+				});
+			});
+		} else if (!allActionHistoriesOpen && actions.length) {
+			// Stage 2: open every Action Item's Check-In history.
+			actions.forEach((action) => {
+				this.state.action_history[action.name] = true;
+			});
 		} else {
-			$collapses.stop(true, true).slideUp(180).removeClass("open");
-			$chevrons.removeClass("expanded").addClass("collapsed");
+			// Stage 3: return to visible Key Results with Action Items collapsed.
+			krs.forEach((kr) => {
+				this.state.key_results[kr.name] = false;
+				(kr.action_items || []).forEach((action) => {
+					this.state.action_history[action.name] = false;
+				});
+			});
+			this.state.action_checkin = null;
 		}
 
-		this.update_toggle_all_button();
+		this.persist_view_state();
+		this.render_content();
 	}
 
 	update_toggle_all_button() {
@@ -488,17 +498,26 @@ class OKRWorkspace {
 		const selected =
 			objectives.find((obj) => obj.name === this.state.selected_objective) || objectives[0];
 		const krs = selected?.key_results || [];
-		if (!krs.length) {
+		if (!selected || !krs.length) {
 			$btn.hide();
 			return;
 		}
-		$btn.show();
-		const anyOpen = krs.some((kr) => this.state.key_results[kr.name] !== false);
-		const iconName = anyOpen ? "collapse" : "expand";
-		const titleText = anyOpen ? __("Collapse All") : __("Expand All");
-		$btn.attr("title", titleText).attr("aria-label", titleText).html(frappe.utils.icon(iconName, "sm"));
-	}
 
+		$btn.show();
+		const actions = krs.flatMap((kr) => kr.action_items || []);
+		const allActionsVisible = krs.every((kr) => this.state.key_results[kr.name] === true);
+		const allActionHistoriesOpen =
+			actions.length > 0 && actions.every((action) => this.state.action_history[action.name] === true);
+		const titleText = !allActionsVisible
+			? __("Show All Action Items")
+			: !allActionHistoriesOpen && actions.length
+			? __("Open All Action Items")
+			: __("Collapse All Action Items");
+		$btn
+			.attr("title", titleText)
+			.attr("aria-label", titleText)
+			.html(frappe.utils.icon(allActionsVisible && allActionHistoriesOpen ? "collapse" : "expand", "sm"));
+	}
 	render_rail(objectives) {
 		const html = objectives.length
 			? objectives
@@ -523,6 +542,7 @@ class OKRWorkspace {
 	}
 
 	objective_card(obj) {
+		const objectiveOpen = this.state.objectives[obj.name] === true;
 		const open = this.state.objectives[obj.name];
 		const progress = cint(obj.progress || 0);
 		const completionClass = progress >= 70 ? "good" : "warn";
@@ -561,7 +581,7 @@ class OKRWorkspace {
 			obj.status || ""
 		)}">${frappe.utils.escape_html(obj.status || "")}</span></div>
                                 </div>
-                                <div class="okr-collapse open" style="display: block;">
+                                <div class="okr-collapse ${objectiveOpen ? "open" : ""}" style="${objectiveOpen ? "display: block;" : "display: none;"}">
                                         <div class="okr-overview-summary">
                                                 <div class="okr-summary-card okr-completion-card">
                                                         <span class="okr-summary-card-label">${__(
