@@ -23,6 +23,13 @@ def ensure_required_link(value: Any, field_label: str) -> None:
 		frappe.throw(_("{0} is required.").format(field_label))
 
 
+def ensure_max_length(value: Any, field_label: str, max_length: int = 1000) -> None:
+	if value is not None and len(str(value)) > max_length:
+		frappe.throw(
+			_("{0} cannot exceed {1} characters.").format(field_label, max_length)
+		)
+
+
 def ensure_valid_weight(weight: Any, field_label: str = "Weight") -> None:
 	value = flt(weight)
 	if value < 0 or value > 100:

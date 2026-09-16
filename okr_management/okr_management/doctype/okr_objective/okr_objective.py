@@ -12,6 +12,7 @@ from okr_management.okr_management.doctype.okr_plan.okr_plan import (
 	get_plan_timeline,
 )
 from okr_management.utils.okr_calculations import recalculate_objective_progress, recalculate_plan_progress
+from okr_management.utils.okr_validations import ensure_max_length
 
 STATUS_TRANSITIONS = {
 	"Draft": {"Active"},
@@ -50,6 +51,7 @@ class OKRObjective(Document):
 		self.update_system_summary_fields()
 
 	def validate(self) -> None:
+		ensure_max_length(self.objective_title, "Objective Title")
 		self.validate_required_fields()
 		self.validate_parent_relationships()
 		self.validate_lifecycle_transition()

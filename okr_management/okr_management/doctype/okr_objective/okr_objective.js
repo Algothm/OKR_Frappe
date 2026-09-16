@@ -77,6 +77,7 @@ function configure_objective_status(frm, plan_status) {
 function setup_auto_growing_title(frm) {
 	const input = frm.fields_dict.objective_title?.$wrapper?.find("textarea").first();
 	if (!input?.length) return;
+	input.attr("maxlength", 1000);
 
 	input.off("input.okr-title-resize").on("input.okr-title-resize", () => {
 		resize_objective_title(frm);

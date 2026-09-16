@@ -6,6 +6,7 @@ from frappe.model.document import Document
 from frappe.utils import getdate, today
 
 from okr_management.okr_management.doctype.okr_plan.okr_plan import get_derived_periods
+from okr_management.utils.okr_validations import ensure_max_length
 
 VALID_PRIORITIES = {"Low", "Medium", "High"}
 VALID_STATUSES = {"Draft", "Planned", "Active", "On Hold", "Completed", "Closed", "Archived"}
@@ -84,6 +85,7 @@ class OKRKeyResult(Document):
 			self.score = 0.0
 
 	def validate(self) -> None:
+		ensure_max_length(self.key_result_title, "Key Result Title")
 		self.inherit_context_from_objective()
 		self.validate_required_fields()
 		self.validate_options()

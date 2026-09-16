@@ -42,9 +42,6 @@ def calculate_metric_progress(baseline_value: Any, current_value: Any, target_va
 	if target == baseline:
 		return 0.0
 	if metric_direction == "Decrease":
-		# Values beyond a decrease target are invalid input, not extra completion.
-		if current < target:
-			return 0.0
 		progress = ((baseline - current) / (baseline - target)) * 100.0
 	else:
 		progress = ((current - baseline) / (target - baseline)) * 100.0

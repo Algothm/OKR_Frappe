@@ -6,7 +6,7 @@ from frappe.model.document import Document
 from frappe.utils import flt, getdate, today
 
 from okr_management.utils.okr_calculations import calculate_action_item_progress
-from okr_management.utils.okr_validations import ensure_percentage, ensure_required_link
+from okr_management.utils.okr_validations import ensure_max_length, ensure_percentage, ensure_required_link
 
 
 class OKRActionItem(Document):
@@ -27,6 +27,7 @@ class OKRActionItem(Document):
 
 	def validate(self) -> None:
 		ensure_required_link(self.action_item_title, "Action Item Title")
+		ensure_max_length(self.action_item_title, "Action Item Title")
 		ensure_required_link(self.parent_key_result, "Key Result")
 		self.validate_assigned_to()
 		ensure_required_link(self.status, "Status")

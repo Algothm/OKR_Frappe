@@ -7,7 +7,7 @@ from frappe.utils import date_diff, flt, formatdate, nowdate
 
 from okr_management.hierarchy_visibility import get_hierarchy_visibility_scope
 from okr_management.permissions import is_okr_admin
-from okr_management.utils.okr_validations import ensure_percentage, ensure_required_link
+from okr_management.utils.okr_validations import ensure_max_length, ensure_percentage, ensure_required_link
 
 ACTIVE_ACTION_STATUSES = ("Open", "In Progress", "On Hold", "Done", "Blocked", "Archived")
 ACTION_STATUS_MAP = {
@@ -72,6 +72,7 @@ class OKRCheckIn(Document):
 		self.progress_percent = self.progress
 
 	def validate(self) -> None:
+		ensure_max_length(self.achievements, "Progress Update")
 		ensure_required_link(self.action_item, "Action Item")
 		ensure_required_link(self.key_result, "Key Result")
 		ensure_percentage(self.progress, "Progress")

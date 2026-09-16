@@ -50,6 +50,7 @@ function configure_form(frm) {
     frm.set_df_property('progress', 'hidden', 1);
     frm.set_df_property('action_status', 'reqd', 1);
     frm.set_df_property('achievements', 'reqd', 0);
+    frm.fields_dict.achievements?.$input?.attr('maxlength', 1000);
     frm.set_df_property('checkin_update_heading', 'hidden', 1);
     frm.set_df_property('context_preview_html', 'label', __('Context and Preview'));
     frm.toggle_display('context_preview_html', 1);
@@ -93,15 +94,19 @@ function load_action_item_context(frm) {
             frm.okr_metric = context.metric || {};
             configure_metric_value(frm);
             const updates = {};
+            // Relationship links are authoritative server-side values derived
+            // from the selected Action Item. Do not pass them through Link
+            // controls: a title-formatted value can otherwise replace the
+            // document name and hit Frappe's 140-character Link limit on save.
+            const server_managed_fields = new Set([
+                'objective', 'parent_plan', 'financial_year',
+                'company', 'group', 'department'
+            ]);
             Object.keys(context).forEach(fieldname => {
-                if (frm.fields_dict[fieldname]) {
+                if (frm.fields_dict[fieldname] && !server_managed_fields.has(fieldname)) {
                     updates[fieldname] = context[fieldname] ?? '';
                 }
             });
-            const financial_year = updates.financial_year || '';
-            delete updates.financial_year;
-            frm.doc.financial_year = financial_year;
-            frm.refresh_field('financial_year');
             frm.set_value(updates).then(() => {
                 render_context_preview(frm);
             });
@@ -160,7 +165,7 @@ function render_context_preview(frm) {
         { icon: icons.notes,    label: __('Objective Description'),    value: frm.doc.objective_description_context, wide: true },
         { icon: icons.plan,     label: __('Plan'),                     value: frm.doc.plan_name_context },
         { icon: icons.building, label: __('Organization'),             value: frm.doc.organization_context },
-        { icon: icons.group,    label: __('Group'),                    value: frm.doc.group },
+        { icon: icons.group,    label: __('Group'),                    value: ctx.group || frm.doc.group },
         { icon: icons.notes,    label: __('Plan Description'),         value: frm.doc.plan_description_context, wide: true },
         { icon: icons.calendar, label: __('Financial Year'),           value: frm.doc.financial_year_context },
         { icon: icons.calendar, label: __('Timeline'),                  value: frm.doc.timeline_preview_context || ctx.timeline_preview_context || '', wide: true }

@@ -543,6 +543,7 @@ function render_preview_cards(field, cards, empty_message, title) {
 function setup_auto_growing_key_result_title(frm) {
 	const input = frm.fields_dict.key_result_title?.$wrapper?.find("textarea").first();
 	if (!input?.length) return;
+	input.attr("maxlength", 1000);
 	input.off("input.okr-title-resize").on("input.okr-title-resize", () => resize_key_result_title(frm));
 	resize_key_result_title(frm);
 }

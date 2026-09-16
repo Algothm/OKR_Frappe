@@ -151,7 +151,10 @@ class TestOKRUserFacingLabels(FrappeTestCase):
 			"OKR Action Item": (
 				"action_item_title", "key_result_title", "objective_title", "plan_title",
 			),
-			"OKR Check In": ("action_item_title_context",),
+			"OKR Check In": (
+				"action_item_title_context", "key_result_name_context",
+				"objective_name_context", "plan_name_context",
+			),
 		}
 		for doctype, fieldnames in unlimited_title_fields.items():
 			meta = frappe.get_meta(doctype)

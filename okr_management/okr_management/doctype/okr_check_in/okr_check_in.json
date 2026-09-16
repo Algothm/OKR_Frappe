@@ -468,7 +468,7 @@
   },
   {
    "fieldname": "key_result_name_context",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Key Result",
    "read_only": 1,
    "hidden": 1
@@ -482,7 +482,7 @@
   },
   {
    "fieldname": "objective_name_context",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Objective",
    "read_only": 1,
    "hidden": 1
@@ -496,7 +496,7 @@
   },
   {
    "fieldname": "plan_name_context",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Plan",
    "read_only": 1,
    "hidden": 1
