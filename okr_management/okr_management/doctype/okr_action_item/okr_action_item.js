@@ -1,6 +1,7 @@
 function setup_auto_growing_title(frm, fieldname) {
     const input = frm.fields_dict[fieldname]?.$wrapper?.find('textarea').first();
     if (!input?.length) return;
+    input.attr('maxlength', 1000);
     input.off('input.okr-title-resize').on('input.okr-title-resize', () => resize_auto_growing_title(frm, fieldname));
     resize_auto_growing_title(frm, fieldname);
 }
@@ -482,9 +483,7 @@ function recalculate_form_action_progress(frm) {
         progress = actual ? 100 : 0;
     } else if (target !== baseline) {
         if (frm.doc.metric_direction === 'Decrease') {
-            progress = actual < target
-                ? 0
-                : ((baseline - actual) / (baseline - target)) * 100;
+            progress = ((baseline - actual) / (baseline - target)) * 100;
         } else {
             progress = ((actual - baseline) / (target - baseline)) * 100;
         }

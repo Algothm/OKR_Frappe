@@ -280,7 +280,7 @@ class OKRWorkspace {
 			else if (target !== baseline)
 				completion =
 					direction === "Decrease"
-						? (actual < target ? 0 : ((baseline - actual) / (baseline - target)) * 100)
+						? ((baseline - actual) / (baseline - target)) * 100
 						: ((actual - baseline) / (target - baseline)) * 100;
 			completion = Math.min(100, Math.max(0, completion));
 			$input
@@ -1036,9 +1036,7 @@ class OKRWorkspace {
 				progress = current ? 100.0 : 0.0;
 			} else if (target !== baseline) {
 				if (direction === "Decrease") {
-					progress = current < target
-						? 0
-						: ((baseline - current) / (baseline - target)) * 100.0;
+					progress = ((baseline - current) / (baseline - target)) * 100.0;
 				} else {
 					progress = ((current - baseline) / (target - baseline)) * 100.0;
 				}
