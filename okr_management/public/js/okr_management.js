@@ -1,5 +1,15 @@
 frappe.provide("okr_management");
 
+// One-time cleanup for users who hit the bug before the workspace rename shipped; safe to remove in a future release once confirmed all active sessions are clean.
+try {
+	if (window.localStorage && localStorage.getItem("current_page") === "Plan") {
+		localStorage.removeItem("current_page");
+		localStorage.removeItem("is_current_page_public");
+	}
+} catch (e) {
+	// Ignore if localStorage is unavailable
+}
+
 frappe.listview_settings["OKR Objective"] = {
 	onload(listview) {
 		$(listview.page.wrapper).addClass("okr-objective-list");
@@ -223,6 +233,7 @@ window.okr_management.preview_attachment = function (file_url) {
 (() => {
 	// Keep permitted OKR DocTypes in Frappe's native route registry.
 	const native_okr_routes = {
+		"okr-plan": "OKR Plan",
 		"okr-objective": "OKR Objective",
 		"okr-key-result": "OKR Key Result",
 		"okr-action-item": "OKR Action Item",
