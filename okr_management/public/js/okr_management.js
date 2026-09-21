@@ -1,8 +1,9 @@
 frappe.provide("okr_management");
 
-// One-time cleanup for users who hit the bug before the workspace rename shipped; safe to remove in a future release once confirmed all active sessions are clean.
+// Clear workspace selections created by the former Plan/OKR Planning titles.
 try {
-	if (window.localStorage && localStorage.getItem("current_page") === "Plan") {
+	const stale_okr_pages = new Set(["Plan", "OKR Planning"]);
+	if (window.localStorage && stale_okr_pages.has(localStorage.getItem("current_page"))) {
 		localStorage.removeItem("current_page");
 		localStorage.removeItem("is_current_page_public");
 	}
@@ -233,6 +234,9 @@ window.okr_management.preview_attachment = function (file_url) {
 (() => {
 	// Keep permitted OKR DocTypes in Frappe's native route registry.
 	const native_okr_routes = {
+		// Backward-compatible aliases for bookmarks/history created by old workspace titles.
+		"plan": "OKR Plan",
+		"okr-planning": "OKR Plan",
 		"okr-plan": "OKR Plan",
 		"okr-objective": "OKR Objective",
 		"okr-key-result": "OKR Key Result",

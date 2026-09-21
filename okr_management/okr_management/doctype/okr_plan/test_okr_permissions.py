@@ -260,48 +260,38 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 	def test_sidebar_has_exact_admin_and_user_modes(self):
 		from okr_management.navigation import get_workspace_sidebar_items
 
+		def okr_page_names():
+			return [
+				page.get("name")
+				for page in get_workspace_sidebar_items().get("pages", [])
+				if page.get("module") == "OKR Management"
+			]
+
 		frappe.set_user(self.users["plain"])
-		no_role_pages = {
-			page.get("name")
-			for page in get_workspace_sidebar_items().get("pages", [])
-			if page.get("module") == "OKR Management"
-		}
-		self.assertEqual(no_role_pages, set())
+		self.assertEqual(okr_page_names(), [])
 
 		frappe.set_user(self.users["okr_user"])
-		user_pages = {
-			page.get("name")
-			for page in get_workspace_sidebar_items().get("pages", [])
-			if page.get("module") == "OKR Management"
-		}
 		self.assertEqual(
-			user_pages,
-			{
+			okr_page_names(),
+			[
 				"OKR Workspace Sidebar",
 				"OKR Objective Execution",
 				"OKR Key Result Execution",
 				"Action Item",
 				"Check-In",
-			},
+			],
 		)
 
 		frappe.set_user(self.users["okr_admin"])
-		admin_pages = {
-			page.get("name")
-			for page in get_workspace_sidebar_items().get("pages", [])
-			if page.get("module") == "OKR Management"
-		}
-		self.assertEqual(admin_pages, {"OKR Admin Workspace Sidebar", "OKR Plan Planning"})
+		self.assertEqual(
+			okr_page_names(),
+			["OKR Admin Workspace Sidebar", "OKR Plan Planning"],
+		)
 
 		frappe.set_user(self.users["dual_role"])
-		dual_role_pages = {
-			page.get("name")
-			for page in get_workspace_sidebar_items().get("pages", [])
-			if page.get("module") == "OKR Management"
-		}
 		self.assertEqual(
-			dual_role_pages,
-			{
+			okr_page_names(),
+			[
 				"OKR Admin Workspace Sidebar",
 				"OKR Plan Planning",
 				"OKR Workspace Sidebar",
@@ -309,9 +299,8 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 				"OKR Key Result Execution",
 				"Action Item",
 				"Check-In",
-			},
+			],
 		)
-
 	def test_dual_role_workspace_includes_full_hierarchy(self):
 		from okr_management.okr_management.page.okr_workspace.okr_workspace import get_workspace_data
 

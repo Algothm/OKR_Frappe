@@ -6,6 +6,17 @@ from frappe.desk.desktop import get_workspace_sidebar_items as _get_workspace_si
 ADMIN_WORKSPACES = {"OKR Admin Workspace Sidebar", "OKR Plan Planning", "OKR Sprint Planning"}
 USER_WORKSPACES = {"OKR Workspace Sidebar", "OKR Objective Execution", "OKR Key Result Execution", "Action Item", "Check-In"}
 
+OKR_WORKSPACE_ORDER = {
+    "OKR Admin Workspace Sidebar": 0,
+    "OKR Plan Planning": 1,
+    "OKR Sprint Planning": 2,
+    "OKR Workspace Sidebar": 3,
+    "OKR Objective Execution": 4,
+    "OKR Key Result Execution": 5,
+    "Action Item": 6,
+    "Check-In": 7,
+}
+
 
 @frappe.whitelist()
 def get_workspace_sidebar_items():
@@ -32,7 +43,7 @@ def get_workspace_sidebar_items():
                 filters={"name": ["in", sorted(missing)]},
                 fields=[
                     "name", "title", "for_user", "parent_page", "content", "public",
-                    "module", "icon", "indicator_color", "is_hidden", "label",
+                    "module", "icon", "indicator_color", "is_hidden", "label", "sequence_id",
                 ],
             )
         )
@@ -54,4 +65,18 @@ def get_workspace_sidebar_items():
     }
     for page in result["pages"]:
         page["route"] = routes.get(page.get("name"), "")
+
+    # Preserve every other module position while making the OKR hierarchy deterministic.
+    okr_positions = [
+        index
+        for index, page in enumerate(result["pages"])
+        if page.get("module") == "OKR Management"
+    ]
+    ordered_okr_pages = sorted(
+        (result["pages"][index] for index in okr_positions),
+        key=lambda page: OKR_WORKSPACE_ORDER.get(page.get("name"), len(OKR_WORKSPACE_ORDER)),
+    )
+    for index, page in zip(okr_positions, ordered_okr_pages):
+        result["pages"][index] = page
+
     return result
