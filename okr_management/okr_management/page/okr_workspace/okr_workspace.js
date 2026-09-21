@@ -4,10 +4,14 @@ frappe.pages["okr-workspace"].on_page_load = function (wrapper) {
 };
 
 frappe.pages["okr-workspace"].on_page_show = function (wrapper) {
-	const workspace = wrapper.okr_workspace;
-	if (workspace?.options) {
-		workspace.load_options();
+	// Recover if the Page wrapper was created during Desk's initial route setup
+	// before on_page_load initialized the custom workspace instance.
+	if (!wrapper.okr_workspace) {
+		new OKRWorkspace(wrapper);
+		return;
 	}
+
+	wrapper.okr_workspace.load_options();
 };
 
 class OKRWorkspace {
