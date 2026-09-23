@@ -26,7 +26,7 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 app_include_css = "/assets/okr_management/css/okr_management.css?v=20260907-4"
-app_include_js = "/assets/okr_management/js/okr_management.js?v=20260921-1"
+app_include_js = "/assets/okr_management/js/okr_management.js?v=20260923-1"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/okr_management/css/okr_management.css"
