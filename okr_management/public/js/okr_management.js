@@ -357,6 +357,9 @@ window.okr_management.preview_attachment = function (file_url) {
 	}
 
 	function refresh_okr_breadcrumbs() {
+		// Desk can run after_ajax callbacks before the first route is parsed.
+		// breadcrumbs.update() calls get_route_str(), which expects an array.
+		if (!Array.isArray(frappe.router?.current_route)) return;
 		if (!is_okr_route() || !frappe.breadcrumbs?.update) return;
 		frappe.breadcrumbs.update();
 	}

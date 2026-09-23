@@ -1,0 +1,13 @@
+{
+ "content": null,
+ "doctype": "Page",
+ "module": "OKR Management",
+ "name": "key-result",
+ "page_name": "key-result",
+ "roles": [{"role": "Desk User"}],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Key Result"
+}
