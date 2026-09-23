@@ -232,6 +232,33 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		with self.assertRaises(frappe.PermissionError):
 			save_workspace_checkin(self.action.name, 30, "Unauthorized check-in must be denied")
 
+	def test_workspace_alias_pages_and_breadcrumb_route_guard(self):
+		aliases = {
+			"okr-admin-workspace": ("okr_admin_workspace", 'frappe.set_route("admin-workspace")'),
+			"objective": ("objective", 'frappe.set_route("okr-objective")'),
+			"key-result": ("key_result", 'frappe.set_route("okr-key-result")'),
+		}
+		for page_name, (folder, expected_redirect) in aliases.items():
+			self.assertTrue(frappe.db.exists("Page", page_name))
+			source = Path(
+				frappe.get_app_path(
+					"okr_management", "okr_management", "page", folder, f"{folder}.js"
+				)
+			).read_text()
+			self.assertIn(expected_redirect, source)
+
+		global_source = Path(
+			frappe.get_app_path("okr_management", "public", "js", "okr_management.js")
+		).read_text()
+		self.assertIn("Array.isArray(frappe.router?.current_route)", global_source)
+
+		from frappe.desk.desk_page import get as get_desk_page
+
+		frappe.set_user(self.users["okr_admin"])
+		self.assertEqual(get_desk_page("okr-admin-workspace").name, "okr-admin-workspace")
+		frappe.set_user(self.users["okr_user"])
+		self.assertEqual(get_desk_page("objective").name, "objective")
+		self.assertEqual(get_desk_page("key-result").name, "key-result")
 	def test_sidebar_uses_native_routes_without_click_interceptor(self):
 		from okr_management.navigation import get_workspace_sidebar_items
 

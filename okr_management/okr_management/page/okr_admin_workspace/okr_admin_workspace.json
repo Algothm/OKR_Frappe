@@ -1,0 +1,16 @@
+{
+ "content": null,
+ "doctype": "Page",
+ "module": "OKR Management",
+ "name": "okr-admin-workspace",
+ "page_name": "okr-admin-workspace",
+ "roles": [
+  {"role": "OKR Admin"},
+  {"role": "System Manager"}
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "OKR Admin Workspace"
+}
