@@ -189,8 +189,10 @@ class OKRCheckIn(Document):
 		frappe.throw(_("You are not authorized to create a Check-In for this Action Item."))
 
 	def on_trash(self) -> None:
-		if self.status == "Submitted":
-			frappe.throw(_("Submitted Check-ins cannot be deleted."))
+		if not is_okr_admin():
+			frappe.throw(
+				_("Check-ins can only be deleted by an OKR Admin or System Manager.")
+			)
 
 	def on_update(self) -> None:
 		if self.action_item and frappe.db.exists("OKR Action Item", self.action_item):

@@ -34,6 +34,7 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		}
 		for employee, key in zip(self.employees, ("objective", "kr", "action"), strict=False):
 			frappe.db.set_value("Employee", employee, "user_id", self.users[key])
+		self.group = frappe.get_doc({"doctype": "Group", "group_name": "Permission Group " + frappe.generate_hash(length=8), "company": self.company}).insert(ignore_permissions=True).name
 		self.make_tree()
 
 	def tearDown(self):
@@ -71,6 +72,7 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		self.objective = frappe.get_doc(
 			{
 				"doctype": "OKR Objective",
+				"group": self.group,
 				"objective_title": "Permission Objective",
 				"parent_plan": self.plan.name,
 				"department": self.department,
@@ -352,6 +354,7 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		objective = frappe.get_doc(
 			{
 				"doctype": "OKR Objective",
+				"group": self.group,
 				"objective_title": "Owner Activation " + frappe.generate_hash(length=6),
 				"parent_plan": self.plan.name,
 				"department": self.department,
@@ -387,6 +390,7 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		for index, (level, extra) in enumerate(definitions, start=1):
 			objective_values = {
 				"doctype": "OKR Objective",
+				"group": self.group,
 				"objective_title": f"{level} E2E Objective {frappe.generate_hash(length=6)}",
 				"parent_plan": self.plan.name,
 				"level": level,
@@ -479,6 +483,7 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		draft_objective = frappe.get_doc(
 			{
 				"doctype": "OKR Objective",
+				"group": self.group,
 				"objective_title": "Draft Parent Objective",
 				"parent_plan": draft_plan.name,
 				"department": self.department,
@@ -590,21 +595,23 @@ class TestOKRPermissionIntegration(FrappeTestCase):
 		managed_group.save()
 		managed_group.delete()
 
-		# 3. OKR User can read/select existing Groups, but cannot manage them.
+		# 3. OKR User can discover and create Groups, but cannot edit or delete.
 		okr_user = self.users["okr_user"]
 		frappe.set_user(okr_user)
 		self.assertTrue(frappe.has_permission("Group", "read", user=okr_user))
 		self.assertTrue(frappe.has_permission("Group", "select", user=okr_user))
 		self.assertFalse(frappe.has_permission("Group", "write", user=okr_user))
-		self.assertFalse(frappe.has_permission("Group", "create", user=okr_user))
+		self.assertTrue(frappe.has_permission("Group", "create", user=okr_user))
 		self.assertFalse(frappe.has_permission("Group", "delete", user=okr_user))
-		self.assertEqual(frappe.get_list("Group"), [])
-		with self.assertRaises(frappe.PermissionError):
-			frappe.new_doc("Group", group_name="Denied Group OKR User", company=self.company).insert()
+		self.assertTrue(frappe.get_list("Group"))
+		frappe.new_doc("Group", group_name="OKR User Group " + frappe.generate_hash(length=8), company=self.company).insert()
+
+		frappe.set_user(self.users["system"])
+		for permission_type in ("read", "create", "write", "delete"):
+			self.assertTrue(frappe.has_permission("Group", permission_type))
 
 		# 4. Other roles cannot read or manage Groups.
 		test_users = [
-			self.users["system"],
 			self.users["outsider"],
 		]
 		for u in test_users:
