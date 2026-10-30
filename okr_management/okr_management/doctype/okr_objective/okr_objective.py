@@ -13,6 +13,7 @@ from okr_management.okr_management.doctype.okr_plan.okr_plan import (
 )
 from okr_management.utils.okr_calculations import recalculate_objective_progress, recalculate_plan_progress
 from okr_management.utils.okr_validations import ensure_max_length
+from okr_management.permissions import is_okr_admin
 
 STATUS_TRANSITIONS = {
 	"Draft": {"Active"},
@@ -71,6 +72,8 @@ class OKRObjective(Document):
 		archive_plan_when_all_objectives_are_terminal(self.parent_plan)
 
 	def on_trash(self) -> None:
+		if not is_okr_admin():
+			frappe.throw(_("Objectives can only be deleted by an OKR Admin or System Manager."))
 		if self.has_key_results():
 			frappe.throw(_("Cannot delete Objective because Key Results exist."))
 
@@ -106,9 +109,7 @@ class OKRObjective(Document):
 
 	def sync_group_context(self) -> None:
 		if not self.group:
-			if self.is_new() and not self.department:
-				frappe.throw(_("Group is required."))
-			return
+			frappe.throw(_("Group is required."))
 
 		group = frappe.db.get_value("Group", self.group, ["company", "disabled"], as_dict=True)
 		if not group:
