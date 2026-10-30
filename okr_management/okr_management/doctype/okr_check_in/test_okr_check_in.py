@@ -13,7 +13,8 @@ class TestOKRCheckIn(FrappeTestCase):
         if not all((company,department,employee,fiscal_year)): self.skipTest("Required ERP masters are missing.")
         fy=frappe.db.get_value("Fiscal Year",fiscal_year,["year_start_date","year_end_date"],as_dict=True)
         self.plan=frappe.get_doc({"doctype":"OKR Plan","plan_name":"CI Test "+frappe.generate_hash(length=6),"financial_year":fiscal_year,"company":company,"owner_user":"Administrator","sprint_frequency":"Monthly","planned_activation_date":today(),"status":"Draft"}).insert(ignore_permissions=True)
-        objective=frappe.get_doc({"doctype":"OKR Objective","objective_title":"CI Objective "+frappe.generate_hash(length=6),"parent_plan":self.plan.name,"level":"Department","level_details":department,"department":department,"owner_user":"Administrator","status":"Draft"}).insert(ignore_permissions=True)
+        group = frappe.get_doc({"doctype": "Group", "group_name": "Check In Group " + frappe.generate_hash(length=8), "company": company}).insert(ignore_permissions=True)
+        objective=frappe.get_doc({"doctype":"OKR Objective","group":group.name,"objective_title":"CI Objective "+frappe.generate_hash(length=6),"parent_plan":self.plan.name,"level":"Department","level_details":department,"department":department,"owner_user":"Administrator","status":"Draft"}).insert(ignore_permissions=True)
         self.kr=frappe.get_doc({"doctype":"OKR Key Result","key_result_title":"CI KR "+frappe.generate_hash(length=6),"objective":objective.name,"assignee":"Administrator","metric_type":"Number","metric_direction":"Increase","calculation_mode":"Automatic","baseline_value":0,"current_value":0,"target_value":100,"end_date":objective.end_date,"status":"Draft"}).insert(ignore_permissions=True)
         self.employee_user=employee.user_id
         if "OKR User" not in frappe.get_roles(self.employee_user):
@@ -89,6 +90,18 @@ class TestOKRCheckIn(FrappeTestCase):
     def test_submitted_checkin_is_read_only(self):
         self.activate(); checkin=self.checkin(); checkin.achievements="Changed"
         self.assertRaises(frappe.ValidationError,checkin.save)
+
+    def test_okr_user_cannot_delete_submitted_checkin(self):
+        self.activate()
+        checkin = self.checkin()
+        self.assertRaises(frappe.ValidationError, checkin.delete, ignore_permissions=True)
+
+    def test_administrator_can_delete_submitted_checkin(self):
+        self.activate()
+        checkin = self.checkin()
+        frappe.set_user("Administrator")
+        checkin.delete()
+        self.assertFalse(frappe.db.exists("OKR Check In", checkin.name))
 
     def test_stale_zero_kr_checkin_count_does_not_bypass_submitted_immutability(self):
         self.activate()

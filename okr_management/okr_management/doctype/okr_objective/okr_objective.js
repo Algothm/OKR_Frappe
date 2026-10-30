@@ -7,8 +7,6 @@ frappe.ui.form.on("OKR Objective", {
 		frm.set_query("group", () => ({
 			filters: { company: frm.doc.company, disabled: 0 },
 		}));
-		const group_field = frappe.meta.get_docfield("OKR Objective", "group", frm.doc.name);
-		if (group_field) group_field.only_select = 1;
 	},
 	onload(frm) {},
 	onload_post_render(frm) {
@@ -40,7 +38,7 @@ frappe.ui.form.on("OKR Objective", {
 		configure_objective_form(frm);
 	},
 	validate(frm) {
-		if (frm.is_new() && !frm.doc.group) frappe.throw(__("Group is required."));
+		if (!frm.doc.group) frappe.throw(__("Group is required."));
 	},
 });
 

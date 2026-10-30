@@ -12,6 +12,7 @@ class TestOKRObjectivePlanContext(FrappeTestCase):
 		self.department = frappe.db.get_value("Department", {"company": self.company}, "name")
 		if not self.company or not self.department:
 			self.skipTest("A Company and Department are required.")
+		self.group = frappe.get_doc({"doctype": "Group", "group_name": "Objective Test " + frappe.generate_hash(length=8), "company": self.company}).insert(ignore_permissions=True).name
 		self.fiscal_year = self.ensure_fiscal_year()
 
 	def ensure_fiscal_year(self):
@@ -64,6 +65,7 @@ class TestOKRObjectivePlanContext(FrappeTestCase):
 			"objective_title": "Objective " + frappe.generate_hash(length=6),
 			"parent_plan": plan.name,
 			"department": self.department,
+			"group": self.group,
 			"priority": "High",
 			"owner_user": "Administrator",
 			"status": "Draft",

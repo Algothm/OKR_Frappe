@@ -14,7 +14,6 @@
    "read": 1,
    "write": 1,
    "create": 1,
-   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -22,6 +21,17 @@
   },
   {
    "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "OKR Admin",
    "read": 1,
    "write": 1,
    "create": 1,
@@ -146,7 +156,7 @@
    "fieldtype": "Link",
    "label": "Group",
    "options": "Group",
-   "reqd": 0,
+   "reqd": 1,
    "in_list_view": 0,
    "in_standard_filter": 1,
    "ignore_user_permissions": 1
