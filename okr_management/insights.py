@@ -372,7 +372,7 @@ def get_review_rating_rows(include_normal: bool = True, limit: int | None = None
         "OKR Objective Review",
         filters={"docstatus": ["<", 2]},
         fields=[
-            "name", "objective", "sprint", "reviewer", "self_rating", "manager_rating",
+            "name", "objective", "reviewer", "self_rating", "manager_rating",
             "rating", "decision", "review_status", "manager_feedback", "review_date", "modified",
         ],
         order_by="review_date desc, modified desc",
@@ -398,7 +398,7 @@ def get_review_rating_rows(include_normal: bool = True, limit: int | None = None
         objective_row = frappe.db.get_value(
             "OKR Objective",
             review.objective,
-            ["objective_title", "owner_user", "department"],
+            ["objective_title", "owner_user", "department", "parent_plan"],
             as_dict=True,
         ) or {}
         rows.append({
@@ -407,7 +407,7 @@ def get_review_rating_rows(include_normal: bool = True, limit: int | None = None
             "objective_title": objective_row.get("objective_title") or review.objective,
             "owner": objective_row.get("owner_user"),
             "department": objective_row.get("department"),
-            "sprint": review.sprint,
+            "plan": objective_row.get("parent_plan"),
             "reviewer": review.reviewer,
             "self_rating": self_rating,
             "manager_rating": manager_rating,
@@ -839,10 +839,10 @@ EXECUTIVE_REPORT_TEMPLATE = """
 	<div class="okr-report-shell">
 		<div class="okr-report-header">
 			<div>
-				<div class="okr-report-kicker">{{ _("OKR Executive Report") }}{% if company %} &middot; {{ company }}{% endif %}</div>
+				<div class="okr-report-kicker">{{ _("OKR Executive Report") }}{% if company %} &middot; {{ company|e }}{% endif %}</div>
 				<h1>{{ _("OKR Executive Report") }}</h1>
-				{% if active_plan_name %}<p style="font-size:15px;font-weight:600;opacity:0.9;margin-bottom:6px;">{{ active_plan_name }}</p>{% endif %}
-				<p>{{ _("Generated on {0}").format(generated_on_display) }}{% if company %} &middot; {{ company }}{% endif %}</p>
+				{% if active_plan_name %}<p style="font-size:15px;font-weight:600;opacity:0.9;margin-bottom:6px;">{{ active_plan_name|e }}</p>{% endif %}
+				<p>{{ _("Generated on {0}").format(generated_on_display) }}{% if company %} &middot; {{ company|e }}{% endif %}</p>
 			</div>
 			<div class="okr-report-meta">
 				<div class="okr-meta-card">
@@ -877,12 +877,12 @@ EXECUTIVE_REPORT_TEMPLATE = """
 		<div class="okr-spotlight-grid">
 			<div class="okr-spotlight">
 				<div class="title">{{ _("Top Department") }}</div>
-				<div class="value">{{ top_department.department or _("Not available") }}</div>
+				<div class="value">{{ (top_department.department or _("Not available"))|e }}</div>
 				<div class="hint">{{ top_department.average_progress or 0 }}% average progress · {{ top_department.at_risk or 0 }} at risk</div>
 			</div>
 			<div class="okr-spotlight">
 				<div class="title">{{ _("Lowest Department") }}</div>
-				<div class="value">{{ lowest_department.department or _("Not available") }}</div>
+				<div class="value">{{ (lowest_department.department or _("Not available"))|e }}</div>
 				<div class="hint">{{ lowest_department.average_progress or 0 }}% average progress · {{ lowest_department.at_risk or 0 }} at risk</div>
 			</div>
 			<div class="okr-spotlight">
@@ -905,7 +905,7 @@ EXECUTIVE_REPORT_TEMPLATE = """
 			{% for department in department_performance %}
 			<div class="okr-department-row">
 				<div class="okr-department-head">
-					<div class="name">{{ department.department }}</div>
+					<div class="name">{{ department.department|e }}</div>
 					<div class="meta">{{ department.average_progress }}% · {{ department.objective_count }} {{ _("objectives") }} · {{ department.at_risk }} {{ _("at risk") }}</div>
 				</div>
 				<div class="okr-progress"><span style="width: {{ department.average_progress }}%;"></span></div>
@@ -998,13 +998,13 @@ EXECUTIVE_REPORT_TEMPLATE = """
 				<tbody>
 					{% for row in review_ratings.recent_reviews %}
 					<tr>
-						<td><strong>{{ row.objective_title }}</strong><br><span class="okr-muted">{{ row.objective }}</span></td>
-						<td>{{ row.reviewer or _("Unassigned") }}</td>
+						<td><strong>{{ row.objective_title|e }}</strong><br><span class="okr-muted">{{ row.objective|e }}</span></td>
+						<td>{{ (row.reviewer or _("Unassigned"))|e }}</td>
 						<td>{{ row.self_rating_display or _("Not rated") }}</td>
 						<td>{{ row.manager_rating_display or _("Not rated") }}</td>
 						<td>{{ row.overall_rating_display or _("Not rated") }}</td>
 						<td>{{ row.rating_gap }}</td>
-						<td>{{ row.review_status or _("Draft") }}</td>
+						<td>{{ (row.review_status or _("Draft"))|e }}</td>
 					</tr>
 					{% endfor %}
 				</tbody>
@@ -1031,14 +1031,14 @@ EXECUTIVE_REPORT_TEMPLATE = """
 				<tbody>
 					{% for row in at_risk_objectives %}
 					<tr>
-						<td><strong>{{ row.title }}</strong><br><span class="okr-muted">{{ row.record }}</span></td>
-						<td>{{ row.owner or _("Unassigned") }}</td>
-						<td>{{ row.department or _("No Department") }}</td>
+						<td><strong>{{ row.title|e }}</strong><br><span class="okr-muted">{{ row.record|e }}</span></td>
+						<td>{{ (row.owner or _("Unassigned"))|e }}</td>
+						<td>{{ (row.department or _("No Department"))|e }}</td>
 						<td>{{ row.progress }}%</td>
 						<td>{{ row.confidence }}</td>
 						<td><span class="okr-pill {{ row.risk_level|lower }}">{{ row.risk_level }}</span></td>
 						<td>{{ row.days_remaining_display }}<br><span class="okr-muted">{{ row.end_date_display }}</span></td>
-						<td>{{ row.reason }}</td>
+						<td>{{ row.reason|e }}</td>
 					</tr>
 					{% endfor %}
 				</tbody>
@@ -1064,12 +1064,12 @@ EXECUTIVE_REPORT_TEMPLATE = """
 				<tbody>
 					{% for row in low_confidence_key_results %}
 					<tr>
-						<td><strong>{{ row.title }}</strong><br><span class="okr-muted">{{ row.record }}</span></td>
-						<td>{{ row.owner or _("Unassigned") }}</td>
+						<td><strong>{{ row.title|e }}</strong><br><span class="okr-muted">{{ row.record|e }}</span></td>
+						<td>{{ (row.owner or _("Unassigned"))|e }}</td>
 						<td>{{ row.progress }}%</td>
 						<td>{{ row.confidence }}</td>
 						<td><span class="okr-pill {{ row.risk_level|lower }}">{{ row.risk_level }}</span></td>
-						<td>{{ row.recommended_action }}</td>
+						<td>{{ row.recommended_action|e }}</td>
 					</tr>
 					{% endfor %}
 				</tbody>
@@ -1084,8 +1084,8 @@ EXECUTIVE_REPORT_TEMPLATE = """
 			<ul class="okr-list">
 				{% for row in missed_checkins %}
 				<li>
-					<strong>{{ row.title }}</strong> <span class="okr-muted">({{ row.record }})</span><br>
-					{{ _("Owner") }}: {{ row.owner or _("Unassigned") }} · {{ _("Reason") }}: {{ row.reason }} · {{ _("Recommended action") }}: {{ row.recommended_action }}
+				<strong>{{ row.title|e }}</strong> <span class="okr-muted">({{ row.record|e }})</span><br>
+				{{ _("Owner") }}: {{ (row.owner or _("Unassigned"))|e }} · {{ _("Reason") }}: {{ row.reason|e }} · {{ _("Recommended action") }}: {{ row.recommended_action|e }}
 				</li>
 				{% endfor %}
 			</ul>
@@ -1109,8 +1109,8 @@ EXECUTIVE_REPORT_TEMPLATE = """
 				<tbody>
 					{% for row in upcoming_deadlines %}
 					<tr>
-						<td><strong>{{ row.title }}</strong><br><span class="okr-muted">{{ row.record }}</span></td>
-						<td>{{ row.owner or _("Unassigned") }}</td>
+						<td><strong>{{ row.title|e }}</strong><br><span class="okr-muted">{{ row.record|e }}</span></td>
+						<td>{{ (row.owner or _("Unassigned"))|e }}</td>
 						<td>{{ row.progress }}%</td>
 						<td>{{ row.days_remaining_display }}<br><span class="okr-muted">{{ row.end_date_display }}</span></td>
 						<td><span class="okr-pill {{ row.risk_level|lower }}">{{ row.risk_level }}</span></td>
@@ -1127,7 +1127,7 @@ EXECUTIVE_REPORT_TEMPLATE = """
 			{% if recommended_actions|length %}
 			<ul class="okr-list">
 				{% for action in recommended_actions %}
-				<li>{{ action }}</li>
+				<li>{{ action|e }}</li>
 				{% endfor %}
 			</ul>
 			{% else %}
@@ -1137,7 +1137,7 @@ EXECUTIVE_REPORT_TEMPLATE = """
 
 		<div style="margin-top:32px;padding-top:18px;border-top:1px solid #e5eaf1;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#94a3b8;">
 			<div>
-				<strong style="color:#64748b;">{{ _("OKR Executive Report") }}</strong>{% if company %} &middot; {{ company }}{% endif %}{% if active_plan_name %} &middot; {{ active_plan_name }}{% endif %}
+				<strong style="color:#64748b;">{{ _("OKR Executive Report") }}</strong>{% if company %} &middot; {{ company|e }}{% endif %}{% if active_plan_name %} &middot; {{ active_plan_name|e }}{% endif %}
 			</div>
 			<div>{{ _("Generated") }}: {{ generated_on_display }}</div>
 		</div>
