@@ -3,7 +3,7 @@ from __future__ import annotations
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import date_diff, flt, formatdate, nowdate
+from frappe.utils import date_diff, flt, formatdate, getdate, nowdate
 
 from okr_management.hierarchy_visibility import get_hierarchy_visibility_scope
 from okr_management.permissions import is_okr_admin

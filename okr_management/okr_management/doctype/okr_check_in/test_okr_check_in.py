@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+from unittest.mock import patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import today
@@ -168,3 +171,69 @@ class TestOKRCheckIn(FrappeTestCase):
         )
         ci = frappe.get_doc("OKR Check In", res["name"])
         self.assertEqual(str(ci.checkin_date), today())
+
+    def get_action_item_context(self):
+        from okr_management.okr_management.doctype.okr_check_in.okr_check_in import (
+            get_action_item_context,
+        )
+
+        frappe.set_user(self.employee_user)
+        return get_action_item_context(self.action.name)
+
+    def test_action_item_date_context_uses_getdate(self):
+        self.activate()
+        frappe.db.set_value(
+            "OKR Action Item",
+            self.action.name,
+            {"start_date": "2026-01-01", "due_date": "2026-01-03"},
+        )
+
+        context = self.get_action_item_context()
+
+        self.assertIn("3 Days", context["timeline_preview_context"])
+
+    def test_key_result_date_context_uses_getdate(self):
+        self.activate()
+        frappe.db.set_value(
+            "OKR Action Item",
+            self.action.name,
+            {"start_date": None, "due_date": None},
+        )
+        frappe.db.set_value(
+            "OKR Key Result",
+            self.kr.name,
+            {"start_date": "2026-02-01", "end_date": "2026-02-04"},
+        )
+
+        context = self.get_action_item_context()
+
+        self.assertIn("4 Days", context["timeline_preview_context"])
+
+    def test_plan_date_context_uses_getdate(self):
+        self.activate()
+        frappe.db.set_value(
+            "OKR Action Item",
+            self.action.name,
+            {"start_date": None, "due_date": None},
+        )
+        frappe.db.set_value(
+            "OKR Key Result",
+            self.kr.name,
+            {"start_date": None, "end_date": None},
+        )
+        plan = frappe.get_doc("OKR Plan", self.plan.name)
+        plan.start_date = "2026-03-01"
+        plan.end_date = "2026-03-05"
+        original_get_doc = frappe.get_doc
+
+        def get_doc(doctype, name=None, *args, **kwargs):
+            if doctype == "OKR Plan" and name == plan.name:
+                return plan
+            if isinstance(doctype, dict):
+                return original_get_doc(doctype, *args, **kwargs)
+            return original_get_doc(doctype, name, *args, **kwargs)
+
+        with patch("frappe.get_doc", side_effect=get_doc):
+            context = self.get_action_item_context()
+
+        self.assertIn("5 Days", context["timeline_preview_context"])
