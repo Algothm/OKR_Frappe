@@ -559,3 +559,70 @@
 .frappe-control[data-fieldname="context_preview_html"] {
 	overflow: visible !important;
 }
+.okr-external-link-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	padding: 2px 0;
+}
+
+.okr-external-link-input {
+	flex: 1 1 auto;
+	min-width: 0;
+	height: 38px;
+	line-height: 38px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.okr-external-link-action {
+	display: inline-flex;
+	flex: 0 0 40px;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 38px;
+	padding: 0;
+}
+
+.okr-external-link-action .fa {
+	font-size: 17px;
+}
+
+/* Keep KR progress and redirect actions together even when a long title wraps. */
+.okr-workspace-page .okr-kr-head > div:first-child {
+	min-width: 0;
+	flex: 1 1 auto;
+}
+
+.okr-workspace-page .okr-kr-head > div:first-child > div {
+	min-width: 0;
+	flex: 1 1 auto;
+}
+
+.okr-workspace-page .okr-kr-meta {
+	flex: 0 0 auto;
+	flex-wrap: nowrap;
+	align-items: center;
+	align-self: flex-start;
+	white-space: nowrap;
+}
+
+.okr-workspace-page .okr-kr-meta > * {
+	flex: 0 0 auto;
+	align-self: center;
+	margin: 0;
+}
+
+@media (max-width: 480px) {
+	.okr-external-link-row {
+		gap: 6px;
+	}
+
+	.okr-external-link-action {
+		flex-basis: 38px;
+		width: 38px;
+	}
+}

@@ -40,6 +40,8 @@ class OKRWorkspace {
 			selected_objective: saved_view_state.selected_objective || null,
 		};
 		this.attachment = "";
+		this.attachment_file = "";
+		this.pending_attachments = {};
 		this.saving_checkin = false;
 		this.render_shell();
 		this.bind_events();
@@ -295,11 +297,16 @@ class OKRWorkspace {
 		this.$body.on("click", "[data-attach-file]", () => this.attach_file());
 		this.$body.on("click", "[data-remove-attachment]", () => {
 			this.attachment = "";
+			this.attachment_file = "";
+			if (this.state.action_checkin) delete this.pending_attachments[this.state.action_checkin];
 			this.render_attachment();
 		});
 		this.$body.on("click", "[data-preview-attachment]", (e) => {
 			e.preventDefault();
-			okr_management.preview_attachment($(e.currentTarget).attr("data-preview-attachment"));
+			okr_management.preview_attachment(
+				$(e.currentTarget).attr("data-preview-attachment"),
+				$(e.currentTarget).attr("data-attachment-external") === "1"
+			);
 		});
 		this.$body.on("click", "[data-adjust-filter]", () =>
 			this.$body.find("[data-filter-popover]").show()
@@ -764,11 +771,11 @@ class OKRWorkspace {
 												}"></span>
                                                 <span class="okr-kr-icon">KR</span>
                                                 <div style="display: flex; flex-direction: column;">
-                                                        <div class="okr-title-with-period"><strong title="${frappe.utils.escape_html(
-															kr.key_result_title || kr.name
-														)}">${frappe.utils.escape_html(
+												<div class="okr-title-with-period"><strong title="${frappe.utils.escape_html(
+													kr.key_result_title || kr.name
+												)}">${frappe.utils.escape_html(
 			kr.key_result_title || kr.name
-		)}</strong>${this.period_badge(kr.period_label)}</div>
+		)}</strong></div>
                                                         ${
 															assigneeName
 																? `<span style="font-size: 11px; color: #64748b; font-weight: 500; margin-top: 2px;">${frappe.utils.escape_html(
@@ -778,8 +785,9 @@ class OKRWorkspace {
 														}
                                                 </div>
                                         </div>
-                                        <div class="okr-kr-meta">
-                                                <button type="button" class="okr-signal ${statusClass}" data-open-kr-actions="${frappe.utils.escape_html(
+										<div class="okr-kr-meta">
+												${this.period_badge(kr.period_label)}
+												<button type="button" class="okr-signal ${statusClass}" data-open-kr-actions="${frappe.utils.escape_html(
 			kr.name
 		)}" title="${__("View Action Item measurements")}">${frappe.utils.escape_html(
 			progressDisplay
@@ -993,7 +1001,7 @@ class OKRWorkspace {
 										: ""
 								}</div>
                                 <p>
-                                        <span class="okr-history-details">${frappe.utils.escape_html(
+                                        <span class="okr-history-details">${okr_management.linkify_http_urls(
 											row.achievements || ""
 										)}${
 					row.blockers
@@ -1005,9 +1013,9 @@ class OKRWorkspace {
 													row.attachment
 														? `<button type="button" class="okr-history-attachment" data-preview-attachment="${frappe.utils.escape_html(
 																row.attachment
-														  )}" title="${__(
+															  )}" title="${__(
 																"View Attachment"
-														  )}" aria-label="${__(
+															  )}" data-attachment-external="${row.attachment_is_external ? "1" : "0"}" aria-label="${__(
 																"View Attachment"
 														  )}">${frappe.utils.icon(
 																"attachment",
@@ -1035,17 +1043,7 @@ class OKRWorkspace {
 			const baseline = flt(ai.baseline_value || 0, 2);
 			const target = flt(ai.target_value || 0, 2);
 			const current = ai.current_value !== undefined && ai.current_value !== null ? flt(ai.current_value, 2) : baseline;
-			let progress = flt(ai.progress || 0, 2);
-			if (metricType === "Boolean") {
-				progress = current ? 100.0 : 0.0;
-			} else if (target !== baseline) {
-				if (direction === "Decrease") {
-					progress = ((baseline - current) / (baseline - target)) * 100.0;
-				} else {
-					progress = ((current - baseline) / (target - baseline)) * 100.0;
-				}
-				progress = Math.min(100.0, Math.max(0.0, Math.round(progress * 100) / 100));
-			}
+			const progress = flt(ai.progress || 0, 2);
 			return {
 				is_custom: true,
 				metric_type: metricType,
@@ -1227,24 +1225,35 @@ class OKRWorkspace {
 	}
 	open_checkin(action) {
 		this.state.action_checkin = this.state.action_checkin === action ? null : action;
-		this.attachment = "";
+		const pending = this.pending_attachments[this.state.action_checkin] || {};
+		this.attachment = pending.file_url || "";
+		this.attachment_file = pending.name || "";
 		this.render_content();
 	}
 
 	attach_file() {
+		const action = this.state.action_checkin;
 		new frappe.ui.FileUploader({
 			allow_multiple: false,
 			on_success: (file) => {
 				this.attachment = file.file_url;
+				this.attachment_file = file.name || "";
+				this.pending_attachments[action] = {
+					file_url: this.attachment,
+					name: this.attachment_file,
+				};
 				this.render_attachment();
 			},
 		});
 	}
 
 	render_attachment() {
+		const attachmentLabel = /^https?:\/\//i.test(this.attachment || "")
+			? this.attachment
+			: (this.attachment || "").split("/").pop();
 		const html = this.attachment
 			? `<div class="okr-file-chip"><span>${frappe.utils.escape_html(
-					this.attachment.split("/").pop()
+					attachmentLabel
 			  )}</span><button class="btn btn-xs btn-link" data-remove-attachment>${__(
 					"Remove"
 			  )}</button></div>`
@@ -1276,7 +1285,8 @@ class OKRWorkspace {
 			checkin_date: checkinDate,
 			blocker: "",
 			dependency: "",
-			attachment: this.attachment || "",
+			attachment: (this.pending_attachments[action] || {}).file_url || this.attachment || "",
+			attachment_file: (this.pending_attachments[action] || {}).name || this.attachment_file || "",
 		};
 
 		if (!action) return frappe.msgprint(__("Please select an Action Item."));
@@ -1305,7 +1315,9 @@ class OKRWorkspace {
 				frappe.show_alert({ message, indicator: "green" });
 				this.state.action_history[action] = true;
 				this.state.action_checkin = null;
+				delete this.pending_attachments[action];
 				this.attachment = "";
+				this.attachment_file = "";
 				this.load();
 			},
 			error: () => {

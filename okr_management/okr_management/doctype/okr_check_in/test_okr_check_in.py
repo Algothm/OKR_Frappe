@@ -65,6 +65,26 @@ class TestOKRCheckIn(FrappeTestCase):
         self.assertEqual(first.is_latest,0)
         self.assertEqual(second.is_latest,1)
 
+    def test_latest_checkin_updates_only_its_action_and_rolls_up_hierarchy(self):
+        self.activate()
+        other = frappe.copy_doc(self.action)
+        other.action_item_title = "Other Action " + frappe.generate_hash(length=6)
+        other.insert(ignore_permissions=True)
+
+        for value in (10, 20, 30):
+            self.checkin(value)
+
+        self.action.reload()
+        other.reload()
+        self.kr.reload()
+        objective = frappe.get_doc("OKR Objective", self.kr.objective)
+        self.plan.reload()
+        self.assertEqual(self.action.progress, 30)
+        self.assertEqual(other.progress, 0)
+        self.assertEqual(self.kr.target_progress, 15)
+        self.assertEqual(objective.progress, 15)
+        self.assertEqual(self.plan.progress, 15)
+
     def test_selected_status_is_preserved_and_updates_action_item(self):
         self.activate()
 
@@ -90,6 +110,48 @@ class TestOKRCheckIn(FrappeTestCase):
         self.action.reload()
         self.assertEqual(resumed.action_status, "In Progress")
         self.assertEqual(self.action.status, "In Progress")
+
+    def test_done_sets_and_preserves_completion_date(self):
+        self.activate()
+        frappe.set_user(self.employee_user)
+        frappe.get_doc({
+            "doctype": "OKR Check In",
+            "action_item": self.action.name,
+            "current_value": 100,
+            "achievements": "Completed",
+            "action_status": "Done",
+        }).insert(ignore_permissions=True)
+        self.action.reload()
+        self.assertEqual(self.action.status, "Done")
+        self.assertIsNotNone(self.action.completion_date)
+
+        original_completion_date = "2026-01-15"
+        frappe.db.set_value(
+            "OKR Action Item", self.action.name, "completion_date", original_completion_date
+        )
+        frappe.get_doc({
+            "doctype": "OKR Check In",
+            "action_item": self.action.name,
+            "current_value": 100,
+            "achievements": "Completion confirmed",
+            "action_status": "Done",
+        }).insert(ignore_permissions=True)
+        self.action.reload()
+        self.assertEqual(str(self.action.completion_date), original_completion_date)
+
+    def test_unauthorized_context_does_not_reveal_action_item_existence(self):
+        self.activate()
+        frappe.set_user("Guest")
+        messages = []
+        for action_item in (self.action.name, "MISSING-OKR-ACTION-ITEM"):
+            with self.assertRaises(frappe.PermissionError) as error:
+                from okr_management.okr_management.doctype.okr_check_in.okr_check_in import (
+                    get_action_item_context,
+                )
+
+                get_action_item_context(action_item)
+            messages.append(str(error.exception))
+        self.assertEqual(messages[0], messages[1])
     def test_submitted_checkin_is_read_only(self):
         self.activate(); checkin=self.checkin(); checkin.achievements="Changed"
         self.assertRaises(frappe.ValidationError,checkin.save)

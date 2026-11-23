@@ -16,20 +16,24 @@ def execute(filters=None):
 		{"label": "Check-in Count", "fieldname": "checkin_count", "fieldtype": "Int", "width": 130},
 		{"label": "Last Check-in", "fieldname": "last_checkin", "fieldtype": "Date", "width": 120},
 	]
-	base_filters = {"plan": filters.plan} if filters.get("plan") else {}
+	base_filters = {"parent_plan": filters.plan} if filters.get("plan") else {}
 	owners = set(frappe.get_all("OKR Objective", filters=base_filters, pluck="owner_user")) | set(frappe.get_all("OKR Key Result", filters=base_filters, pluck="assignee")) | set(frappe.get_all("OKR Check In", filters=base_filters, pluck="reported_by"))
 	if filters.get("owner"):
 		owners = {filters.owner}
 	data = []
+	has_kr_confidence = bool(frappe.get_meta("OKR Key Result").has_field("confidence"))
+	kr_fields = ["target_progress"]
+	if has_kr_confidence:
+		kr_fields.append("confidence")
 	for owner in sorted(filter(None, owners)):
 		objective_filters = {**base_filters, "owner_user": owner}
 		kr_filters = {**base_filters, "assignee": owner}
 		checkin_filters = {**base_filters, "reported_by": owner}
 		obj = frappe.get_all("OKR Objective", filters=objective_filters, fields=["progress", "confidence"])
-		krs = frappe.get_all("OKR Key Result", filters=kr_filters, fields=["target_progress", "confidence"])
+		krs = frappe.get_all("OKR Key Result", filters=kr_filters, fields=kr_fields)
 		checkins = frappe.get_all("OKR Check In", filters=checkin_filters, fields=["checkin_date"], order_by="checkin_date desc")
 		obj_avg = sum(flt(x.progress) for x in obj) / len(obj) if obj else 0
 		kr_avg = sum(flt(x.target_progress) for x in krs) / len(krs) if krs else 0
-		conf_values = [flt(x.confidence) for x in obj + krs if x.confidence]
+		conf_values = [flt(x.confidence) for x in obj + krs if getattr(x, "confidence", None)]
 		data.append({"owner": owner, "objective_count": len(obj), "key_result_count": len(krs), "avg_objective_progress": obj_avg, "avg_kr_progress": kr_avg, "avg_confidence": (sum(conf_values) / len(conf_values) if conf_values else 0), "checkin_count": len(checkins), "last_checkin": checkins[0].checkin_date if checkins else None})
 	return columns, data

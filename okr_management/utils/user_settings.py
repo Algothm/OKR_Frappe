@@ -38,7 +38,6 @@ def reset_list_group_by_fields(doctype: str) -> int:
 		updated += 1
 
 	clear_user_settings_cache(doctype)
-	frappe.db.commit()
 	return updated
 
 

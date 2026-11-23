@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urlparse
+
 import frappe
 from frappe import _
 from frappe.utils import flt, getdate, nowdate, today
@@ -248,6 +250,7 @@ def save_workspace_checkin(
 	blocker: str | None = None,
 	dependency: str | None = None,
 	attachment: str | None = None,
+	attachment_file: str | None = None,
 	status: str | None = None,
 	current_value: float | None = None,
 	checkin_date: str | None = None,
@@ -297,7 +300,7 @@ def save_workspace_checkin(
 		doc.checkin_date = getdate(checkin_date)
 	doc.flags.ignore_permissions = True
 	doc.save()
-	link_uploaded_attachment(doc)
+	link_uploaded_attachment(doc, attachment_file)
 	result = {"name": doc.name, "message": "Check-in saved successfully"}
 
 	action = frappe.get_doc("OKR Action Item", action_item)
@@ -507,23 +510,23 @@ def get_action_items(kr_names: list[str]) -> list:
 	for row in rows:
 		if row.get("status") == "Archived":
 			row["status"] = "Done"
-		if row.get("customize_measurement"):
-			row["progress"] = calculate_effective_action_progress(row)
 	return add_user_full_names(rows, "owner_user", "owner_full_name")
 
 
-def link_uploaded_attachment(checkin) -> None:
+def link_uploaded_attachment(checkin, attachment_file: str | None = None) -> None:
 	"""Attach a Workspace upload so authorized hierarchy viewers can preview private files."""
 	if not checkin.attachment:
 		return
 	file_row = frappe.db.get_value(
 		"File",
-		{"file_url": checkin.attachment},
+		attachment_file or {"file_url": checkin.attachment},
 		["name", "owner", "attached_to_doctype", "attached_to_name"],
 		as_dict=True,
 	)
 	if not file_row:
 		frappe.throw("The selected attachment could not be found.")
+	if frappe.db.get_value("File", file_row.name, "file_url") != checkin.attachment:
+		frappe.throw("The selected attachment does not match the uploaded file.")
 	if frappe.session.user != "Administrator" and file_row.owner != frappe.session.user:
 		frappe.throw("You can only attach files that you uploaded.", frappe.PermissionError)
 	if file_row.attached_to_name and (
@@ -580,6 +583,7 @@ def get_checkin_history(action_item_names: list[str]) -> dict:
 	)
 	out = {}
 	for row in rows:
+		row["attachment_is_external"] = is_external_attachment_url(row.attachment)
 		if row.get("action_status") == "Archived":
 			row["action_status"] = "Done"
 		assignee = action_assignees.get(row.action_item)
@@ -590,6 +594,12 @@ def get_checkin_history(action_item_names: list[str]) -> dict:
 		)
 		out.setdefault(row.action_item, []).append(row)
 	return out
+
+
+def is_external_attachment_url(file_url: str | None) -> bool:
+	"""Match Frappe v15 Link uploads without querying a computed File property."""
+	parsed = urlparse(file_url or "")
+	return bool(parsed.scheme in {"http", "https"} and parsed.netloc)
 
 
 def calculate_effective_action_progress(item: dict) -> float:

@@ -68,7 +68,10 @@ class OKRAdminWorkspace {
 		this.body.on("click", "[data-preview-attachment]", (e) => {
 			e.preventDefault();
 			e.stopPropagation();
-			okr_management.preview_attachment($(e.currentTarget).attr("data-preview-attachment"));
+			okr_management.preview_attachment(
+				$(e.currentTarget).attr("data-preview-attachment"),
+				$(e.currentTarget).attr("data-attachment-external") === "1"
+			);
 		});
 		this.body.on("click", "[data-select-plan]", (e) =>
 			this.select_plan($(e.currentTarget).data("select-plan"))
@@ -627,13 +630,15 @@ class OKRAdminWorkspace {
 								"</span><strong>" +
 								this.percent(ck.progress) +
 								"</strong><p>" +
-								this.e(ck.note || __("No update")) +
+								okr_management.linkify_http_urls(ck.note || __("No update")) +
 								(ck.blockers
 									? "<br><b>" + __("Blocker") + ":</b> " + this.e(ck.blockers)
 									: "") +
 								(ck.attachment
 									? '<br><button type="button" class="btn btn-xs btn-default" data-preview-attachment="' +
 									  this.e(ck.attachment) +
+									  '" data-attachment-external="' +
+									  (ck.attachment_is_external ? "1" : "0") +
 									  '">' +
 									  __("View Attachment") +
 									  "</button>"

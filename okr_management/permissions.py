@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import frappe
+from frappe import _
 
 
 def is_okr_admin(user: str | None = None) -> bool:
@@ -17,6 +18,11 @@ def is_okr_user(user: str | None = None) -> bool:
 		return True
 	roles = set(frappe.get_roles(user))
 	return bool({"OKR User", "System Manager"} & roles)
+
+
+def require_okr_admin() -> None:
+	if not is_okr_admin():
+		frappe.throw(_("Only an OKR Admin can access OKR analytics."), frappe.PermissionError)
 
 
 def _is_plan_team_member(plan_name: str, user: str) -> bool:

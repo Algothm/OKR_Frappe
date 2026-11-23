@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import frappe
 
+from okr_management.hierarchy_visibility import get_hierarchy_visibility_scope
+
 
 def execute(filters=None):
 	filters = frappe._dict(filters or {})
@@ -19,6 +21,30 @@ def execute(filters=None):
 		{"label": "End Date", "fieldname": "end_date", "fieldtype": "Date", "width": 110},
 	]
 	conditions, values = [], {}
+	scope = get_hierarchy_visibility_scope()
+	if not scope["read_all"]:
+		visible_objectives = sorted(scope["visible_objectives"])
+		visible_key_results = sorted(scope["visible_key_results"])
+		visibility_conditions = []
+		if visible_key_results:
+			placeholders = []
+			for index, name in enumerate(visible_key_results):
+				key = f"visible_key_result_{index}"
+				values[key] = name
+				placeholders.append(f"%({key})s")
+			visibility_conditions.append(f"kr.name in ({', '.join(placeholders)})")
+		if visible_objectives:
+			placeholders = []
+			for index, name in enumerate(visible_objectives):
+				key = f"visible_objective_{index}"
+				values[key] = name
+				placeholders.append(f"%({key})s")
+			visibility_conditions.append(
+				f"(kr.name is null and obj.name in ({', '.join(placeholders)}))"
+			)
+		conditions.append(
+			f"({' or '.join(visibility_conditions)})" if visibility_conditions else "1=0"
+		)
 	if filters.get("plan"):
 		conditions.append("obj.parent_plan = %(plan)s")
 		values["plan"] = filters.plan
