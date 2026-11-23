@@ -23,6 +23,13 @@ class TestOKRActionItem(FrappeTestCase):
 		)
 		if not all((self.company, self.department, self.employee, self.fiscal_year)):
 			self.skipTest("Required ERP masters are missing.")
+		self.group = frappe.get_doc(
+			{
+				"doctype": "Group",
+				"group_name": "AI Test " + frappe.generate_hash(length=8),
+				"company": self.company,
+			}
+		).insert(ignore_permissions=True).name
 		fy = frappe.db.get_value(
 			"Fiscal Year", self.fiscal_year, ["year_start_date", "year_end_date"], as_dict=True
 		)
@@ -48,6 +55,7 @@ class TestOKRActionItem(FrappeTestCase):
 				"level": "Department",
 				"level_details": self.department,
 				"department": self.department,
+				"group": self.group,
 				"owner_user": "Administrator",
 				"status": "Draft",
 			}
@@ -160,6 +168,14 @@ class TestOKRActionItem(FrappeTestCase):
 		action.reload()
 		self.assertEqual(action.customize_measurement, 1)
 		self.assertEqual(action.metric_type, "Number")
+		self.assertEqual(flt(action.progress), 0)
+		save_workspace_checkin(
+			action_item=action.name,
+			current_value=4,
+			update="Measurement shortcut check-in",
+			status="In Progress",
+		)
+		action.reload()
 		self.assertEqual(flt(action.progress), 60)
 
 		self.kr.reload()
@@ -525,6 +541,14 @@ class TestOKRActionItem(FrappeTestCase):
 
 		ai_2_doc.reload()
 		self.assertEqual(ai_2_doc.current_value, 40)
+		self.assertEqual(ai_2_doc.progress, 0.0)
+		save_workspace_checkin(
+			action_item=ai_2.name,
+			current_value=40,
+			update="AI-2 initial check-in",
+			status="In Progress",
+		)
+		ai_2_doc.reload()
 		self.assertEqual(ai_2_doc.progress, 40.0)
 
 		# 2. Lock CHECKED: current_value customization denied.
@@ -562,6 +586,14 @@ class TestOKRActionItem(FrappeTestCase):
 		ai_3_doc.target_value = 100000
 		ai_3_doc.current_value = 50000
 		ai_3_doc.save()
+		ai_3_doc.reload()
+		self.assertEqual(ai_3_doc.progress, 0.0)
+		save_workspace_checkin(
+			action_item=ai_3.name,
+			current_value=50000,
+			update="AI-3 initial check-in",
+			status="In Progress",
+		)
 		ai_3_doc.reload()
 		self.assertEqual(ai_3_doc.progress, 50.0)
 

@@ -12,7 +12,11 @@ from okr_management.okr_management.doctype.okr_plan.okr_plan import (
 	get_plan_timeline,
 )
 from okr_management.utils.okr_calculations import recalculate_objective_progress, recalculate_plan_progress
-from okr_management.utils.okr_validations import ensure_max_length
+from okr_management.utils.okr_validations import (
+	ensure_document_id_editable_before_plan_start,
+	ensure_max_length,
+	ensure_title_editable_before_plan_start,
+)
 from okr_management.permissions import is_okr_admin
 
 STATUS_TRANSITIONS = {
@@ -41,6 +45,9 @@ SYSTEM_FIELDS = {"progress", "key_result_count"}
 
 
 class OKRObjective(Document):
+	def before_rename(self, old: str, new: str, merge: bool = False) -> None:
+		ensure_document_id_editable_before_plan_start(self, self.parent_plan)
+
 	def before_validate(self) -> None:
 		self.status = self.status or "Draft"
 		self.priority = self.priority or "High"
@@ -271,6 +278,7 @@ class OKRObjective(Document):
 	def validate_locked_fields(self) -> None:
 		if self.is_new():
 			return
+		ensure_title_editable_before_plan_start(self, "objective_title", self.parent_plan)
 		old_doc = self.get_doc_before_save()
 		if not old_doc:
 			return
@@ -345,6 +353,10 @@ class OKRObjective(Document):
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
 def get_team_options(doctype, txt, searchfield, start, page_len, filters):
+	from okr_management.permissions import is_okr_admin, is_okr_user
+
+	if not (is_okr_admin() or is_okr_user()):
+		frappe.throw(_("Only an OKR User or OKR Admin can search the OKR team."), frappe.PermissionError)
 	users = frappe.get_all(
 		"User",
 		filters={"enabled": 1},
@@ -364,8 +376,11 @@ def get_team_options(doctype, txt, searchfield, start, page_len, filters):
 @frappe.validate_and_sanitize_search_inputs
 def search_available_plans(doctype, txt, searchfield, start, page_len, filters):
 	"""Return selectable Plan names without granting access to Plan documents."""
-	if frappe.session.user == "Guest":
-		frappe.throw(_("Please log in to select an OKR Plan."), frappe.PermissionError)
+	from okr_management.permissions import is_okr_admin, is_okr_user
+
+	user = frappe.session.user
+	if not (is_okr_admin(user) or is_okr_user(user)):
+		frappe.throw(_("Only an OKR User or OKR Admin can select an OKR Plan."), frappe.PermissionError)
 	plan_filters = {"status": ["in", ["Draft", "Active"]]}
 	requested_status = (filters or {}).get("status") if isinstance(filters, dict) else None
 	if requested_status:

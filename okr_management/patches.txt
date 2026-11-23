@@ -62,3 +62,4 @@ okr_management.patches.v0_0_48_restore_okr_plan_native_route
 okr_management.patches.v0_0_49_restore_standard_navigation_aliases
 
 okr_management.patches.v0_0_50_restore_standard_delete_permissions
+okr_management.patches.v0_0_51_restrict_okr_home_workspaces

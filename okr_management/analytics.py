@@ -4,6 +4,8 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, flt, get_first_day, getdate, nowdate
 
+from okr_management.permissions import require_okr_admin
+
 
 def _has_field(doctype: str, fieldname: str) -> bool:
 	return bool(frappe.get_meta(doctype).has_field(fieldname))
@@ -18,16 +20,19 @@ def _avg(doctype: str, fieldname: str, filters: dict | None = None) -> float:
 
 @frappe.whitelist()
 def average_objective_progress() -> float:
+	require_okr_admin()
 	return _avg("OKR Objective", "progress")
 
 
 @frappe.whitelist()
 def average_objective_confidence() -> float:
+	require_okr_admin()
 	return _avg("OKR Objective", "confidence")
 
 
 @frappe.whitelist()
 def pending_reviews_count() -> int:
+	require_okr_admin()
 	if not _has_field("OKR Objective Review", "review_status"):
 		return 0
 	return frappe.db.count("OKR Objective Review", {"review_status": ["in", ["Draft", "Submitted"]]})
@@ -35,6 +40,7 @@ def pending_reviews_count() -> int:
 
 @frappe.whitelist()
 def checkins_this_month_count() -> int:
+	require_okr_admin()
 	filters = {}
 	if _has_field("OKR Check In", "checkin_date"):
 		filters["checkin_date"] = [">=", get_first_day(nowdate())]
@@ -43,6 +49,7 @@ def checkins_this_month_count() -> int:
 
 @frappe.whitelist()
 def average_review_rating() -> str:
+	require_okr_admin()
 	if not frappe.db.exists("DocType", "OKR Objective Review"):
 		return "★ 0.0 / 5"
 	reviews = frappe.get_all(
@@ -67,19 +74,32 @@ def average_review_rating() -> str:
 
 @frappe.whitelist()
 def get_executive_insights(days_without_update: int = 14, risk_progress: float = 60, risk_confidence: float = 3) -> dict:
+	require_okr_admin()
+
 	cutoff = add_days(nowdate(), -int(days_without_update))
 	today = getdate(nowdate())
 	near_end = add_days(nowdate(), 14)
 
+	has_obj_confidence = _has_field("OKR Objective", "confidence")
+	obj_fields = ["name", "objective_title", "owner_user", "status", "progress", "end_date"]
+	if has_obj_confidence:
+		obj_fields.append("confidence")
+
 	objectives = frappe.get_all(
 		"OKR Objective",
-		fields=["name", "objective_title", "owner_user", "status", "progress", "confidence", "end_date"],
+		fields=obj_fields,
 		order_by="modified desc",
 		limit_page_length=500,
 	)
+
+	has_kr_confidence = _has_field("OKR Key Result", "confidence")
+	kr_fields = ["name", "key_result_title", "objective", "assignee", "status", "target_progress", "end_date", "modified"]
+	if has_kr_confidence:
+		kr_fields.append("confidence")
+
 	key_results = frappe.get_all(
 		"OKR Key Result",
-		fields=["name", "key_result_title", "objective", "assignee", "status", "target_progress", "confidence", "end_date", "modified"],
+		fields=kr_fields,
 		order_by="modified desc",
 		limit_page_length=500,
 	)
@@ -89,7 +109,7 @@ def get_executive_insights(days_without_update: int = 14, risk_progress: float =
 		reasons = []
 		if flt(objective.progress) < risk_progress and objective.status not in {"Completed", "Archived", "Cancelled"}:
 			reasons.append(_("progress below {0}%").format(risk_progress))
-		if flt(objective.confidence) < risk_confidence:
+		if has_obj_confidence and flt(objective.get("confidence")) < risk_confidence:
 			reasons.append(_("low confidence"))
 		if objective.end_date and today <= getdate(objective.end_date) <= getdate(near_end) and flt(objective.progress) < 90:
 			reasons.append(_("end date is near"))
@@ -103,7 +123,7 @@ def get_executive_insights(days_without_update: int = 14, risk_progress: float =
 		reasons = []
 		if flt(kr.target_progress) < risk_progress and kr.status not in {"Achieved", "Closed"}:
 			reasons.append(_("progress below {0}%").format(risk_progress))
-		if flt(kr.confidence) < risk_confidence:
+		if has_kr_confidence and flt(kr.get("confidence")) < risk_confidence:
 			reasons.append(_("low confidence"))
 		if kr.status == "At Risk":
 			reasons.append(_("marked At Risk"))
@@ -141,4 +161,3 @@ def get_executive_insights(days_without_update: int = 14, risk_progress: float =
 		"owners_without_recent_update": owners_without_recent_update[:20],
 		"recommended_next_actions": recommended_next_actions,
 	}
-

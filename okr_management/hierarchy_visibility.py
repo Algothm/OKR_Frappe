@@ -28,7 +28,21 @@ def get_assigned_action_items(user=None):
 
 def get_hierarchy_visibility_scope(user=None):
 	user = user or frappe.session.user
-	if not is_okr_user(user):
+	# Test runners intentionally create and roll back records repeatedly inside one
+	# synthetic request. Production requests use the request cache, additionally
+	# keyed by write count so a write in the same transaction refreshes the scope.
+	if frappe.flags.in_test:
+		return _compute_hierarchy_visibility_scope(user)
+	return _get_hierarchy_visibility_scope(user, frappe.db.transaction_writes)
+
+
+@frappe.request_cache
+def _get_hierarchy_visibility_scope(user, transaction_writes):
+	return _compute_hierarchy_visibility_scope(user)
+
+
+def _compute_hierarchy_visibility_scope(user):
+	if not (is_okr_user(user) or is_okr_admin(user)):
 		return {
 			"visible_objectives": set(),
 			"visible_key_results": set(),

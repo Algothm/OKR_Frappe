@@ -3,7 +3,7 @@ from __future__ import annotations
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import date_diff, flt, formatdate, nowdate
+from frappe.utils import date_diff, flt, formatdate, getdate, nowdate
 
 from okr_management.hierarchy_visibility import get_hierarchy_visibility_scope
 from okr_management.permissions import is_okr_admin
@@ -90,6 +90,12 @@ class OKRCheckIn(Document):
 				frappe.throw(_("Submitted Check-ins are read-only and cannot be modified."))
 
 	def populate_from_action_item(self) -> None:
+		scope = get_hierarchy_visibility_scope()
+		if not scope["read_all"] and self.action_item not in scope["checkin_action_items"]:
+			frappe.throw(
+				_("You are not authorized to create a Check-In for this Action Item."),
+				frappe.PermissionError,
+			)
 		if not frappe.db.exists("OKR Action Item", self.action_item):
 			frappe.throw(_("Selected Action Item does not exist."))
 
@@ -197,6 +203,12 @@ class OKRCheckIn(Document):
 	def on_update(self) -> None:
 		if self.action_item and frappe.db.exists("OKR Action Item", self.action_item):
 			action_status = ACTION_STATUS_MAP[self.action_status]
+			completion_date = None
+			if action_status == "Done":
+				completion_date = (
+					frappe.db.get_value("OKR Action Item", self.action_item, "completion_date")
+					or nowdate()
+				)
 			frappe.db.set_value(
 				"OKR Action Item",
 				self.action_item,
@@ -204,7 +216,7 @@ class OKRCheckIn(Document):
 					"progress": self.progress,
 					"current_value": flt(self.current_value),
 					"status": action_status,
-					"completion_date": nowdate() if action_status == "Completed" else None,
+					"completion_date": completion_date,
 				},
 			)
 

@@ -42,6 +42,9 @@ def calculate_metric_progress(baseline_value: Any, current_value: Any, target_va
 	if target == baseline:
 		return 0.0
 	if metric_direction == "Decrease":
+		# Crossing below a decrease target is invalid input, not extra completion.
+		if current < target:
+			return 0.0
 		progress = ((baseline - current) / (baseline - target)) * 100.0
 	else:
 		progress = ((current - baseline) / (target - baseline)) * 100.0
@@ -126,26 +129,33 @@ def get_key_result_progress(key_result_name: str, key_result: Any) -> float:
 	# determines KR progress, regardless of the legacy calculation_mode value.
 	action_items = frappe.get_all(
 		'OKR Action Item',
-		filters={'parent_key_result': key_result_name, 'status': ['not in', ['Archived', 'Done']]},
+		filters={'parent_key_result': key_result_name},
 		fields=['name', 'progress', 'current_value', 'customize_measurement', 'metric_type', 'metric_direction', 'baseline_value', 'target_value'],
 	)
 	if action_items:
+		action_item_names = [item.get('name') for item in action_items]
+		latest_by_action_item = {}
+		checkins = frappe.get_all(
+			'OKR Check In',
+			filters={'action_item': ['in', action_item_names]},
+			fields=['action_item', 'current_value', 'progress'],
+			order_by='action_item asc, checkin_date desc, creation desc',
+		)
+		for checkin in checkins:
+			latest_by_action_item.setdefault(checkin.get('action_item'), checkin)
+
 		progress_values = []
 		for item in action_items:
-			latest = frappe.db.get_value(
-				'OKR Check In',
-				{'action_item': item.get('name')},
-				['current_value', 'progress'],
-				as_dict=True,
-				order_by='checkin_date desc, creation desc',
-			)
+			latest = latest_by_action_item.get(item.get('name'))
 			if latest:
 				# A submitted Check-In is the authoritative Action snapshot.
 				current = flt(latest.get('current_value'))
 				progress = flt(latest.get('progress'))
 			else:
+				# An Action Item has no earned progress until its first Check-In.
+				# Preserve its configured raw measurement for Number/Amount display.
 				current = flt(item.get('current_value'))
-				progress = calculate_action_item_progress(item, key_result)
+				progress = 0.0
 			progress_values.append(progress)
 			updates = {}
 			if flt(item.get('current_value')) != current:
@@ -211,4 +221,3 @@ def recalculate_from_key_result_doc(doc: Any, method: str | None = None) -> None
 
 def recalculate_from_objective_doc(doc: Any, method: str | None = None) -> None:
 	recalculate_plan_progress(safe_get(doc, 'parent_plan'))
-

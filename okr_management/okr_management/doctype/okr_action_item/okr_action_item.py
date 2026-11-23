@@ -5,11 +5,19 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt, getdate, today
 
-from okr_management.utils.okr_calculations import calculate_action_item_progress
-from okr_management.utils.okr_validations import ensure_max_length, ensure_percentage, ensure_required_link
+from okr_management.utils.okr_validations import (
+	ensure_document_id_editable_before_plan_start,
+	ensure_max_length,
+	ensure_percentage,
+	ensure_required_link,
+	ensure_title_editable_before_plan_start,
+)
 
 
 class OKRActionItem(Document):
+	def before_rename(self, old: str, new: str, merge: bool = False) -> None:
+		ensure_document_id_editable_before_plan_start(self, self.parent_plan)
+
 	def before_validate(self) -> None:
 		# Normalize the legacy stored label without requiring a destructive data migration.
 		if self.status == "Archived":
@@ -23,7 +31,13 @@ class OKRActionItem(Document):
 		self.set_parent_key_result_from_child_context()
 		self.inherit_context_from_key_result()
 		self.update_measurement_customization_status()
-		self.progress = calculate_action_item_progress(self)
+		latest_progress = None if self.is_new() else frappe.db.get_value(
+			"OKR Check In",
+			{"action_item": self.name},
+			"progress",
+			order_by="checkin_date desc, creation desc",
+		)
+		self.progress = flt(latest_progress) if latest_progress is not None else 0.0
 
 	def validate(self) -> None:
 		ensure_required_link(self.action_item_title, "Action Item Title")
@@ -36,6 +50,7 @@ class OKRActionItem(Document):
 		self.validate_due_date()
 		self.validate_lifecycle()
 		self.validate_measurement_customization()
+		ensure_title_editable_before_plan_start(self, "action_item_title", self.parent_plan)
 
 	def on_update(self) -> None:
 		self.update_parent_action_item_count()

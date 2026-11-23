@@ -18,6 +18,13 @@ class TestOKRKeyResult(FrappeTestCase):
 		)
 		if not all((self.company, self.department, self.employee, self.fiscal_year)):
 			self.skipTest("Required ERP masters are missing.")
+		self.group = frappe.get_doc(
+			{
+				"doctype": "Group",
+				"group_name": "KR Test " + frappe.generate_hash(length=8),
+				"company": self.company,
+			}
+		).insert(ignore_permissions=True).name
 		fy = frappe.db.get_value(
 			"Fiscal Year", self.fiscal_year, ["year_start_date", "year_end_date"], as_dict=True
 		)
@@ -43,6 +50,7 @@ class TestOKRKeyResult(FrappeTestCase):
 				"level": "Department",
 				"level_details": self.department,
 				"department": self.department,
+				"group": self.group,
 				"owner_user": "Administrator",
 				"status": "Draft",
 			}
@@ -144,9 +152,16 @@ class TestOKRKeyResult(FrappeTestCase):
 		kr = self.make_kr(current_value=25)
 		action_a = self.make_action(kr)
 		action_b = self.make_action(kr)
-		frappe.db.set_value("OKR Action Item", action_a.name, {"current_value": 20, "progress": 20})
-		frappe.db.set_value("OKR Action Item", action_b.name, {"current_value": 80, "progress": 80})
-		recalculate_key_result_progress(kr.name)
+		for action, current in ((action_a, 20), (action_b, 80)):
+			frappe.get_doc(
+				{
+					"doctype": "OKR Check In",
+					"action_item": action.name,
+					"current_value": current,
+					"action_status": "In Progress",
+					"achievements": "Authoritative action progress",
+				}
+			).insert(ignore_permissions=True)
 		kr.reload()
 		self.assertEqual(kr.target_progress, 50)
 		# The child average is mapped into the KR's configured 0 -> 100 range.
@@ -176,11 +191,12 @@ class TestOKRKeyResult(FrappeTestCase):
 		new_target_date = add_days(self.objective.start_date, 20)
 		kr.end_date = new_target_date
 		kr.target_value = 120
-		kr.key_result_title = "KR Updated " + frappe.generate_hash(length=4)
+		original_title = kr.key_result_title
 		kr.save(ignore_permissions=True)
 		kr.reload()
 		self.assertEqual(getdate(kr.end_date), getdate(new_target_date))
 		self.assertEqual(kr.target_value, 120)
+		self.assertEqual(kr.key_result_title, original_title)
 
 		# Edit again after second save
 		kr.target_value = 150
