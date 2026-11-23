@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from urllib.parse import urlparse
 
 import frappe
 from frappe.utils import add_days, flt, getdate, today
@@ -315,7 +316,7 @@ def get_checkins(
 		doc_filters["key_result"] = ["in", kr_names]
 	elif plan_names is not None:
 		doc_filters["key_result"] = ["in", ["__none__"]]
-	return frappe.get_all(
+	rows = frappe.get_all(
 		"OKR Check In",
 		filters=doc_filters,
 		fields=[
@@ -338,6 +339,15 @@ def get_checkins(
 		order_by="checkin_date desc, creation desc",
 		limit_page_length=20000,
 	)
+	for row in rows:
+		row["attachment_is_external"] = is_external_attachment_url(row.attachment)
+	return rows
+
+
+def is_external_attachment_url(file_url: str | None) -> bool:
+	"""Match Frappe v15 Link uploads without querying a computed File property."""
+	parsed = urlparse(file_url or "")
+	return bool(parsed.scheme in {"http", "https"} and parsed.netloc)
 
 
 def build_plan_summaries(plans, objectives, key_results, action_items, checkins) -> list[dict]:
@@ -500,6 +510,7 @@ def build_plan_tree(objectives, key_results_by_objective, actions_by_kr, checkin
 								"note": ck.achievements or "",
 								"blockers": ck.blockers or "",
 								"attachment": ck.attachment or "",
+								"attachment_is_external": bool(ck.attachment_is_external),
 							}
 							for ck in checkins_by_action.get(action.name, [])
 						],

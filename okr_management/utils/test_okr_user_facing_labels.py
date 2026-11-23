@@ -3,6 +3,13 @@ from pathlib import Path
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from okr_management.okr_management.page.admin_workspace.admin_workspace import (
+	is_external_attachment_url as is_admin_external_attachment_url,
+)
+from okr_management.okr_management.page.okr_workspace.okr_workspace import (
+	is_external_attachment_url as is_workspace_external_attachment_url,
+)
+
 
 class TestOKRUserFacingLabels(FrappeTestCase):
 	def test_action_item_and_checkin_status_options_use_done(self):
@@ -62,6 +69,51 @@ class TestOKRUserFacingLabels(FrappeTestCase):
 		self.assertNotIn("baseline + ((target - baseline) * enteredValue) / 100", source)
 		self.assertIn('this.format_kr_number(row.progress)', source)
 
+	def test_checkin_links_are_escaped_and_external_attachments_bypass_file_preview(self):
+		shared = Path(frappe.get_app_path("okr_management", "public", "js", "okr_management.js")).read_text(
+			encoding="utf-8"
+		)
+		workspace = Path(frappe.get_app_path(
+			"okr_management", "okr_management", "page", "okr_workspace", "okr_workspace.js",
+		)).read_text(encoding="utf-8")
+		admin = Path(frappe.get_app_path(
+			"okr_management", "okr_management", "page", "admin_workspace", "admin_workspace.js",
+		)).read_text(encoding="utf-8")
+		global_css = Path(frappe.get_app_path(
+			"okr_management", "public", "css", "okr_management.css",
+		)).read_text(encoding="utf-8")
+		hooks = Path(frappe.get_app_path("okr_management", "hooks.py")).read_text(encoding="utf-8")
+
+		self.assertIn("window.okr_management.linkify_http_urls", shared)
+		self.assertIn('parsed.protocol === "http:" || parsed.protocol === "https:"', shared)
+		self.assertIn("frappe.utils.escape_html", shared)
+		self.assertIn('target="_blank" rel="noopener noreferrer"', shared)
+		self.assertIn("window.okr_management.show_external_link", shared)
+		self.assertIn('class="form-control okr-external-link-input"', shared)
+		self.assertNotIn('<div class="form-control" style="overflow:auto', shared)
+		self.assertIn('this.select()', shared)
+		self.assertIn(".okr-external-link-input", global_css)
+		self.assertIn(".okr-workspace-page .okr-kr-meta", global_css)
+		self.assertIn("flex-wrap: nowrap", global_css)
+		self.assertIn("v=20261123-4", hooks)
+		self.assertIn('<div class="okr-kr-meta">', workspace)
+		self.assertIn("${this.period_badge(kr.period_label)}", workspace)
+		self.assertIn("frappe.utils.copy_to_clipboard(exact_url)", shared)
+		self.assertIn('window.open(exact_url, "_blank", "noopener,noreferrer")', shared)
+		self.assertIn("okr_management.linkify_http_urls", workspace)
+		self.assertIn("data-attachment-external", workspace)
+		self.assertIn('const attachmentLabel = /^https?:\\/\\//i.test(this.attachment || "")', workspace)
+		self.assertIn("okr_management.linkify_http_urls", admin)
+		self.assertIn("data-attachment-external", admin)
+
+		for detector in (is_workspace_external_attachment_url, is_admin_external_attachment_url):
+			self.assertTrue(detector("https://docs.google.com/test"))
+			self.assertTrue(detector("http://example.com/test"))
+			self.assertFalse(detector("/files/report.pdf"))
+			self.assertFalse(detector("/private/files/report.pdf"))
+			self.assertFalse(detector("javascript:alert(1)"))
+			self.assertFalse(detector(""))
+
 	def test_workspace_kr_display_follows_metric_type_and_percentage_uses_child_average(self):
 		source = Path(frappe.get_app_path(
 			"okr_management", "okr_management", "page", "okr_workspace", "okr_workspace.js",
@@ -105,6 +157,10 @@ class TestOKRUserFacingLabels(FrappeTestCase):
 		self.assertIn("render_action_completion(frm, progress)", source)
 		self.assertIn("Calculated completion", source)
 		self.assertIn("fields_dict.current_value", source)
+		self.assertIn("function initialize_new_current_from_baseline(frm)", source)
+		self.assertIn("if (!frm.is_new() || frm.__current_value_was_edited) return;", source)
+		self.assertIn("set_initial_current_value(frm, flt(frm.doc.baseline_value || 0))", source)
+		self.assertIn("frm.__current_value_was_edited = true", source)
 
 	def test_customize_measurement_checkbox_is_internal_and_section_is_directly_available(self):
 		meta = frappe.get_meta("OKR Action Item")

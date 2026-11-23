@@ -6,7 +6,11 @@ from frappe.model.document import Document
 from frappe.utils import getdate, today
 
 from okr_management.okr_management.doctype.okr_plan.okr_plan import get_derived_periods
-from okr_management.utils.okr_validations import ensure_max_length
+from okr_management.utils.okr_validations import (
+	ensure_document_id_editable_before_plan_start,
+	ensure_max_length,
+	ensure_title_editable_before_plan_start,
+)
 
 VALID_PRIORITIES = {"Low", "Medium", "High"}
 VALID_STATUSES = {"Draft", "Planned", "Active", "On Hold", "Completed", "Closed", "Archived"}
@@ -30,6 +34,9 @@ INHERITED_FIELDS = {
 
 
 class OKRKeyResult(Document):
+	def before_rename(self, old: str, new: str, merge: bool = False) -> None:
+		ensure_document_id_editable_before_plan_start(self, self.parent_plan)
+
 	def before_validate(self) -> None:
 		if self.lock_measurement_fields_for_action_item_assignees is None:
 			self.lock_measurement_fields_for_action_item_assignees = 1
@@ -96,6 +103,7 @@ class OKRKeyResult(Document):
 		self.validate_child_due_dates()
 		self.validate_lifecycle()
 		self.validate_inherited_fields_locked()
+		ensure_title_editable_before_plan_start(self, "key_result_title", self.parent_plan)
 
 	def validate_duplicate_title_in_objective(self) -> None:
 		duplicate = frappe.db.exists(

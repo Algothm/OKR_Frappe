@@ -8,7 +8,12 @@ from frappe.model.document import Document
 from frappe.utils import add_months, flt, get_last_day, getdate, today
 
 from okr_management.utils.okr_calculations import recalculate_plan_progress
-from okr_management.utils.okr_validations import ensure_date_range, ensure_required_link
+from okr_management.utils.okr_validations import (
+	ensure_document_id_editable_before_plan_start,
+	ensure_date_range,
+	ensure_required_link,
+	ensure_title_editable_before_plan_start,
+)
 
 LOCKED_AFTER_ACTIVE_FIELDS = (
 	"financial_year",
@@ -25,6 +30,9 @@ SPRINT_FREQUENCIES = {"Monthly", "Quarterly"}
 
 
 class OKRPlan(Document):
+	def before_rename(self, old: str, new: str, merge: bool = False) -> None:
+		ensure_document_id_editable_before_plan_start(self)
+
 	def before_validate(self) -> None:
 		if self.status == "Active" and not self.planned_activation_date:
 			self.planned_activation_date = today()
@@ -128,6 +136,7 @@ class OKRPlan(Document):
 	def validate_locked_fields(self) -> None:
 		if self.is_new():
 			return
+		ensure_title_editable_before_plan_start(self, "plan_name")
 
 		previous = self.get_doc_before_save()
 		if not previous:
@@ -338,10 +347,11 @@ def get_period_label(item_date, plan: Document | str | dict, end_date=None) -> s
 
 @frappe.whitelist()
 def get_plan_context(plan_name: str) -> dict:
-	from okr_management.permissions import is_okr_admin, is_okr_user
+	from okr_management.permissions import _is_plan_team_member, is_okr_admin
 
-	if not (is_okr_admin() or is_okr_user()):
-		frappe.throw(_("Only an OKR User or OKR Admin can access OKR Plan context."), frappe.PermissionError)
+	user = frappe.session.user
+	if not (is_okr_admin(user) or _is_plan_team_member(plan_name, user)):
+		frappe.throw(_("You do not have access to this OKR Plan context."), frappe.PermissionError)
 	plan = frappe.get_doc("OKR Plan", plan_name, ignore_permissions=True)
 	start_date, end_date = get_plan_timeline(plan)
 	default_start, default_end = get_default_objective_dates(plan)

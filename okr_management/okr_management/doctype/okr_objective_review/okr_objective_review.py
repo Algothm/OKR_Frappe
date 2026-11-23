@@ -51,6 +51,7 @@ class OKRObjectiveReview(Document):
 def get_derived_self_rating(objective: str | None = None) -> float | None:
 	if not objective:
 		return None
+	frappe.has_permission("OKR Objective", "read", doc=objective, throw=True)
 	result = frappe.db.sql(
 		"""
 		select avg(self_rating)

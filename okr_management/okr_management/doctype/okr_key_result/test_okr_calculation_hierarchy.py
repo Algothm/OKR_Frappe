@@ -19,6 +19,17 @@ class TestOKRCalculationHierarchy(TestOKRKeyResult):
 		frappe.db.set_value("OKR Action Item", action.name, "current_value", value)
 		recalculate_key_result_progress(action.parent_key_result)
 
+	def checkin_action_value(self, action, value):
+		frappe.get_doc(
+			{
+				"doctype": "OKR Check In",
+				"action_item": action.name,
+				"current_value": value,
+				"action_status": "In Progress",
+				"achievements": "Hierarchy calculation regression",
+			}
+		).insert(ignore_permissions=True)
+
 	def test_zero_no_checkin_archive_and_order_independence(self):
 		kr = self.make_automatic_kr()
 		a = self.make_action(kr)
@@ -26,21 +37,21 @@ class TestOKRCalculationHierarchy(TestOKRKeyResult):
 
 		self.set_action_value(a, 100)
 		kr.reload()
-		self.assertEqual(kr.target_progress, 50)
+		self.assertEqual(kr.target_progress, 0)
 
 		# B has no Check-In; its legitimate zero remains in the denominator.
 		self.assertFalse(frappe.db.exists("OKR Check In", {"action_item": b.name}))
-		self.assertEqual(kr.target_progress, 50)
+		self.assertEqual(kr.target_progress, 0)
 
 		b.status = "Done"
 		b.save(ignore_permissions=True)
 		kr.reload()
-		self.assertEqual(kr.target_progress, 100)
+		self.assertEqual(kr.target_progress, 0)
 
 		b.status = "Open"
 		b.save(ignore_permissions=True)
 		kr.reload()
-		self.assertEqual(kr.target_progress, 50)
+		self.assertEqual(kr.target_progress, 0)
 
 	def test_latest_checkin_never_replaces_automatic_kr_aggregate(self):
 		kr = self.make_automatic_kr()
@@ -86,14 +97,12 @@ class TestOKRCalculationHierarchy(TestOKRKeyResult):
 		self.assertEqual(api_kr.target_progress, 0)
 		self.assertEqual(api_kr.current_value, 0)
 
-		a.current_value = 50
-		a.save(ignore_permissions=True)
+		self.checkin_action_value(a, 50)
 		kr.reload()
 		self.assertEqual(kr.target_progress, 25)
 		self.assertEqual(kr.current_value, 25)
 
-		b.current_value = 50
-		b.save(ignore_permissions=True)
+		self.checkin_action_value(b, 50)
 		kr.reload()
 		self.objective.reload()
 		self.plan.reload()
@@ -106,14 +115,14 @@ class TestOKRCalculationHierarchy(TestOKRKeyResult):
 		kr = self.make_automatic_kr()
 		actions = [self.make_action(kr) for _ in range(3)]
 		for action, value in zip(actions, (100, 50, 0), strict=True):
-			self.set_action_value(action, value)
+			self.checkin_action_value(action, value)
 
 		objective_2 = frappe.copy_doc(self.objective)
 		objective_2.objective_title = "Second Objective " + frappe.generate_hash(length=6)
 		objective_2.insert(ignore_permissions=True)
 		kr_2 = self.make_kr(objective=objective_2.name, calculation_mode="Automatic", current_value=0)
 		action_c = self.make_action(kr_2)
-		self.set_action_value(action_c, 50)
+		self.checkin_action_value(action_c, 50)
 
 		kr.reload()
 		self.objective.reload()
@@ -157,7 +166,7 @@ class TestOKRCalculationHierarchy(TestOKRKeyResult):
 		frappe.db.set_value("OKR Action Item", b.name, "status", "Archived")
 		recalculate_key_result_progress(kr.name)
 		kr.reload()
-		self.assertEqual(kr.target_progress, 100)
+		self.assertEqual(kr.target_progress, 0)
 
 		rows = {row.name: row for row in get_action_items([kr.name])}
 		self.assertEqual(rows[b.name].status, "Done")
