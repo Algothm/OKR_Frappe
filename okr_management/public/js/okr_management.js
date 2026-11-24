@@ -115,7 +115,72 @@ frappe.listview_settings["OKR Objective"] = {
 	},
 };
 
-window.okr_management.preview_attachment = function (file_url) {
+window.okr_management.linkify_http_urls = function (text) {
+	const value = String(text || "");
+	const url_pattern = /https?:\/\/[^\s<>"']+/gi;
+	let html = "";
+	let last_index = 0;
+	for (const match of value.matchAll(url_pattern)) {
+		const url = match[0];
+		html += frappe.utils.escape_html(value.slice(last_index, match.index));
+		let parsed;
+		try {
+			parsed = new URL(url);
+		} catch (error) {
+			parsed = null;
+		}
+		if (parsed && (parsed.protocol === "http:" || parsed.protocol === "https:")) {
+			const safe_url = frappe.utils.escape_html(url);
+			html += `<a href="${safe_url}" target="_blank" rel="noopener noreferrer">${safe_url}</a>`;
+		} else {
+			html += frappe.utils.escape_html(url);
+		}
+		last_index = match.index + url.length;
+	}
+	return html + frappe.utils.escape_html(value.slice(last_index));
+};
+
+window.okr_management.show_external_link = function (file_url) {
+	let parsed;
+	try {
+		parsed = new URL(String(file_url));
+	} catch (error) {
+		frappe.msgprint(__("Invalid attachment URL."));
+		return;
+	}
+	if (!(parsed.protocol === "http:" || parsed.protocol === "https:")) {
+		frappe.msgprint(__("Only HTTP and HTTPS links can be opened."));
+		return;
+	}
+	const exact_url = String(file_url);
+	const dialog = new frappe.ui.Dialog({
+		title: __("External Link"),
+		fields: [{ fieldtype: "HTML", fieldname: "external_link" }],
+	});
+	const safe_url = frappe.utils.escape_html(exact_url);
+	dialog.fields_dict.external_link.$wrapper.html(`
+		<div class="okr-external-link-row">
+			<input type="text" class="form-control okr-external-link-input" value="${safe_url}" readonly aria-label="${__("External link URL")}">
+			<button type="button" class="btn btn-default okr-external-link-action" data-copy-external-link title="${__("Copy link")}" aria-label="${__("Copy link")}">
+				<i class="fa fa-copy" aria-hidden="true"></i>
+			</button>
+			<button type="button" class="btn btn-primary okr-external-link-action" data-open-external-link title="${__("Open Link")}" aria-label="${__("Open Link")}">${frappe.utils.icon("external-link", "sm")}</button>
+		</div>`);
+	dialog.$wrapper.on("focus click", ".okr-external-link-input", function () {
+		this.select();
+	});
+	dialog.$wrapper.on("click", "[data-copy-external-link]", () => {
+		frappe.utils.copy_to_clipboard(exact_url);
+		frappe.show_alert({ message: __("Link copied"), indicator: "green" });
+	});
+	dialog.$wrapper.on("click", "[data-open-external-link]", () => {
+		const opened = window.open(exact_url, "_blank", "noopener,noreferrer");
+		if (opened) opened.opener = null;
+	});
+	dialog.show();
+};
+
+window.okr_management.preview_attachment = function (file_url, is_external_link = false) {
 	if (!file_url) return;
 	let parsed;
 	try {
@@ -125,10 +190,15 @@ window.okr_management.preview_attachment = function (file_url) {
 		return;
 	}
 	if (
+		is_external_link ||
 		parsed.origin !== window.location.origin ||
 		!(parsed.pathname.startsWith("/files/") || parsed.pathname.startsWith("/private/files/"))
 	) {
-		frappe.msgprint(__("Only files uploaded to this site can be previewed."));
+		if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+			okr_management.show_external_link(String(file_url));
+			return;
+		}
+		frappe.msgprint(__("Only HTTP and HTTPS links can be opened."));
 		return;
 	}
 

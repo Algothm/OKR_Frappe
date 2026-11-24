@@ -14,6 +14,7 @@ def after_install() -> None:
 def create_roles() -> None:
 	roles = [
 		"OKR Admin",
+		"OKR User",
 		"Department Head",
 		"Team Lead",
 		"Employee",

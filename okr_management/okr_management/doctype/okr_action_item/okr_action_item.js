@@ -49,9 +49,11 @@ frappe.ui.form.on('OKR Action Item', {
         render_context_preview(frm, frm._kr_context);
     },
     current_value(frm) {
+        if (!frm.__setting_initial_current) frm.__current_value_was_edited = true;
         recalculate_form_action_progress(frm);
     },
     baseline_value(frm) {
+        initialize_new_current_from_baseline(frm);
         recalculate_form_action_progress(frm);
     },
     target_value(frm) {
@@ -463,7 +465,11 @@ function update_measurement_customization_ui(frm, is_locked, kr_data) {
         frm.set_value('metric_direction', kr_data.metric_direction || 'Increase');
         frm.set_value('baseline_value', flt(kr_data.baseline_value, 2));
         frm.set_value('target_value', flt(kr_data.target_value, 2));
-        frm.set_value('current_value', flt(frm.is_new() ? kr_data.baseline_value : (frm.doc.current_value ?? kr_data.baseline_value), 2));
+        if (frm.is_new()) {
+            set_initial_current_value(frm, flt(kr_data.baseline_value, 2));
+        } else {
+            frm.set_value('current_value', flt(frm.doc.current_value ?? kr_data.baseline_value, 2));
+        }
         frm.set_value('customize_measurement', 1);
     }
     ['metric_type', 'metric_direction', 'baseline_value', 'target_value', 'current_value'].forEach((f) => {
@@ -491,6 +497,18 @@ function recalculate_form_action_progress(frm) {
     }
     frm.set_value('progress', progress);
     render_action_completion(frm, progress);
+}
+
+function initialize_new_current_from_baseline(frm) {
+    if (!frm.is_new() || frm.__current_value_was_edited) return;
+    set_initial_current_value(frm, flt(frm.doc.baseline_value || 0));
+}
+
+function set_initial_current_value(frm, value) {
+    frm.__setting_initial_current = true;
+    frm.set_value('current_value', value).then(() => {
+        frm.__setting_initial_current = false;
+    });
 }
 
 function render_action_completion(frm, progress_value) {

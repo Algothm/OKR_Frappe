@@ -21,7 +21,7 @@ def execute(filters=None):
 	near_end = getdate(add_days(nowdate(), int(filters.get("days_to_end") or 14)))
 	data, obj_filters, kr_filters = [], {}, {}
 	if filters.get("plan"):
-		obj_filters["plan"] = filters.plan; kr_filters["parent_plan"] = filters.plan
+		obj_filters["parent_plan"] = filters.plan; kr_filters["parent_plan"] = filters.plan
 	if filters.get("owner"):
 		obj_filters["owner_user"] = filters.owner; kr_filters["assignee"] = filters.owner
 	for row in frappe.get_all("OKR Objective", filters=obj_filters, fields=["name", "objective_title", "parent_plan", "owner_user", "status", "progress", "confidence", "end_date"]):

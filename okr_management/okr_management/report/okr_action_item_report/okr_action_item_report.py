@@ -3,12 +3,26 @@ from __future__ import annotations
 import frappe
 from frappe.utils import date_diff, getdate, nowdate
 
+from okr_management.hierarchy_visibility import get_hierarchy_visibility_scope
+
 
 def execute(filters=None):
     filters = frappe._dict(filters or {})
     columns = get_columns()
     conditions = []
     values = {}
+    scope = get_hierarchy_visibility_scope()
+    if not scope["read_all"]:
+        visible_action_items = sorted(scope["visible_action_items"])
+        if not visible_action_items:
+            conditions.append("1=0")
+        else:
+            placeholders = []
+            for index, name in enumerate(visible_action_items):
+                key = f"visible_action_item_{index}"
+                values[key] = name
+                placeholders.append(f"%({key})s")
+            conditions.append(f"ai.name in ({', '.join(placeholders)})")
     if filters.get("plan"):
         conditions.append("ai.parent_plan = %(plan)s")
         values["plan"] = filters.plan
