@@ -22,6 +22,10 @@ from okr_management.patches.v0_0_51_restrict_okr_home_workspaces import (
 	USER_WORKSPACE,
 	execute,
 )
+from okr_management.patches.v0_0_52_restrict_okr_plan_route import (
+	PLAN_WORKSPACE,
+	execute as restrict_plan_route,
+)
 
 
 class TestOKRHomeRoutePatch(FrappeTestCase):
@@ -149,13 +153,17 @@ class TestOKRHomeRoutePatch(FrappeTestCase):
 	def test_workspace_roles_are_synchronized_idempotently(self):
 		execute()
 		execute()
+		restrict_plan_route()
+		restrict_plan_route()
 
 		self.assertEqual(self.workspace_roles(ADMIN_WORKSPACE), ["OKR Admin", "System Manager"])
 		self.assertEqual(self.workspace_roles(USER_WORKSPACE), ["OKR User", "System Manager"])
+		self.assertEqual(self.workspace_roles(PLAN_WORKSPACE), ["OKR Admin", "System Manager"])
 		self.assertEqual(self.assigned_roles("Page", "okr-workspace"), ["OKR User", "System Manager"])
 
 	def test_core_boot_workspace_visibility_matches_roles(self):
 		execute()
+		restrict_plan_route()
 
 		self.assertIn(ADMIN_WORKSPACE, self.allowed_okr_workspaces(self.admin))
 		self.assertNotIn(USER_WORKSPACE, self.allowed_okr_workspaces(self.admin))
@@ -165,6 +173,25 @@ class TestOKRHomeRoutePatch(FrappeTestCase):
 		self.assertNotIn(USER_WORKSPACE, self.allowed_okr_workspaces(self.desk_user))
 		self.assertIn(ADMIN_WORKSPACE, self.allowed_okr_workspaces(self.system_manager))
 		self.assertIn(USER_WORKSPACE, self.allowed_okr_workspaces(self.system_manager))
+		self.assertIn(PLAN_WORKSPACE, self.allowed_okr_workspaces(self.admin))
+		self.assertIn(PLAN_WORKSPACE, self.allowed_okr_workspaces(self.system_manager))
+		self.assertNotIn(PLAN_WORKSPACE, self.allowed_okr_workspaces(self.okr_user))
+		self.assertNotIn(PLAN_WORKSPACE, self.allowed_okr_workspaces(self.desk_user))
+
+	def test_plan_workspace_default_is_removed_only_for_unauthorized_users(self):
+		self.set_default(self.admin, PLAN_WORKSPACE)
+		self.set_default(self.system_manager, PLAN_WORKSPACE)
+		self.set_default(self.okr_user, PLAN_WORKSPACE)
+		self.set_default(self.desk_user, PLAN_WORKSPACE)
+
+		restrict_plan_route()
+
+		self.assertEqual(frappe.db.get_value("User", self.admin, "default_workspace"), PLAN_WORKSPACE)
+		self.assertEqual(
+			frappe.db.get_value("User", self.system_manager, "default_workspace"), PLAN_WORKSPACE
+		)
+		self.assertIsNone(frappe.db.get_value("User", self.okr_user, "default_workspace"))
+		self.assertIsNone(frappe.db.get_value("User", self.desk_user, "default_workspace"))
 
 	def test_invalid_admin_default_is_corrected_by_role(self):
 		self.assertIn("OKR Admin", frappe.get_roles(self.admin))
@@ -299,6 +326,14 @@ class TestOKRHomeRoutePatch(FrappeTestCase):
 		self.assertIn('class="navbar-brand navbar-home" href="/app"', navbar)
 		self.assertIn('frappe.set_route("admin-workspace")', alias)
 		self.assertNotIn('frappe.set_route("okr-admin-workspace")', alias)
+
+		global_source = Path(
+			frappe.get_app_path("okr_management", "public", "js", "okr_management.js")
+		).read_text(encoding="utf-8")
+		self.assertIn('"OKR Plan"', global_source)
+		self.assertIn('path === "/app/okr-plan"', global_source)
+		self.assertIn('frappe.set_route("home")', global_source)
+		self.assertIn('frappe.user?.has_role?.(role)', global_source)
 
 	def test_page_and_backend_access_matrix(self):
 		execute()
