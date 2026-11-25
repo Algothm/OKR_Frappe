@@ -1,15 +1,43 @@
 frappe.provide("okr_management");
 
-// Clear workspace selections created by the former Plan/OKR Planning titles.
-try {
-	const stale_okr_pages = new Set(["Plan", "OKR Planning"]);
-	if (window.localStorage && stale_okr_pages.has(localStorage.getItem("current_page"))) {
-		localStorage.removeItem("current_page");
-		localStorage.removeItem("is_current_page_public");
+// The Plan workspace used to be public, so Desk may retain it as the selected
+// workspace even after the server-side role restriction is migrated.
+(() => {
+	const stale_plan_pages = new Set(["Plan", "OKR Planning", "OKR Plan"]);
+	const has_role = (role) =>
+		Boolean(frappe.user?.has_role?.(role) || frappe.user_roles?.includes(role));
+	const has_admin_role = () =>
+		frappe.session.user === "Administrator" ||
+		["OKR Admin", "System Manager"].some(has_role);
+
+	function clear_unauthorized_plan_selection() {
+		if (has_admin_role()) return;
+		try {
+			if (window.localStorage && stale_plan_pages.has(localStorage.getItem("current_page"))) {
+				localStorage.removeItem("current_page");
+				localStorage.removeItem("is_current_page_public");
+			}
+		} catch (e) {
+			// Ignore if localStorage is unavailable.
+		}
 	}
-} catch (e) {
-	// Ignore if localStorage is unavailable
-}
+
+	function leave_unauthorized_plan_route() {
+		if (has_admin_role()) return;
+		const route = frappe.get_route?.() || [];
+		const path = window.location.pathname.replace(/\/$/, "");
+		if (path === "/app/okr-plan" || (route[0] === "List" && route[1] === "OKR Plan")) {
+			frappe.set_route("home");
+		}
+	}
+
+	clear_unauthorized_plan_selection();
+	$(document).on("page-change route-change", () => {
+		clear_unauthorized_plan_selection();
+		leave_unauthorized_plan_route();
+	});
+	setTimeout(leave_unauthorized_plan_route, 0);
+})();
 
 frappe.listview_settings["OKR Objective"] = {
 	onload(listview) {
